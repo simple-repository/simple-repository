@@ -11,9 +11,9 @@ cache:
 before_script:
   - python -m venv venv
   - source venv/bin/activate
-  - pip install -r grouping_service/requirements.txt
+  - pip install -r requirements.txt
   - pip install pytest requests pytest-asyncio anyio
 
 test:
   script:
-    - pytest -vv grouping_service/tests
+    - pytest -vv acc_py_index/tests
