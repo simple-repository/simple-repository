@@ -1,13 +1,5 @@
 image: python:3.9.9
 
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-cache:
-  paths:
-    - .cache/pip
-    - venv/
-
 before_script:
   - python -m venv venv
   - source venv/bin/activate
