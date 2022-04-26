@@ -30,3 +30,15 @@ repos:
     rev: "v0.942"
     hooks:
       - id: mypy
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: "v2.10.0"
+    hooks:
+      - id: hadolint
+
+  - repo: https://gitlab.com/devopshq/gitlab-ci-linter
+    rev: v1.0.2
+    hooks:
+      - id: gitlab-ci-linter
+        files: '.gitlab-ci.yml'
+        args: [ "--server", "https://gitlab.cern.ch" ]
