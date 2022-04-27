@@ -1,11 +1,40 @@
-image: python:3.9.9
+# Use the acc-py-devtools templates found at
+# https://gitlab.cern.ch/-/ide/project/acc-co/devops/python/acc-py-devtools/blob/master/-/acc_py_devtools/templates/gitlab-ci/python.yml.
+stages:
+  - test
+  - build-image
 
-before_script:
-  - python -m venv venv
-  - source venv/bin/activate
-  - pip install -r requirements.txt
-  - pip install pytest requests pytest-asyncio anyio
+include:
+  - project: acc-co/devops/python/acc-py-devtools
+    file: acc_py_devtools/templates/gitlab-ci/python.yml
 
-test:
+variables:
+  project_name: acc_py_index
+  PY_VERSION: '3.9'
+
+# A full installation of acc-py-index, tested with pytest.
+test_install:
+  extends: .acc_py_full_test
+
+# A development installation of acc-py-index tested with pytest.
+test_dev:
+  extends: .acc_py_dev_test
+
+build_image:
+  extends: .acc_py_on_tag
+  stage: build-image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  before_script:
+    # Remove leading 'v' from tag name
+    - export TAG_VERSION="$(echo $CI_COMMIT_TAG | sed 's/^v//')"
   script:
-    - pytest -vv acc_py_index/tests
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:latest"
+      --destination "${CI_REGISTRY_IMAGE}:${TAG_VERSION}"
