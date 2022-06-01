@@ -58,9 +58,11 @@ setup(
         **REQUIREMENTS,
         # The "dev" extra is the union of "test" and "doc", with an option
         # to have explicit development dependencies listed.
-        "dev": [req
-                for extra in ["dev", "test", "doc"]
-                for req in REQUIREMENTS.get(extra, [])],
+        "dev": [
+            req
+            for extra in ["dev", "test", "doc"]
+            for req in REQUIREMENTS.get(extra, [])
+        ],
         # The "all" extra is the union of all requirements.
         "all": [req for reqs in REQUIREMENTS.values() for req in reqs],
     },
