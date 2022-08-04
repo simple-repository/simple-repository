@@ -25,14 +25,3 @@ repos:
         args:
           - "--max-line-length=100"
           - "--per-file-ignores=acc_py_index/tests/*.py:E501"
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.942"
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-cachetools]
-
-  - repo: https://github.com/hadolint/hadolint
-    rev: "v2.10.0"
-    hooks:
-      - id: hadolint
