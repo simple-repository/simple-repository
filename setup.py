@@ -19,12 +19,11 @@ REQUIREMENTS: dict = {
         "cachetools",
         "fastapi",
         "gunicorn",
-        "Jinja2",
+        "lxml<=4.6.5",  # Versions above 4.6.5 break `lxml.etree.HTMLPullParser`
+        "packaging",
         "uvicorn[standard]",
-        "lxml<=4.6.5",
     ],
     "test": [
-        "anyio",
         "pytest",
         "pytest_asyncio",
         "requests",
