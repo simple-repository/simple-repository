@@ -1,38 +1,32 @@
 # Use the acc-py-devtools templates found at
 # https://gitlab.cern.ch/-/ide/project/acc-co/devops/python/acc-py-devtools/blob/master/-/acc_py_devtools/templates/gitlab-ci/python.yml.
 stages:
+  - build
   - test
-  - build-wheel
-  - freeze-wheel
-  - build-image
+  - publish
 
 include:
-  - project: acc-co/devops/python/acc-py-devtools
-    file: acc_py_devtools/templates/gitlab-ci/python.yml
+  - project: acc-co/devops/python/acc-py-gitlab-ci-templates
+    file: v2/python.gitlab-ci.yml
 
 variables:
   project_name: acc_py_index
   project_root: .
   PY_VERSION: '3.9'
+  ACC_PY_BASE_IMAGE_TAG: '2021.12'
 
-# A full installation of acc-py-index, tested with pytest.
-test_install:
-  extends: .acc_py_full_test
-
-# A development installation of acc-py-index tested with pytest.
-test_dev:
-  extends: .acc_py_dev_test
 
 build_wheel:
-  extends:
-    - .acc_py_on_tag
-    - .acc_py_build_wheel
-  stage: build-wheel
+  extends: .acc_py_build_wheel
+  stage: build
+
 
 freeze_wheel:
   # Inject the lockfiles from the source directory into the wheel
   extends: .acc_py_on_tag
-  stage: freeze-wheel
+  stage: build
+  needs:
+    - build_wheel
   # NOTE: use a "_ci" image with the same tag as your Dockerfile
   image: registry.cern.ch/acc/acc-py_cc7_ci:2021.12
   script:
@@ -47,14 +41,27 @@ freeze_wheel:
     paths:
       - ${project_root}/.wheel-to-deploy/*.whl
 
-build_image:
+
+# A full installation of acc-py-index, tested with pytest.
+wheel_test:
+  # TODO: Test the frozen wheel (by installing it with acc-py-deploy), instead of the
+  # unlocked/unfrozen one.
+  extends: .acc_py_wheel_test
+
+
+# A development installation of acc-py-index, tested with pytest.
+test_dev:
+  extends: .acc_py_dev_test
+
+
+publish_container_image:
   # Build a container image with Kaniko, for more details see
   # https://gitlab.cern.ch/gitlabci-examples/build_docker_image
   extends: .acc_py_on_tag
-  stage: build-image
+  stage: publish
   image:
     name: gitlab-registry.cern.ch/ci-tools/docker-image-builder
-    entrypoint: [ "" ]
+    entrypoint: ['']
   variables:
     CONTEXT: ${project_root}/.wheel-to-deploy/
     DOCKERFILE: ${project_root}/Dockerfile
