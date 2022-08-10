@@ -31,7 +31,10 @@ REQUIREMENTS: dict = {
     "dev": [
         "pre-commit",
     ],
-    "doc": [],
+    "doc": [
+        "acc-py-sphinx",
+        "sphinx",
+    ],
 }
 
 setup(
