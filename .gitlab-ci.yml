@@ -74,3 +74,14 @@ publish_container_image:
       --dockerfile ${DOCKERFILE}
       --destination "${CI_REGISTRY_IMAGE}:latest"
       --destination "${CI_REGISTRY_IMAGE}:${TAG_VERSION}"
+
+
+# A dev build of the documentation, made available through cern.ch/acc-py.
+build_docs:
+  extends: .acc_py_build_docs
+
+
+# A release build of the documentation, made available through cern.ch/acc-py.
+build_docs_on_tag:
+  stage: publish
+  extends: .acc_py_build_docs_on_tag
