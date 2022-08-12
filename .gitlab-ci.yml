@@ -15,7 +15,7 @@ variables:
   PY_VERSION: '3.9'
   ACC_PY_BASE_IMAGE_TAG: '2021.12'
   # Use this directory to install extra wheels (such as those fetched from upstream repos)
-  PIP_FIND_LINKS: "file://${CI_PROJECT_DIR}/dist/"
+  PIP_FIND_LINKS: "file://${CI_PROJECT_DIR}/extra-wheels/"
 
 
 fetch_external_deps:
@@ -32,12 +32,14 @@ fetch_external_deps:
       ref: "${UPSTREAM_TRIGGER_REF}"
       artifacts: true
   script:
-    - echo "Dependencies fetched into dist. They will be installed as a result of the PIP_FIND_LINKS environment variable (currently set as ${PIP_FIND_LINKS})."
+    - mkdir -p ./extra-wheels/
+    - cp ./dist/* ./extra-wheels/
+    - echo "Dependencies fetched into extra-wheels. They will be installed as a result of the PIP_FIND_LINKS environment variable (currently set as ${PIP_FIND_LINKS})."
     - export FL_DIR=$(echo "${PIP_FIND_LINKS}" | sed 's\file://\\'); echo ${FL_DIR}
     - ls -ltr ${FL_DIR} || true
   artifacts:
     paths:
-      - dist/
+      - ./extra-wheels/
 
 
 build_wheel:
@@ -56,9 +58,10 @@ freeze_wheel:
     # Figure out the wheel to install, compatible with this python version.
     - python -m pip wheel ${project_name}
       --no-deps --no-index
+      --find-links ${project_root}/dist/
       --wheel-dir ${project_root}/.wheel-to-deploy
-    # Lock the wheel
-    - acc-py app lock ${project_root}/.wheel-to-deploy/*.whl
+    # Lock the wheel using the existing lock-files.
+    - acc-py -vv app lock ${project_root}/.wheel-to-deploy/*.whl
   artifacts:
     paths:
       - ${project_root}/.wheel-to-deploy/*.whl
@@ -86,18 +89,20 @@ publish_container_image:
   image:
     name: gitlab-registry.cern.ch/ci-tools/docker-image-builder
     entrypoint: ['']
-  variables:
-    CONTEXT: ${project_root}/.wheel-to-deploy/
-    DOCKERFILE: ${project_root}/Dockerfile
   before_script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - export TAG_VERSION="$(echo $CI_COMMIT_TAG | sed 's/^v//')"
+    # Extract the version (according to setuptools-scm) from one of the wheels.
+    - export VERSION=$(cd ${project_root}/.wheel-to-deploy/ && ls -1 *.whl | head -n 1 | cut -d'-' -f2 | tr + .)
+    - echo $VERSION
   script:
+    - mkdir -p ${project_root}/context/
+    - cp -r ${project_root}/.wheel-to-deploy ${project_root}/context/
+    - cp -r ${project_root}/extra-wheels ${project_root}/context
     - /kaniko/executor
-      --context ${CONTEXT}
-      --dockerfile ${DOCKERFILE}
+      --context ${project_root}/context
+      --dockerfile ${project_root}/Dockerfile
+      --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
       --destination "${CI_REGISTRY_IMAGE}:latest"
-      --destination "${CI_REGISTRY_IMAGE}:${TAG_VERSION}"
 
 
 # A dev build of the documentation, made available through cern.ch/acc-py.
