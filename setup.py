@@ -14,6 +14,7 @@ with (HERE / "README.md").open("rt") as fh:
 
 REQUIREMENTS: dict = {
     "core": [
+        "indexing",
         "aiohttp",
         "beautifulsoup4",
         "cachetools",
