@@ -81,7 +81,7 @@ test_dev:
    - fetch_external_deps
 
 
-publish_container_image:
+build_and_publish_container_image:
   # Build a container image with Kaniko, for more details see
   # https://gitlab.cern.ch/gitlabci-examples/build_docker_image
   extends: .acc_py_on_tag
