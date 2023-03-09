@@ -23,11 +23,13 @@ REQUIREMENTS: dict = {
         "lxml<=4.6.5",  # Versions above 4.6.5 break `lxml.etree.HTMLPullParser`
         "packaging",
         "uvicorn[standard]",
+        "databases[sqlite]",
+        "sqlalchemy",
     ],
     "test": [
         "pytest",
         "pytest_asyncio",
-        "requests",
+        "httpx", # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
     ],
     "dev": [
         "pre-commit",
