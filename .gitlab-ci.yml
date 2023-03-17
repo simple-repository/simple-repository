@@ -17,6 +17,8 @@ variables:
   # Use this directory to install extra wheels (such as those fetched from upstream repos)
   PIP_FIND_LINKS: "file://${CI_PROJECT_DIR}/extra-wheels/"
 
+pre-commit:
+  extends: .acc_py_pre-commit
 
 fetch_external_deps:
   # Whether triggered by an upstream pipeline or not, fetch the upstream built dependencies,
