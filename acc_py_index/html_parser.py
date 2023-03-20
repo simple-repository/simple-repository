@@ -24,7 +24,7 @@ class HTMLElement:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(tag={self.tag}, attrs={self.attrs}, content={self.content})"
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, HTMLElement):
             return False
         return self.tag == other.tag and self.attrs == other.attrs and self.content == other.content
