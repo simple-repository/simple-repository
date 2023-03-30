@@ -88,6 +88,9 @@ def _serialize_project_list_html(project_list: ProjectList) -> str:
 
 
 def serialize(page: Union[ProjectDetail, ProjectList]) -> str:
+    """Serialises a ProjectDetail or ProjectList object
+    into the html format standardised by PEP503."""
+
     if isinstance(page, ProjectDetail):
         return _serialize_project_page_html(page)
 
