@@ -152,9 +152,9 @@ class HttpSimpleRepository(SimpleRepository):
 
             body: str = await response.text()
             if "application/vnd.pypi.simple.v1+json" in response.headers.get("content-type", ""):
-                project_page: ProjectDetail = _parse_json_project_page(self.source_url, body)
+                project_page: ProjectDetail = _parse_json_project_page(page_url, body)
             else:
-                project_page = _parse_html_project_page(self.source_url, body, project_name)
+                project_page = _parse_html_project_page(page_url, body, project_name)
 
             return project_page
 

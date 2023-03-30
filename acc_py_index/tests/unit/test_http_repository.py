@@ -11,7 +11,7 @@ from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
 @pytest.fixture
 def repository() -> HttpSimpleRepository:
     repo = HttpSimpleRepository(
-        url="https://example.com/simple/",
+        url="https://example.com",
         session=mock.MagicMock(),
     )
     return repo
@@ -76,7 +76,7 @@ async def test_get_project_page(text: str, header: str, repository: HttpSimpleRe
         files=[
             File(
                 filename="test1.whl",
-                url="https://example.com/simple/test1.whl",
+                url="https://example.com/simple/project/test1.whl",
                 hashes={"hash": "test_hash"},
                 requires_python=">4.0",
                 dist_info_metadata="true",
