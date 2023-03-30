@@ -22,7 +22,7 @@ class Meta:
 class ProjectDetail:
     name: str
     files: list[File]
-    meta: Optional[Meta]
+    meta: Meta
 
 
 @dataclass
