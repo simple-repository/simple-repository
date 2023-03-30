@@ -30,7 +30,7 @@ class ProjectListElement:
     name: str
 
     def __hash__(self) -> int:
-        return hash(str(self))
+        return hash(self.name)
 
 
 @dataclass
