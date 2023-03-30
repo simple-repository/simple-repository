@@ -11,7 +11,7 @@ from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
 @pytest.fixture
 def repository() -> HttpSimpleRepository:
     repo = HttpSimpleRepository(
-        url="https://example.com",
+        url="https://example.com/simple/",
         session=mock.MagicMock(),
     )
     return repo

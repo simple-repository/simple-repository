@@ -143,7 +143,7 @@ class HttpSimpleRepository(SimpleRepository):
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         headers = {"Accept": self.CONTENT_TYPES}
 
-        page_url = f"{self.source_url}/simple/{project_name}/"
+        page_url = self.source_url + f"{project_name}/"
         async with self.session.get(page_url, headers=headers) as response:
             if 400 <= response.status <= 499:
                 raise errors.PackageNotFoundError(
@@ -161,8 +161,7 @@ class HttpSimpleRepository(SimpleRepository):
     async def get_project_list(self) -> ProjectList:
         headers = {"Accept": self.CONTENT_TYPES}
 
-        list_url = f"{self.source_url}/simple/"
-        async with self.session.get(list_url, headers=headers) as response:
+        async with self.session.get(self.source_url, headers=headers) as response:
             if 400 <= response.status <= 499:
                 raise errors.SourceRepositoryUnavailable()
 
