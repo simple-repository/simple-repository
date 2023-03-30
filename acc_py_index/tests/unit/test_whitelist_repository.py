@@ -3,12 +3,12 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index.simple.aggregated_repositories import SpecialCaseRepository, get_special_cases
+from acc_py_index.simple.aggregated_repositories import WhitelistRepository, get_special_cases
 
 
 @pytest.mark.asyncio
 async def test_special_get_project_page() -> None:
-    repo = SpecialCaseRepository(
+    repo = WhitelistRepository(
         default_source=mock.AsyncMock(),
         special_source=mock.AsyncMock(),
         special_case_file=pathlib.Path("./test.json"),
