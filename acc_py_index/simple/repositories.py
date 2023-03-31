@@ -141,6 +141,9 @@ class HttpSimpleRepository(SimpleRepository):
         self.session = session
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
+        if project_name != packaging.utils.canonicalize_name(project_name):
+            raise errors.NotNormalizedProjectName()
+
         headers = {"Accept": self.CONTENT_TYPES}
 
         page_url = self.source_url + f"{project_name}/"

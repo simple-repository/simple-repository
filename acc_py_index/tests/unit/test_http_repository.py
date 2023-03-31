@@ -167,3 +167,9 @@ async def test_get_project_list_failed(repository: HttpSimpleRepository) -> None
 
     with pytest.raises(errors.SourceRepositoryUnavailable):
         await repository.get_project_list()
+
+
+@pytest.mark.asyncio
+async def test_not_normalized_package(repository: HttpSimpleRepository) -> None:
+    with pytest.raises(errors.NotNormalizedProjectName):
+        await repository.get_project_page("non_normalized")

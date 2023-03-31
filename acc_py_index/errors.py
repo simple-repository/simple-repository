@@ -10,3 +10,7 @@ class PackageNotFoundError(ValueError):
 
 class SourceRepositoryUnavailable(Exception):
     pass
+
+
+class NotNormalizedProjectName(Exception):
+    pass

@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 
+from acc_py_index import errors
 from acc_py_index.simple.aggregated_repositories import WhitelistRepository, get_special_cases
 
 
@@ -40,3 +41,14 @@ def test_get_special_cases() -> None:
         assert special_cases[0] == 'case1'
         assert special_cases[1] == 'case2'
         assert special_cases[2] == 'case3'
+
+
+@pytest.mark.asyncio
+async def test_not_normalized_package() -> None:
+    repo = WhitelistRepository(
+        default_source=mock.AsyncMock(),
+        special_source=mock.AsyncMock(),
+        special_case_file=pathlib.Path("./test.json"),
+    )
+    with pytest.raises(errors.NotNormalizedProjectName):
+        await repo.get_project_page("non_normalized")

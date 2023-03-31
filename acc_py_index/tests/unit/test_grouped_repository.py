@@ -110,3 +110,9 @@ async def test_blended_get_project_list_failed(group_repository: GroupedReposito
 def test_group_repository_failed_init() -> None:
     with pytest.raises(ValueError):
         GroupedRepository([])
+
+
+@pytest.mark.asyncio
+async def test_not_normalized_package(group_repository: GroupedRepository) -> None:
+    with pytest.raises(errors.NotNormalizedProjectName):
+        await group_repository.get_project_page("non_normalized")
