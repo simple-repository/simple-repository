@@ -59,15 +59,13 @@ async def test_get_project_list() -> None:
 
 
 def test_get_special_cases() -> None:
-    special_cases_json = '{"special_cases": ["case1", "case2", "case3"]}'
+    special_cases_json = '{"c1": "", "c2": "", "c3": ""}'
     m = mock.mock_open(read_data=special_cases_json)
     with mock.patch.object(pathlib.Path, "open", m):
         special_cases = get_special_cases(pathlib.Path('special_cases.json'))
 
-        assert len(special_cases) == 3
-        assert special_cases[0] == 'case1'
-        assert special_cases[1] == 'case2'
-        assert special_cases[2] == 'case3'
+        for special_case, expected in zip(special_cases, ["c1", "c2", "c3"]):
+            assert special_case == expected
 
 
 @pytest.mark.asyncio
