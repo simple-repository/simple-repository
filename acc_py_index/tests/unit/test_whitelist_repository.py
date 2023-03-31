@@ -5,6 +5,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.aggregated_repositories import WhitelistRepository, get_special_cases
+from acc_py_index.simple.model import Meta, ProjectList, ProjectListElement
 
 
 @pytest.mark.asyncio
@@ -29,6 +30,32 @@ async def test_special_get_project_page() -> None:
         await repo.get_project_page("package")
         repo.default_source.get_project_page.assert_awaited_once_with("package")
         m.assert_called_once_with(pathlib.Path("./test.json"))
+
+
+@pytest.mark.asyncio
+async def test_get_project_list() -> None:
+    repo = WhitelistRepository(
+        default_source=mock.AsyncMock(),
+        special_source=mock.AsyncMock(),
+        special_case_file=pathlib.Path("./test.json"),
+    )
+
+    assert isinstance(repo.special_source, mock.Mock)
+    assert isinstance(repo.default_source, mock.Mock)
+
+    special_cases = ["p1"]
+    repo.default_source.get_project_list.return_value = ProjectList(
+        meta=Meta("1.0"),
+        projects={ProjectListElement("p2")},
+    )
+
+    with mock.patch("acc_py_index.simple.aggregated_repositories.get_special_cases", return_value=special_cases):
+        res = await repo.get_project_list()
+
+    assert res == ProjectList(
+        meta=Meta("1.0"),
+        projects={ProjectListElement("p1"), ProjectListElement("p2")},
+    )
 
 
 def test_get_special_cases() -> None:
