@@ -33,12 +33,9 @@ class ProjectDetail:
     files: list[File]
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectListElement:
     name: str
-
-    def __hash__(self) -> int:
-        return hash(self.name)
 
 
 @dataclass
