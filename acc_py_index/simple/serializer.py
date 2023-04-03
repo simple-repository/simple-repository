@@ -80,7 +80,7 @@ def _serialize_project_list_html(project_list: ProjectList) -> str:
         project_list_html.append(
             SIMPLE_INDEX_PROJECT_LINK.format(
                 project=project_name.name,
-                href="/simple/" + packaging.utils.canonicalize_name(project_name.name) + "/",
+                href=packaging.utils.canonicalize_name(project_name.name) + "/",
             ),
         )
     project_list_html.append(SIMPLE_INDEX_FOOTER)

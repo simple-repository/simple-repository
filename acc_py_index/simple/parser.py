@@ -1,17 +1,9 @@
 import json
-from urllib.parse import urljoin
 
 import packaging.utils
 
 from .. import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
-
-
-def _url_absolutizer(url: str, url_base: str) -> str:
-    """Converts a relative url into an absolute one"""
-    if not url.startswith("http") and not url.startswith("https"):
-        return urljoin(url_base, url)
-    return url
 
 
 def parse_json_project_list(page: str) -> ProjectList:
@@ -51,7 +43,7 @@ def parse_html_project_list(page: str) -> ProjectList:
     )
 
 
-def parse_json_project_page(source_url: str, body: str) -> ProjectDetail:
+def parse_json_project_page(body: str) -> ProjectDetail:
     page_dict = json.loads(body)
     return ProjectDetail(
         name=page_dict["name"],
@@ -61,7 +53,7 @@ def parse_json_project_page(source_url: str, body: str) -> ProjectDetail:
         files=[
             File(
                 filename=file.get("filename"),
-                url=_url_absolutizer(file.get("url"), source_url),
+                url=file.get("url"),
                 hashes=file.get("hashes"),
                 requires_python=file.get("requires-python"),
                 dist_info_metadata=file.get("dist-info-metadata"),
@@ -73,7 +65,7 @@ def parse_json_project_page(source_url: str, body: str) -> ProjectDetail:
     )
 
 
-def parse_html_project_page(source_url: str, page: str, project_name: str) -> ProjectDetail:
+def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
     parser = html_parser.SimpleHTMLParser()
     if not page.lower().lstrip().startswith("<!DOCTYPE html>"):
         # Temporary fix: https://github.com/pypa/pip/issues/10825
@@ -83,27 +75,24 @@ def parse_html_project_page(source_url: str, page: str, project_name: str) -> Pr
     files = []
     a_tags = (e for e in parser.elements if e.tag == "a")
     for a_tag in a_tags:
-        hash = {}
         if (url := a_tag.attrs.get("href")) and (a_tag.content is not None):
+            hash = {}
             url_tokens = url.split('#')
-            abs_url = _url_absolutizer(url_tokens[0], source_url)
             if len(url_tokens) > 1:
                 hash_string = url_tokens[1].split('=')
                 hash[hash_string[0]] = hash_string[1]
 
             file = File(
                 filename=a_tag.content,
-                url=abs_url,
+                url=url_tokens[0],
                 hashes=hash,
             )
-        if requires_python := a_tag.attrs.get("data-requires-python"):
-            file.requires_python = requires_python
-        if dist_info_metadata := a_tag.attrs.get("data-dist-info-metadata"):
-            file.dist_info_metadata = dist_info_metadata
-        if yanked := a_tag.attrs.get("data-yanked"):
-            file.yanked = yanked
 
-        files.append(file)
+            file.requires_python = a_tag.attrs.get("data-requires-python")
+            file.dist_info_metadata = a_tag.attrs.get("data-dist-info-metadata")
+            file.yanked = a_tag.attrs.get("data-yanked")
+
+            files.append(file)
 
     return ProjectDetail(
         name=project_name,

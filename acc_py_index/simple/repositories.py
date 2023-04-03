@@ -1,10 +1,11 @@
 from typing import Protocol
+from urllib.parse import urljoin
 
 import aiohttp
 import packaging.utils
 
 from . import parser
-from .. import errors
+from .. import errors, utils
 from .model import ProjectDetail, ProjectList
 
 
@@ -38,7 +39,7 @@ class HttpSimpleRepository(SimpleRepository):
 
         headers = {"Accept": self.CONTENT_TYPES}
 
-        page_url = self.source_url + f"{project_name}/"
+        page_url = urljoin(self.source_url, f"{project_name}/")
         async with self.session.get(page_url, headers=headers) as response:
             if 400 <= response.status <= 499:
                 raise errors.PackageNotFoundError(
@@ -47,9 +48,14 @@ class HttpSimpleRepository(SimpleRepository):
 
             body: str = await response.text()
             if "application/vnd.pypi.simple.v1+json" in response.headers.get("content-type", ""):
-                project_page: ProjectDetail = parser.parse_json_project_page(page_url, body)
+                project_page: ProjectDetail = parser.parse_json_project_page(body)
             else:
-                project_page = parser.parse_html_project_page(page_url, body, project_name)
+                project_page = parser.parse_html_project_page(body, project_name)
+
+            for file in project_page.files:
+                file.url = utils.url_absolutizer(
+                    file.url, page_url,
+                )
 
             return project_page
 
