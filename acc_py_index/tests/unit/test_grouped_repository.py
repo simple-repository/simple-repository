@@ -3,41 +3,8 @@ from unittest import mock
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple import aggregated_repositories
-from acc_py_index.simple.aggregated_repositories import GroupedRepository
+from acc_py_index.simple.grouped_repository import GroupedRepository
 from acc_py_index.simple.model import Meta, ProjectList, ProjectListElement
-
-
-def test_blend_project_lists() -> None:
-    meta = Meta(api_version="1.0")
-    projects_elements = [
-        {
-            ProjectListElement("a"),
-            ProjectListElement("c"),
-        }, {
-            ProjectListElement("a"),
-            ProjectListElement("b"),
-        }, {
-            ProjectListElement("d"),
-        },
-    ]
-
-    project_lists = [
-        ProjectList(
-            meta=meta,
-            projects=projects,
-        ) for projects in projects_elements
-    ]
-    blended_project = aggregated_repositories._blend_project_lists(project_lists)
-    assert blended_project == ProjectList(
-        meta=meta,
-        projects={
-            ProjectListElement("a"),
-            ProjectListElement("b"),
-            ProjectListElement("c"),
-            ProjectListElement("d"),
-        },
-    )
 
 
 @pytest.fixture
@@ -88,12 +55,36 @@ async def test_get_project_page_failed(group_repository: GroupedRepository) -> N
 
 @pytest.mark.asyncio
 async def test_blended_get_project_list(group_repository: GroupedRepository) -> None:
-    with mock.patch("acc_py_index.simple.aggregated_repositories._blend_project_lists") as m:
-        await group_repository.get_project_list()
-        m.assert_called_once()
-        for source in group_repository.sources:
-            assert isinstance(source, mock.Mock)
-            source.get_project_list.assert_awaited_once()
+    meta = Meta(api_version="1.0")
+    projects_elements = [
+        {
+            ProjectListElement("a"),
+            ProjectListElement("c"),
+        }, {
+            ProjectListElement("a"),
+            ProjectListElement("b"),
+        }, {
+            ProjectListElement("d"),
+        },
+    ]
+
+    for source, page in zip(group_repository.sources, projects_elements):
+        assert isinstance(source, mock.Mock)
+        source.get_project_list.return_value = ProjectList(
+            meta=meta,
+            projects=page,
+        )
+
+    result = await group_repository.get_project_list()
+    assert result == ProjectList(
+        meta=meta,
+        projects={
+            ProjectListElement("a"),
+            ProjectListElement("b"),
+            ProjectListElement("c"),
+            ProjectListElement("d"),
+        },
+    )
 
 
 @pytest.mark.asyncio

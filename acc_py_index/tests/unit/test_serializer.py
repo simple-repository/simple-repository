@@ -65,5 +65,5 @@ def test_serialize_project_list_html() -> None:
     assert serialized_page.startswith(expected_header)
     assert serialized_page.endswith(expected_footer)
     a_tags = serialized_page.removeprefix(expected_header).removesuffix(expected_footer)
-    assert '<a href="/simple/test-project-1/">test-project-1</a><br/>' in a_tags
-    assert '<a href="/simple/test-project-2/">test-project-2</a><br/>' in a_tags
+    assert '<a href="test-project-1/">test-project-1</a><br/>' in a_tags
+    assert '<a href="test-project-2/">test-project-2</a><br/>' in a_tags
