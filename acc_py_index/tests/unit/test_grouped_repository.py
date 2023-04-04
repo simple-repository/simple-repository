@@ -4,82 +4,68 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.grouped_repository import GroupedRepository
-from acc_py_index.simple.model import Meta, ProjectList, ProjectListElement
+from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, ProjectListElement
 
-
-@pytest.fixture
-def group_repository() -> GroupedRepository:
-    repo = GroupedRepository(
-        sources=[
-            mock.AsyncMock() for i in range(3)
-        ],
-    )
-    return repo
+from ..mock_repository import MockRepository
 
 
 @pytest.mark.asyncio
-async def test_get_project_page(group_repository: GroupedRepository) -> None:
-    assert isinstance(group_repository.sources[0], mock.Mock)
-    assert isinstance(group_repository.sources[1], mock.Mock)
-    assert isinstance(group_repository.sources[2], mock.Mock)
+async def test_get_project_page() -> None:
+    group_repository = GroupedRepository([
+        MockRepository(),
+        MockRepository(
+            ProjectList(Meta('1.0'), {ProjectListElement("numpy")}),
+            [ProjectDetail(Meta('1.0'), "numpy", files=[])],
+        ),
+        MockRepository(
+            ProjectList(Meta('1.0'), {ProjectListElement("numpy")}),
+            [ProjectDetail(Meta('WRONG'), "numpy", files=[])],
+        ),
+    ])
 
-    group_repository.sources[0].get_project_page.side_effect = errors.PackageNotFoundError(package_name="numpy")
+    resp = await group_repository.get_project_page(project_name="numpy")
 
-    await group_repository.get_project_page(project_name="numpy")
-
-    group_repository.sources[0].get_project_page.assert_awaited_once_with("numpy")
-    group_repository.sources[1].get_project_page.assert_awaited_once_with("numpy")
-    group_repository.sources[2].get_project_page.assert_not_awaited()
+    assert resp == ProjectDetail(Meta('1.0'), "numpy", files=[])
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_failed(group_repository: GroupedRepository) -> None:
-    assert isinstance(group_repository.sources[0], mock.Mock)
-    assert isinstance(group_repository.sources[1], mock.Mock)
-    assert isinstance(group_repository.sources[2], mock.Mock)
-
-    group_repository.sources[0].get_project_page.side_effect = errors.PackageNotFoundError(package_name="numpy")
-    group_repository.sources[1].get_project_page.side_effect = errors.PackageNotFoundError(package_name="numpy")
-    group_repository.sources[2].get_project_page.side_effect = errors.PackageNotFoundError(package_name="numpy")
-
+async def test_get_project_page_failed() -> None:
+    group_repository = GroupedRepository([
+        MockRepository() for i in range(3)
+    ])
     with pytest.raises(
         expected_exception=errors.PackageNotFoundError,
         match=r"Package 'numpy' was not found in the configured source",
     ):
-        await group_repository.get_project_page(project_name="numpy")
-
-    group_repository.sources[0].get_project_page.assert_awaited_once_with("numpy")
-    group_repository.sources[1].get_project_page.assert_awaited_once_with("numpy")
-    group_repository.sources[2].get_project_page.assert_awaited_once_with("numpy")
+        await group_repository.get_project_page("numpy")
 
 
 @pytest.mark.asyncio
-async def test_blended_get_project_list(group_repository: GroupedRepository) -> None:
+async def test_blended_get_project_list() -> None:
     meta = Meta(api_version="1.0")
     projects_elements = [
         {
-            ProjectListElement("a"),
+            ProjectListElement("a_"),
             ProjectListElement("c"),
         }, {
-            ProjectListElement("a"),
+            ProjectListElement("a-"),
             ProjectListElement("b"),
         }, {
             ProjectListElement("d"),
         },
     ]
 
-    for source, page in zip(group_repository.sources, projects_elements):
-        assert isinstance(source, mock.Mock)
-        source.get_project_list.return_value = ProjectList(
-            meta=meta,
-            projects=page,
-        )
+    group_repository = GroupedRepository(
+        sources=[
+            MockRepository(ProjectList(Meta("1.0"), p)) for p in projects_elements
+        ],
+    )
 
     result = await group_repository.get_project_list()
     assert result == ProjectList(
         meta=meta,
         projects={
-            ProjectListElement("a"),
+            ProjectListElement("a-"),
             ProjectListElement("b"),
             ProjectListElement("c"),
             ProjectListElement("d"),
@@ -88,14 +74,16 @@ async def test_blended_get_project_list(group_repository: GroupedRepository) -> 
 
 
 @pytest.mark.asyncio
-async def test_blended_get_project_list_failed(group_repository: GroupedRepository) -> None:
-    assert isinstance(group_repository.sources[0], mock.Mock)
-    assert isinstance(group_repository.sources[1], mock.Mock)
-    assert isinstance(group_repository.sources[2], mock.Mock)
-
-    group_repository.sources[2].get_project_list.side_effect = errors.SourceRepositoryUnavailable
+async def test_blended_get_project_list_failed() -> None:
+    repo = GroupedRepository(
+        sources=[
+            mock.AsyncMock() for i in range(3)
+        ],
+    )
+    assert isinstance(repo.sources[2], mock.Mock)
+    repo.sources[2].get_project_list.side_effect = errors.SourceRepositoryUnavailable
     with pytest.raises(errors.SourceRepositoryUnavailable):
-        await group_repository.get_project_list()
+        await repo.get_project_list()
 
 
 def test_group_repository_failed_init() -> None:
@@ -104,6 +92,9 @@ def test_group_repository_failed_init() -> None:
 
 
 @pytest.mark.asyncio
-async def test_not_normalized_package(group_repository: GroupedRepository) -> None:
+async def test_not_normalized_package() -> None:
+    group_repository = GroupedRepository([
+        MockRepository() for i in range(3)
+    ])
     with pytest.raises(errors.NotNormalizedProjectName):
         await group_repository.get_project_page("non_normalized")

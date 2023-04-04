@@ -5,14 +5,14 @@ from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, Pr
 def test_serialize_file_html() -> None:
     file = File(
         filename="test.html",
-        url="https://example.com/test.html",
+        url="https://example.com/test.html#old",
         hashes={"sha256": "abc123"},
         requires_python=">=3.6",
         dist_info_metadata="metadata.json",
         yanked="Broken",
     )
     expected = (
-        '<a href="https://example.com/test.html#sha256:abc123" data-requires-python=">=3.6" '
+        '<a href="https://example.com/test.html#sha256=abc123&old" data-requires-python=">=3.6" '
         'data-dist-info-metadata="metadata.json" data-yanked="Broken">test.html</a><br/>\n'
     )
     assert serializer._serialize_file_html(file) == expected
