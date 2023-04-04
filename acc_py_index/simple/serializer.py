@@ -1,4 +1,5 @@
 from typing import Union
+from urllib.parse import urlparse
 
 import packaging.utils
 
@@ -30,13 +31,17 @@ SIMPLE_INDEX_FOOTER = "</body>\n</html>"
 
 
 def _serialize_file_html(file: File) -> str:
-    url = file.url
+    url = urlparse(file.url)
     attributes = []
     if file.hashes:
         hash_fun = next(iter(file.hashes))
         hash_value = file.hashes[hash_fun]
-        url += f"#{hash_fun}:{hash_value}"
-    attributes.append(f'href="{url}"')
+        new_anchors = [f"{hash_fun}={hash_value}"]
+        if old_anchors := url.fragment:
+            new_anchors += old_anchors.split('&')
+        url = url._replace(fragment="&".join(new_anchors))
+
+    attributes.append(f'href="{url.geturl()}"')
 
     if file.requires_python:
         attributes.append(f'data-requires-python="{file.requires_python}"')
