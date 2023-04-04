@@ -14,3 +14,7 @@ class SourceRepositoryUnavailable(Exception):
 
 class NotNormalizedProjectName(Exception):
     pass
+
+
+class UnsupportedSerialization(Exception):
+    pass

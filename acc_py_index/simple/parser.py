@@ -1,6 +1,5 @@
 import json
-
-import packaging.utils
+from urllib.parse import urlparse
 
 from .. import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
@@ -30,7 +29,7 @@ def parse_html_project_list(page: str) -> ProjectList:
 
     projects = {
         ProjectListElement(
-            name=packaging.utils.canonicalize_name(element.content),
+            name=element.content,
         )
         for element in parser.elements if element.tag == "a" and element.content is not None
     }
@@ -76,16 +75,19 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
     a_tags = (e for e in parser.elements if e.tag == "a")
     for a_tag in a_tags:
         if (url := a_tag.attrs.get("href")) and (a_tag.content is not None):
-            hash = {}
-            url_tokens = url.split('#')
-            if len(url_tokens) > 1:
-                hash_string = url_tokens[1].split('=')
-                hash[hash_string[0]] = hash_string[1]
+            hashes = {}
+            parsed_url = urlparse(url)
+
+            if anchor := parsed_url.fragment:
+                anchors = anchor.split("&")
+                hash_val = anchors[0].split('=')
+                hashes[hash_val[0]] = hash_val[1]
+                parsed_url = parsed_url._replace(fragment="&".join(anchors[1:]))
 
             file = File(
                 filename=a_tag.content,
-                url=url_tokens[0],
-                hashes=hash,
+                url=parsed_url.geturl(),
+                hashes=hashes,
             )
 
             file.requires_python = a_tag.attrs.get("data-requires-python")
