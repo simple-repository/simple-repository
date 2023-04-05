@@ -5,15 +5,16 @@ from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, Pr
 def test_serialize_file_html() -> None:
     file = File(
         filename="test.html",
-        url="https://example.com/test.html#old",
-        hashes={"sha256": "abc123"},
+        url="https://example.com/test.html",
+        hashes={"test": "123", "sha256": "abc123"},
         requires_python=">=3.6",
         dist_info_metadata="metadata.json",
         yanked="Broken",
+        gpg_sig="true",
     )
     expected = (
-        '<a href="https://example.com/test.html#sha256=abc123&old" data-requires-python=">=3.6" '
-        'data-dist-info-metadata="metadata.json" data-yanked="Broken">test.html</a><br/>\n'
+        '<a href="https://example.com/test.html#sha256=abc123" data-requires-python=">=3.6" '
+        'data-dist-info-metadata="metadata.json" data-yanked="Broken" data-gpg-sig="true">test.html</a><br/>\n'
     )
     assert serializer._serialize_file_html(file) == expected
 
@@ -24,7 +25,7 @@ def test_serialize_project_page_html() -> None:
         name="test-project",
         files=[
             File(filename="test.html", url="https://example.com/test.html", hashes={}),
-            File(filename="test.txt", url="https://example.com/test.txt", hashes={}),
+            File(filename="test.txt", url="test.txt", hashes={}),
         ],
     )
     expected = """<!DOCTYPE html>
@@ -36,7 +37,7 @@ def test_serialize_project_page_html() -> None:
   <body>
     <h1>Links for test-project</h1>
 <a href="https://example.com/test.html">test.html</a><br/>
-<a href="https://example.com/test.txt">test.txt</a><br/>
+<a href="test.txt">test.txt</a><br/>
 </body>
 </html>"""
     assert serializer._serialize_project_page_html(project_page) == expected

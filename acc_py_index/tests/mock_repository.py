@@ -1,3 +1,5 @@
+from typing import Optional
+
 from acc_py_index import errors
 from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList
 from acc_py_index.simple.repositories import SimpleRepository
@@ -7,15 +9,19 @@ class MockRepository(SimpleRepository):
     def __init__(
         self,
         project_list: ProjectList = ProjectList(Meta('1.0'), set()),
-        project_pages: list[ProjectDetail] = [],
+        project_pages: Optional[list[ProjectDetail]] = None,
     ) -> None:
         self.project_list = project_list
-        self.project_pages = project_pages
+        if project_pages:
+            self.project_pages = {
+                project.name: project for project in project_pages
+            }
+        else:
+            self.project_pages = {}
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
-        for p in self.project_pages:
-            if p.name == project_name:
-                return p
+        if project_name in self.project_pages:
+            return self.project_pages[project_name]
         raise errors.PackageNotFoundError(project_name)
 
     async def get_project_list(self) -> ProjectList:
