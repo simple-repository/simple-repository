@@ -1,5 +1,4 @@
 from typing import Union
-from urllib.parse import urlparse
 
 import packaging.utils
 
@@ -31,17 +30,15 @@ SIMPLE_INDEX_FOOTER = "</body>\n</html>"
 
 
 def _serialize_file_html(file: File) -> str:
-    url = urlparse(file.url)
+    url = file.url
     attributes = []
     if file.hashes:
-        hash_fun = next(iter(file.hashes))
+        hash_fun = "sha256" if "sha256" in file.hashes else next(iter(file.hashes))
         hash_value = file.hashes[hash_fun]
-        new_anchors = [f"{hash_fun}={hash_value}"]
-        if old_anchors := url.fragment:
-            new_anchors += old_anchors.split('&')
-        url = url._replace(fragment="&".join(new_anchors))
+        anchor = f"{hash_fun}={hash_value}"
+        url = f"{url}#{anchor}"
 
-    attributes.append(f'href="{url.geturl()}"')
+    attributes.append(f'href="{url}"')
 
     if file.requires_python:
         attributes.append(f'data-requires-python="{file.requires_python}"')
@@ -51,6 +48,9 @@ def _serialize_file_html(file: File) -> str:
 
     if file.yanked:
         attributes.append(f'data-yanked="{file.yanked}"')
+
+    if file.gpg_sig:
+        attributes.append(f'data-gpg-sig="{file.gpg_sig}"')
 
     attributes_string = " ".join(attributes)
 
@@ -85,6 +85,7 @@ def _serialize_project_list_html(project_list: ProjectList) -> str:
         project_list_html.append(
             SIMPLE_INDEX_PROJECT_LINK.format(
                 project=project_name.name,
+                # Using relative paths for project page urls.
                 href=packaging.utils.canonicalize_name(project_name.name) + "/",
             ),
         )

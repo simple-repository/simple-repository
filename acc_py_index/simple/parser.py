@@ -1,5 +1,5 @@
 import json
-from urllib.parse import urlparse
+from urllib.parse import urldefrag
 
 from .. import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
@@ -27,11 +27,17 @@ def parse_html_project_list(page: str) -> ProjectList:
         page = "<!DOCTYPE html>\n" + page
     parser.feed(page)
 
+    a_tags = (
+        element for element in parser.elements
+        if element.tag == "a"
+    )
+
     projects = {
         ProjectListElement(
             name=element.content,
         )
-        for element in parser.elements if element.tag == "a" and element.content is not None
+        for element in a_tags
+        if element.content is not None
     }
 
     return ProjectList(
@@ -51,12 +57,12 @@ def parse_json_project_page(body: str) -> ProjectDetail:
         ),
         files=[
             File(
-                filename=file.get("filename"),
-                url=file.get("url"),
-                hashes=file.get("hashes"),
+                filename=file["filename"],
+                url=file["url"],
+                hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
                 dist_info_metadata=file.get("dist-info-metadata"),
-                gpg_sig=file.get("gpg-sig"),
+                gpg_sig=(file.get("gpg-sig") if file.get("gpg-sig") is not False else None),
                 yanked=(file.get("yanked") if file.get("yanked") is not False else None),
             )
             for file in page_dict["files"]
@@ -72,29 +78,32 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
     parser.feed(page)
 
     files = []
-    a_tags = (e for e in parser.elements if e.tag == "a")
+    a_tags = (
+        e for e in parser.elements if e.tag == "a"
+    )
+
     for a_tag in a_tags:
-        if (url := a_tag.attrs.get("href")) and (a_tag.content is not None):
-            hashes = {}
-            parsed_url = urlparse(url)
+        if (a_tag.content is None) or (a_tag.attrs.get("href") is None):
+            continue
 
-            if anchor := parsed_url.fragment:
-                anchors = anchor.split("&")
-                hash_val = anchors[0].split('=')
-                hashes[hash_val[0]] = hash_val[1]
-                parsed_url = parsed_url._replace(fragment="&".join(anchors[1:]))
+        hashes = {}
+        url, anchor = urldefrag(a_tag.attrs["href"])
 
-            file = File(
-                filename=a_tag.content,
-                url=parsed_url.geturl(),
-                hashes=hashes,
-            )
+        if anchor:
+            hash_val = str(anchor).split('=')
+            hashes[hash_val[0]] = hash_val[1]
 
-            file.requires_python = a_tag.attrs.get("data-requires-python")
-            file.dist_info_metadata = a_tag.attrs.get("data-dist-info-metadata")
-            file.yanked = a_tag.attrs.get("data-yanked")
+        file = File(
+            filename=a_tag.content,
+            url=str(url),
+            hashes=hashes,
+            requires_python=a_tag.attrs.get("data-requires-python"),
+            dist_info_metadata=a_tag.attrs.get("data-dist-info-metadata"),
+            yanked=a_tag.attrs.get("data-yanked"),
+            gpg_sig=a_tag.attrs.get("data-gpg-sig"),
+        )
 
-            files.append(file)
+        files.append(file)
 
     return ProjectDetail(
         name=project_name,
