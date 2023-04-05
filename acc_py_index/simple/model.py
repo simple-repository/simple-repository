@@ -10,7 +10,7 @@ class File:
 
     filename: str
     url: str
-    hashes: dict[str, str]
+    hashes: dict[str, str]  # hash_name to hash_value mapping
     requires_python: Optional[str] = None
     dist_info_metadata: Optional[str] = None  # PEP-658
     gpg_sig: Optional[str] = None
@@ -35,7 +35,7 @@ class ProjectDetail:
 
 @dataclass(frozen=True)
 class ProjectListElement:
-    name: str
+    name: str  # not necessarily normalized.
 
 
 @dataclass

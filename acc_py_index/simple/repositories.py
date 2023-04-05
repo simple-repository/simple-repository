@@ -23,21 +23,20 @@ class SimpleRepository(Protocol):
 class HttpSimpleRepository(SimpleRepository):
     """Proxys a remote simple repository"""
 
-    CONTENT_TYPES = ", ".join([
-        "application/vnd.pypi.simple.v1+json",
-        "application/vnd.pypi.simple.v1+html;q=0.2",
-        "text/html;q=0.01",
-    ])
-
     def __init__(self, url: str, session: aiohttp.ClientSession):
         self.source_url = url
         self.session = session
+        self.downstream_content_types = ", ".join([
+            "application/vnd.pypi.simple.v1+json",
+            "application/vnd.pypi.simple.v1+html;q=0.2",
+            "text/html;q=0.01",
+        ])
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         if project_name != packaging.utils.canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
 
-        headers = {"Accept": self.CONTENT_TYPES}
+        headers = {"Accept": self.downstream_content_types}
 
         page_url = urljoin(self.source_url, f"{project_name}/")
         async with self.session.get(page_url, headers=headers) as response:
@@ -50,22 +49,24 @@ class HttpSimpleRepository(SimpleRepository):
             body: str = await response.text()
             content_type = response.headers.get("content-type", "")
 
-            if (
-                "application/vnd.pypi.simple.v1+html" in content_type or
-                "text/html" in content_type or not content_type
-            ):
-                project_page = parser.parse_html_project_page(body, project_name)
-            elif "application/vnd.pypi.simple.v1+json" in content_type:
-                project_page = parser.parse_json_project_page(body)
-            else:
-                raise errors.UnsupportedSerialization()
+        if (
+            "application/vnd.pypi.simple.v1+html" in content_type or
+            "text/html" in content_type or not content_type
+        ):
+            project_page = parser.parse_html_project_page(body, project_name)
+        elif "application/vnd.pypi.simple.v1+json" in content_type:
+            project_page = parser.parse_json_project_page(body)
+        else:
+            raise errors.UnsupportedSerialization()
 
-            for file in project_page.files:
-                file.url = utils.url_absolutizer(file.url, page_url)
-            return project_page
+        for file in project_page.files:
+            # Make the URLs in the project page absolute, such that they can be
+            # resolved upstream without knowing the original source URLs.
+            file.url = utils.url_absolutizer(file.url, page_url)
+        return project_page
 
     async def get_project_list(self) -> ProjectList:
-        headers = {"Accept": self.CONTENT_TYPES}
+        headers = {"Accept": self.downstream_content_types}
 
         async with self.session.get(self.source_url, headers=headers) as response:
             if response.status == 404:
@@ -75,12 +76,12 @@ class HttpSimpleRepository(SimpleRepository):
             body = await response.text()
             content_type = response.headers.get("content-type", "")
 
-            if (
-                "application/vnd.pypi.simple.v1+html" in content_type or
-                "text/html" in content_type or not content_type
-            ):
-                return parser.parse_html_project_list(body)
-            elif "application/vnd.pypi.simple.v1+json" in content_type:
-                return parser.parse_json_project_list(body)
+        if (
+            "application/vnd.pypi.simple.v1+html" in content_type or
+            "text/html" in content_type or not content_type
+        ):
+            return parser.parse_html_project_list(body)
+        elif "application/vnd.pypi.simple.v1+json" in content_type:
+            return parser.parse_json_project_list(body)
 
-            raise errors.UnsupportedSerialization()
+        raise errors.UnsupportedSerialization()
