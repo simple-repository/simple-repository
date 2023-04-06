@@ -12,24 +12,20 @@ HERE = Path(__file__).parent.absolute()
 with (HERE / "README.md").open("rt") as fh:
     LONG_DESCRIPTION = fh.read().strip()
 
-REQUIREMENTS: dict = {
+REQUIREMENTS: dict[str, list[str]] = {
     "core": [
-        "indexing",
         "aiohttp",
-        "beautifulsoup4",
         "cachetools",
         "fastapi",
         "gunicorn",
-        "lxml<=4.6.5",  # Versions above 4.6.5 break `lxml.etree.HTMLPullParser`
         "packaging",
         "uvicorn[standard]",
-        "databases[sqlite]",
-        "sqlalchemy",
     ],
     "test": [
+        "httpx",  # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
         "pytest",
         "pytest_asyncio",
-        "httpx", # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
+        "starlette>=0.26.1",
     ],
     "dev": [
         "pre-commit",
