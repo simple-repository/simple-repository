@@ -1,3 +1,4 @@
+from html import unescape
 import json
 from typing import Optional, Union
 from urllib.parse import urldefrag
@@ -94,7 +95,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             # PEP-503: The URL SHOULD include a hash in the form of a URL fragment with
             #          the following syntax: #<hashname>=<hashvalue>
             if '=' in fragment:
-                hash_name, hash_value = fragment.split('=', 1)
+                hash_name, hash_value = str(fragment).split('=', 1)
                 hashes[hash_name] = hash_value
 
         yanked: Optional[Union[bool, str]] = None
@@ -137,11 +138,22 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             elif gpg_sig_value == "false":
                 gpg_sig = False
 
+        requires_python: Optional[str] = None
+        requires_python_attr = a_tag.attrs.get("data-requires-python")
+        if requires_python_attr is not None:
+            # PEP-503: A repository MAY include a data-requires-python attribute on a file link.
+            #          This exposes the Requires-Python metadata field, specified in PEP 345, for
+            #          the corresponding release. Where this is present, installer tools SHOULD
+            #          ignore the download when installing to a Python version that doesn’t
+            #          satisfy the requirement. In the attribute value, < and > have to be HTML
+            #          encoded as &lt; and &gt;, respectively.
+            requires_python = unescape(requires_python_attr)
+
         file = File(
             filename=a_tag.content,
             url=str(url),
             hashes=hashes,
-            requires_python=a_tag.attrs.get("data-requires-python"),
+            requires_python=requires_python,
             dist_info_metadata=dist_info_metadata,
             yanked=yanked,
             gpg_sig=gpg_sig,

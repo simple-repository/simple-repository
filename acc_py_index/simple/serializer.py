@@ -1,3 +1,4 @@
+from html import escape
 from typing import Union
 
 import packaging.utils
@@ -41,7 +42,9 @@ def _serialize_file_html(file: File) -> str:
     attributes.append(f'href="{url}"')
 
     if file.requires_python:
-        attributes.append(f'data-requires-python="{file.requires_python}"')
+        # From PEP 503: In the attribute value, < and > have to be HTML
+        # encoded as &lt; and &gt;, respectively.
+        attributes.append(f'data-requires-python="{escape(file.requires_python)}"')
 
     # From PEP 658: The repository SHOULD provide the hash of the Core Metadata file as the
     # data-dist-info-metadata attribute’s value using the syntax <hashname>=<hashvalue>,
@@ -71,7 +74,7 @@ def _serialize_file_html(file: File) -> str:
 
     # From PEP 503: A repository MAY include a data-gpg-sig attribute on a file link with
     # a value of either true or false to indicate whether or not there is a GPG signature.
-    if file.gpg_sig is True:
+    if file.gpg_sig:
         attributes.append('data-gpg-sig="true"')
     elif file.gpg_sig is False:
         attributes.append('data-gpg-sig="false"')

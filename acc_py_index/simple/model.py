@@ -71,7 +71,7 @@ class File:
     # Note that the string "false" is a valid yank reason in both JSON and HTML.
     yanked: Optional[Union[bool, str]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
 

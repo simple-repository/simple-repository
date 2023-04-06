@@ -14,7 +14,7 @@ def test_serialize_file_html() -> None:
         requires_python=">=3.6",
     )
     expected = (
-        '<a href="https://example.com/test.html#sha256=abc123" data-requires-python=">=3.6"'
+        '<a href="https://example.com/test.html#sha256=abc123" data-requires-python="&gt;=3.6"'
         '>test.html</a><br/>\n'
     )
     assert serializer._serialize_file_html(file) == expected

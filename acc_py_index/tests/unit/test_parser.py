@@ -127,10 +127,10 @@ def test_parse_html_project_page_URL_fragment(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes=hashes,
-                yanked=yank_value,
             ),
         ],
     )
+
 
 @pytest.mark.parametrize(
     "yank_attr, yank_value",
@@ -138,6 +138,7 @@ def test_parse_html_project_page_URL_fragment(
         ('data-yanked', True),
         ('data-yanked=""', True),
         ('data-yanked="reason"', "reason"),
+        ('data-yanked="false"', "false"),
         ('', None),
     ],
 )
@@ -172,6 +173,7 @@ def test_parse_html_project_page_yank(
     [
         ('data-dist-info-metadata', True),
         ('data-dist-info-metadata="true"', True),
+        ('data-dist-info-metadata="something incompatible"', True),
         ('data-dist-info-metadata="sha=..."', {"sha": "..."}),
         ('', None),
     ],
