@@ -91,12 +91,17 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
         url, fragment = urldefrag(a_tag.attrs["href"])
 
         if fragment:
-            hash_val = str(fragment).split('=', 1)
-            hashes[hash_val[0]] = hash_val[1]
+            # PEP-503: The URL SHOULD include a hash in the form of a URL fragment with
+            #          the following syntax: #<hashname>=<hashvalue>
+            if '=' in fragment:
+                hash_name, hash_value = fragment.split('=', 1)
+                hashes[hash_name] = hash_value
 
         yanked: Optional[Union[bool, str]] = None
         if "data-yanked" in a_tag.attrs:
             if reason := a_tag.attrs.get("data-yanked"):
+                # Note that the reason can equally be the string "false" and it is
+                # still considered yanked.
                 yanked = reason
             else:
                 # The data-yanked value is not set or is an empty string, replace it with True.
@@ -104,6 +109,9 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
 
         dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None
         if "data-dist-info-metadata" in a_tag.attrs:
+            # PEP-658: The repository SHOULD provide the hash of the Core Metadata file
+            #          as the data-dist-info-metadata attribute’s value using
+            #          the syntax <hashname>=<hashvalue>
             metadata_val = a_tag.attrs.get("data-dist-info-metadata")
             if metadata_val is None:
                 # data-dist-info-metadata is set but doesn't have a value.
@@ -114,11 +122,16 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
                     # the value of data-dist-info-metadata can be parsed as <hash_fun>=<hash_val>.
                     dist_info_metadata = {metadata_attr_tokens[0]: metadata_attr_tokens[1]}
                 else:
-                    # the value of data-dist-info-metadata is a placeholder.
+                    # the value of data-dist-info-metadata is a placeholder. It doesn't follow
+                    # the SHOULD recommendation, but it is still indicating that the
+                    # metadata exists.
                     dist_info_metadata = True
 
         gpg_sig: Optional[bool] = None
         if gpg_sig_value := a_tag.attrs.get("data-gpg-sig"):
+            # PEP-503: A repository MAY include a data-gpg-sig attribute on a file link with
+            #          a value of either true or false to indicate whether or not there is a
+            #          GPG signature. Repositories that do this SHOULD include it on every link.
             if gpg_sig_value == "true":
                 gpg_sig = True
             elif gpg_sig_value == "false":

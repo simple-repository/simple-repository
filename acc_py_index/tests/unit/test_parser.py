@@ -102,6 +102,37 @@ def test_parse_html_project_page() -> None:
 
 
 @pytest.mark.parametrize(
+    "fragment_attr, hashes",
+    [
+        ('', {}),
+        ('#', {}),
+        ('#a=2', {'a': '2'}),
+        ('#a=2&b', {'a': '2&b'}),
+        ('#argh!', {}),
+    ],
+)
+def test_parse_html_project_page_URL_fragment(
+    fragment_attr: str,
+    hashes: dict[str, str],
+) -> None:
+    page = f'''<a href="holygrail-1.0.tar.gz{fragment_attr}">holygrail-1.0.tar.gz</a>'''
+
+    result = parser.parse_html_project_page(page, "holygrail")
+
+    assert result == model.ProjectDetail(
+        model.Meta("1.0"),
+        "holygrail",
+        [
+            model.File(
+                filename="holygrail-1.0.tar.gz",
+                url="holygrail-1.0.tar.gz",
+                hashes=hashes,
+                yanked=yank_value,
+            ),
+        ],
+    )
+
+@pytest.mark.parametrize(
     "yank_attr, yank_value",
     [
         ('data-yanked', True),

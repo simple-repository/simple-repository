@@ -22,9 +22,10 @@ REQUIREMENTS: dict[str, list[str]] = {
         "uvicorn[standard]",
     ],
     "test": [
+        "httpx",  # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
         "pytest",
         "pytest_asyncio",
-        "httpx",  # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
+        "starlette>=0.26.1",
     ],
     "dev": [
         "pre-commit",
