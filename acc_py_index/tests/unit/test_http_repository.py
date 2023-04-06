@@ -24,7 +24,7 @@ def repository() -> HttpSimpleRepository:
         <html>
             <head><title>Test Page</title></head>
             <body>
-                <a href="test1.whl#hash=test_hash" data-requires-python=">4.0" data-dist-info-metadata="true" data-gpg-sig="true" data-yanked="yanked">test1.whl</a>
+                <a href="test1.whl#hash=test_hash">test1.whl</a>
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
@@ -35,7 +35,7 @@ def repository() -> HttpSimpleRepository:
         <html>
             <head><title>Test Page</title></head>
             <body>
-                <a href="test1.whl#hash=test_hash" data-requires-python=">4.0" data-dist-info-metadata="true" data-gpg-sig="true" data-yanked="yanked">test1.whl</a>
+                <a href="test1.whl#hash=test_hash">test1.whl</a>
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
@@ -46,7 +46,7 @@ def repository() -> HttpSimpleRepository:
         <html>
             <head><title>Test Page</title></head>
             <body>
-                <a href="test1.whl#hash=test_hash" data-requires-python=">4.0" data-dist-info-metadata="true" data-gpg-sig="true" data-yanked="yanked">test1.whl</a>
+                <a href="test1.whl#hash=test_hash">test1.whl</a>
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
@@ -63,11 +63,7 @@ def repository() -> HttpSimpleRepository:
                 {
                     "filename": "test1.whl",
                     "url": "test1.whl",
-                    "hashes": {"hash": "test_hash"},
-                    "requires-python": ">4.0",
-                    "yanked": "yanked",
-                    "dist-info-metadata": "true",
-                    "gpg-sig": "true"
+                    "hashes": {"hash": "test_hash"}
                 },
                 {
                     "filename": "test2.whl",
@@ -101,10 +97,6 @@ async def test_get_project_page(text: str, header: str, repository: HttpSimpleRe
                 filename="test1.whl",
                 url="https://example.com/simple/project/test1.whl",
                 hashes={"hash": "test_hash"},
-                requires_python=">4.0",
-                dist_info_metadata="true",
-                yanked="yanked",
-                gpg_sig="true",
             ),
             File(
                 filename="test2.whl",

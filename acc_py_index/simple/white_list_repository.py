@@ -34,7 +34,8 @@ class WhitelistRepository(SimpleRepository):
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         """Returns the project page from the source if the project_name
         is whitelisted. Raises PackageNotFoundError otherwise. Raises
-        NotNormalizedProjectName if project_name is not normalized."""
+        NotNormalizedProjectName if project_name is not normalized.
+        """
 
         if project_name != packaging.utils.canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()

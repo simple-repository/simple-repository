@@ -35,22 +35,46 @@ def _serialize_file_html(file: File) -> str:
     if file.hashes:
         hash_fun = "sha256" if "sha256" in file.hashes else next(iter(file.hashes))
         hash_value = file.hashes[hash_fun]
-        anchor = f"{hash_fun}={hash_value}"
-        url = f"{url}#{anchor}"
+        fragment = f"{hash_fun}={hash_value}"
+        url = f"{url}#{fragment}"
 
     attributes.append(f'href="{url}"')
 
     if file.requires_python:
         attributes.append(f'data-requires-python="{file.requires_python}"')
 
+    # From PEP 658: The repository SHOULD provide the hash of the Core Metadata file as the
+    # data-dist-info-metadata attribute’s value using the syntax <hashname>=<hashvalue>,
+    # where <hashname> is the lower cased name of the hash function used, and <hashvalue>
+    # is the hex encoded digest. The repository MAY use true as the attribute’s value
+    # if a hash is unavailable.
     if file.dist_info_metadata:
-        attributes.append(f'data-dist-info-metadata="{file.dist_info_metadata}"')
+        if file.dist_info_metadata is True:
+            attributes.append('data-dist-info-metadata="true"')
+        else:
+            hash_fun = (
+                "sha256" if "sha256" in file.dist_info_metadata
+                else next(iter(file.dist_info_metadata))
+            )
+            hash_value = file.dist_info_metadata[hash_fun]
+            attributes.append(f'data-dist-info-metadata="{hash_fun}={hash_value}"')
 
+    # From PEP 592: The value of the data-yanked attribute, if present, is an arbitrary
+    # string that represents the reason for why the file has been yanked.
+    # According to PEP 691, if the reason is not specified, the value of the yanked key
+    # is set to True and never to an empty string.
     if file.yanked:
-        attributes.append(f'data-yanked="{file.yanked}"')
+        if file.yanked is True:
+            attributes.append('data-yanked=""')
+        else:
+            attributes.append(f'data-yanked="{file.yanked}"')
 
-    if file.gpg_sig:
-        attributes.append(f'data-gpg-sig="{file.gpg_sig}"')
+    # From PEP 503: A repository MAY include a data-gpg-sig attribute on a file link with
+    # a value of either true or false to indicate whether or not there is a GPG signature.
+    if file.gpg_sig is True:
+        attributes.append('data-gpg-sig="true"')
+    elif file.gpg_sig is False:
+        attributes.append('data-gpg-sig="false"')
 
     attributes_string = " ".join(attributes)
 

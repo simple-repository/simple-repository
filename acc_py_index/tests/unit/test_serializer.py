@@ -1,3 +1,7 @@
+from typing import Optional, Union
+
+import pytest
+
 from acc_py_index.simple import serializer
 from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
 
@@ -8,13 +12,98 @@ def test_serialize_file_html() -> None:
         url="https://example.com/test.html",
         hashes={"test": "123", "sha256": "abc123"},
         requires_python=">=3.6",
-        dist_info_metadata="metadata.json",
-        yanked="Broken",
-        gpg_sig="true",
     )
     expected = (
-        '<a href="https://example.com/test.html#sha256=abc123" data-requires-python=">=3.6" '
-        'data-dist-info-metadata="metadata.json" data-yanked="Broken" data-gpg-sig="true">test.html</a><br/>\n'
+        '<a href="https://example.com/test.html#sha256=abc123" data-requires-python=">=3.6"'
+        '>test.html</a><br/>\n'
+    )
+    assert serializer._serialize_file_html(file) == expected
+
+    file = File(
+        filename="test.html",
+        url="https://example.com/test.html",
+        hashes={},
+    )
+    expected = (
+        '<a href="https://example.com/test.html"'
+        '>test.html</a><br/>\n'
+    )
+    assert serializer._serialize_file_html(file) == expected
+
+
+@pytest.mark.parametrize(
+    "yank_attr, yank_value",
+    [
+        (' data-yanked=""', True),
+        (' data-yanked="reason"', "reason"),
+        ('', None),
+        ('', False),
+    ],
+)
+def test_serialize_file_html_yank(
+    yank_attr: str,
+    yank_value: Optional[Union[bool, str]],
+) -> None:
+    file = File(
+        filename="test.html",
+        url="https://example.com/test.html",
+        hashes={},
+        yanked=yank_value,
+    )
+    expected = (
+        '<a href="https://example.com/test.html"'
+        f'{yank_attr}'
+        '>test.html</a><br/>\n'
+    )
+    assert serializer._serialize_file_html(file) == expected
+
+
+@pytest.mark.parametrize(
+    "metadata_attr, metadata_value",
+    [
+        (' data-dist-info-metadata="true"', True),
+        (' data-dist-info-metadata="sha=..."', {"sha": "..."}),
+        ('', None),
+        ('', False),
+    ],
+)
+def test_serialize_file_html_metadata(
+    metadata_attr: str,
+    metadata_value: Optional[Union[bool, dict[str, str]]],
+) -> None:
+    file = File(
+        filename="test.html",
+        url="https://example.com/test.html",
+        hashes={},
+        dist_info_metadata=metadata_value,
+    )
+    expected = (
+        '<a href="https://example.com/test.html"'
+        f'{metadata_attr}'
+        '>test.html</a><br/>\n'
+    )
+    assert serializer._serialize_file_html(file) == expected
+
+
+@pytest.mark.parametrize(
+    "gpg_attr, gpg_value",
+    [
+        (' data-gpg-sig="true"', True),
+        (' data-gpg-sig="false"', False),
+        ('', None),
+    ],
+)
+def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: Optional[bool]) -> None:
+    file = File(
+        filename="test.html",
+        url="https://example.com/test.html",
+        hashes={},
+        gpg_sig=gpg_value,
+    )
+    expected = (
+        '<a href="https://example.com/test.html"'
+        f'{gpg_attr}'
+        '>test.html</a><br/>\n'
     )
     assert serializer._serialize_file_html(file) == expected
 

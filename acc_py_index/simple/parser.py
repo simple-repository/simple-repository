@@ -1,4 +1,5 @@
 import json
+from typing import Optional, Union
 from urllib.parse import urldefrag
 
 from .. import html_parser
@@ -62,8 +63,8 @@ def parse_json_project_page(body: str) -> ProjectDetail:
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
                 dist_info_metadata=file.get("dist-info-metadata"),
-                gpg_sig=(file.get("gpg-sig") if file.get("gpg-sig") is not False else None),
-                yanked=(file.get("yanked") if file.get("yanked") is not False else None),
+                gpg_sig=file.get("gpg-sig"),
+                yanked=file.get("yanked"),
             )
             for file in page_dict["files"]
         ],
@@ -87,20 +88,50 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             continue
 
         hashes = {}
-        url, anchor = urldefrag(a_tag.attrs["href"])
+        url, fragment = urldefrag(a_tag.attrs["href"])
 
-        if anchor:
-            hash_val = str(anchor).split('=')
+        if fragment:
+            hash_val = str(fragment).split('=', 1)
             hashes[hash_val[0]] = hash_val[1]
+
+        yanked: Optional[Union[bool, str]] = None
+        if "data-yanked" in a_tag.attrs:
+            if reason := a_tag.attrs.get("data-yanked"):
+                yanked = reason
+            else:
+                # The data-yanked value is not set or is an empty string, replace it with True.
+                yanked = True
+
+        dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None
+        if "data-dist-info-metadata" in a_tag.attrs:
+            metadata_val = a_tag.attrs.get("data-dist-info-metadata")
+            if metadata_val is None:
+                # data-dist-info-metadata is set but doesn't have a value.
+                dist_info_metadata = True
+            else:
+                metadata_attr_tokens = metadata_val.split("=", 1)
+                if len(metadata_attr_tokens) == 2:
+                    # the value of data-dist-info-metadata can be parsed as <hash_fun>=<hash_val>.
+                    dist_info_metadata = {metadata_attr_tokens[0]: metadata_attr_tokens[1]}
+                else:
+                    # the value of data-dist-info-metadata is a placeholder.
+                    dist_info_metadata = True
+
+        gpg_sig: Optional[bool] = None
+        if gpg_sig_value := a_tag.attrs.get("data-gpg-sig"):
+            if gpg_sig_value == "true":
+                gpg_sig = True
+            elif gpg_sig_value == "false":
+                gpg_sig = False
 
         file = File(
             filename=a_tag.content,
             url=str(url),
             hashes=hashes,
             requires_python=a_tag.attrs.get("data-requires-python"),
-            dist_info_metadata=a_tag.attrs.get("data-dist-info-metadata"),
-            yanked=a_tag.attrs.get("data-yanked"),
-            gpg_sig=a_tag.attrs.get("data-gpg-sig"),
+            dist_info_metadata=dist_info_metadata,
+            yanked=yanked,
+            gpg_sig=gpg_sig,
         )
 
         files.append(file)
