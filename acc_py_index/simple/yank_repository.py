@@ -29,7 +29,11 @@ def add_yanked_attribute(
 
 
 class YankRepository(RepositoryContainer):
-    """Adds PEP-592 yank support to a SimpleRepository."""
+    """A class that adds support for PEP-592 yank to a SimpleRepository.
+    The project name, file name, and the yanking reason are stored in the
+    yanked_releases table of the SQLite database passed to the constructor.
+    Distributions that are already yanked will not be affected by this component.
+    """
     def __init__(
         self,
         source: SimpleRepository,

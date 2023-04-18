@@ -88,6 +88,10 @@ class HttpSimpleRepository(SimpleRepository):
 
 
 class RepositoryContainer(SimpleRepository):
+    """A base class for components that enhance the functionality of a source
+    `SimpleRepository`. If not overridden, the methods provided by this class
+    will delegate to the corresponding methods of the source repository.
+    """
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 

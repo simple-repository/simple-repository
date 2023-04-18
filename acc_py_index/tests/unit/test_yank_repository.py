@@ -1,3 +1,4 @@
+import sqlite3
 from typing import Optional, Union
 from unittest import mock
 
@@ -79,9 +80,9 @@ async def test_get_project_page(
 
 
 def test_get_yanked_releases() -> None:
-    mock_cursor = mock.Mock()
+    mock_cursor = mock.Mock(spec=sqlite3.Cursor)
     mock_cursor.execute.return_value.fetchall.return_value = [("file1", "reason1"), ("file2", "reason2")]
-    mock_database = mock.Mock()
+    mock_database = mock.Mock(spec=sqlite3.Connection)
     mock_database.cursor.return_value = mock_cursor
 
     versions = yank_repository.get_yanked_releases("project_name", mock_database)
