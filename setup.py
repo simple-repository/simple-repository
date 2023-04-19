@@ -16,7 +16,7 @@ REQUIREMENTS: dict[str, list[str]] = {
     "core": [
         "aiohttp",
         "cachetools",
-        "fastapi",
+        "fastapi>=0.93.0",
         "gunicorn",
         "packaging",
         "uvicorn[standard]",
