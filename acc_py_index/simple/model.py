@@ -102,3 +102,8 @@ class ProjectList:
     """Model of the project list as described in PEP-691"""
     meta: Meta
     projects: set[ProjectListElement]
+
+
+@dataclass(frozen=True)
+class Resource:
+    url: str

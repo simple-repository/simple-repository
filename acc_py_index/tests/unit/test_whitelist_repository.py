@@ -70,3 +70,20 @@ async def test_not_normalized_package() -> None:
     )
     with pytest.raises(errors.NotNormalizedProjectName):
         await repo.get_project_page("non_normalized")
+
+
+@pytest.mark.asyncio
+async def test_get_resources(special_case_file: pathlib.PosixPath) -> None:
+    repo = WhitelistRepository(
+        source=MockRepository(resources={"pyrbac-0.7.whl": "pyrbac_url", "numpy-0.7.whl": "numpy_url"}),
+        special_case_file=special_case_file,
+    )
+
+    with pytest.raises(errors.ResourceUnavailable):
+        await repo.get_resource("pyrbac", "pyrbac-0.7.whl")
+
+    with pytest.raises(errors.ResourceUnavailable):
+        await repo.get_resource("pandas", "pandas.whl")
+
+    result = await repo.get_resource("numpy", "numpy-0.7.whl")
+    assert result.url == "numpy_url"

@@ -18,3 +18,13 @@ class NotNormalizedProjectName(Exception):
 
 class UnsupportedSerialization(Exception):
     pass
+
+
+class ResourceUnavailable(ValueError):
+    msg_format = (
+        "Resource '{resource_name}' was not found in the configured source"
+    )
+
+    def __init__(self, resource_name: str, *args: object):
+        msg = self.msg_format.format(resource_name=resource_name)
+        super().__init__(msg, *args)

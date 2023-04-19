@@ -7,7 +7,7 @@ import cachetools
 import packaging.utils
 
 from .. import errors
-from .model import Meta, ProjectDetail, ProjectList, ProjectListElement
+from .model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .repositories import SimpleRepository
 
 
@@ -55,3 +55,8 @@ class WhitelistRepository(SimpleRepository):
                 get_special_cases(self.special_case_file)
             },
         )
+
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        if project_name in get_special_cases(self.special_case_file):
+            return await self.source.get_resource(project_name, resource_name)
+        raise errors.ResourceUnavailable(resource_name)

@@ -6,7 +6,7 @@ import packaging.utils
 
 from . import parser
 from .. import errors, utils
-from .model import ProjectDetail, ProjectList
+from .model import ProjectDetail, ProjectList, Resource
 
 
 class SimpleRepository(Protocol):
@@ -14,6 +14,9 @@ class SimpleRepository(Protocol):
         ...
 
     async def get_project_list(self) -> ProjectList:
+        ...
+
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
         ...
 
 
@@ -83,6 +86,26 @@ class HttpSimpleRepository(SimpleRepository):
 
         raise errors.UnsupportedSerialization()
 
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        try:
+            project_page = await self.get_project_page(project_name)
+        except errors.PackageNotFoundError:
+            raise errors.ResourceUnavailable(resource_name)
+        if resource_name.endswith(".metadata"):
+            return await self.get_metadata(project_page, resource_name)
+        else:
+            for file in project_page.files:
+                if resource_name == file.filename:
+                    return Resource(file.url)
+            raise errors.ResourceUnavailable(resource_name)
+
+    async def get_metadata(self, project_page: ProjectDetail, resource_name: str) -> Resource:
+        distribution_name = resource_name.removesuffix(".metadata")
+        for file in project_page.files:
+            if distribution_name == file.filename and file.dist_info_metadata:
+                return Resource(file.url + ".metadata")
+        raise errors.ResourceUnavailable(resource_name)
+
 
 class RepositoryContainer(SimpleRepository):
     """A base class for components that enhance the functionality of a source
@@ -97,3 +120,6 @@ class RepositoryContainer(SimpleRepository):
 
     async def get_project_list(self) -> ProjectList:
         return await self.source.get_project_list()
+
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        return await self.source.get_resource(project_name, resource_name)

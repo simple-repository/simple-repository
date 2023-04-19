@@ -1,7 +1,7 @@
 from typing import Optional
 
 from acc_py_index import errors
-from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList
+from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, Resource
 from acc_py_index.simple.repositories import SimpleRepository
 
 
@@ -10,6 +10,7 @@ class MockRepository(SimpleRepository):
         self,
         project_list: ProjectList = ProjectList(Meta('1.0'), set()),
         project_pages: Optional[list[ProjectDetail]] = None,
+        resources: Optional[dict[str, str]] = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:
@@ -18,6 +19,7 @@ class MockRepository(SimpleRepository):
             }
         else:
             self.project_pages = {}
+        self.resources = resources or {}
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         if project_name in self.project_pages:
@@ -26,3 +28,8 @@ class MockRepository(SimpleRepository):
 
     async def get_project_list(self) -> ProjectList:
         return self.project_list
+
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        if resource_name not in self.resources:
+            raise errors.ResourceUnavailable(resource_name)
+        return Resource(self.resources[resource_name])

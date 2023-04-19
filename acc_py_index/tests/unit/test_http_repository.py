@@ -203,3 +203,59 @@ async def test_get_project_list_failed(repository: HttpSimpleRepository) -> None
 async def test_not_normalized_package(repository: HttpSimpleRepository) -> None:
     with pytest.raises(errors.NotNormalizedProjectName):
         await repository.get_project_page("non_normalized")
+
+
+@pytest.fixture
+def project_detail() -> ProjectDetail:
+    return ProjectDetail(
+        meta=Meta("1.0"),
+        name="numpy",
+        files=[
+            File(
+                filename="numpy-1.0.whl",
+                url="my_url/numpy-1.0.whl",
+                hashes={},
+                dist_info_metadata={"sha256": "..."},
+            ),
+            File(
+                filename="numpy-2.0.whl",
+                url="my_url/numpy-2.0.whl",
+                hashes={},
+            ),
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_resource(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+    m = mock.AsyncMock(return_value=project_detail)
+    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+        resouce = await repository.get_resource("numpy", "numpy-2.0.whl")
+        assert resouce.url == "my_url/numpy-2.0.whl"
+
+
+@pytest.mark.asyncio
+async def test_get_resource_unavailable(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+    m = mock.AsyncMock(return_value=project_detail)
+    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+        with pytest.raises(errors.ResourceUnavailable):
+            await repository.get_resource("numpy", "numpy-3.0.whl")
+
+
+@pytest.mark.asyncio
+async def test_get_resource_project_unavailable(repository: HttpSimpleRepository) -> None:
+    m = mock.AsyncMock(side_effect=errors.PackageNotFoundError("numpy"))
+    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+        with pytest.raises(errors.ResourceUnavailable):
+            await repository.get_resource("numpy", "numpy-3.0.whl")
+
+
+@pytest.mark.asyncio
+async def test_get_resource_metadata(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+    m = mock.AsyncMock(return_value=project_detail)
+    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+        resouce = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
+        assert resouce.url == "my_url/numpy-1.0.whl.metadata"
+
+        with pytest.raises(errors.ResourceUnavailable):
+            resouce = await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
