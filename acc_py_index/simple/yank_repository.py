@@ -6,9 +6,9 @@ from .repositories import RepositoryContainer, SimpleRepository
 
 
 def get_yanked_releases(project_name: str, database: sqlite3.Connection) -> dict[str, str]:
-    query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = ?"
+    query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
     curr = database.cursor()
-    result = curr.execute(query, (project_name,)).fetchall()
+    result = curr.execute(query, {"project_name": project_name}).fetchall()
     return {
         file_name: record for file_name, record in result
     }
@@ -52,7 +52,7 @@ class YankRepository(RepositoryContainer):
         self,
         project_name: str,
     ) -> ProjectDetail:
-        project_page = await self.source.get_project_page(project_name)
+        project_page = await super().get_project_page(project_name)
 
         if yanked_versions := get_yanked_releases(project_name, self.yank_database):
             return add_yanked_attribute(
