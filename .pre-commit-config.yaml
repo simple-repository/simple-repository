@@ -35,4 +35,5 @@ repos:
             types-cachetools,
             pytest,
             fastapi,
+            uvicorn,
           ]
