@@ -10,9 +10,6 @@ from .model import ProjectDetail, ProjectList
 
 
 class SimpleRepository(Protocol):
-    def __init__(self) -> None:
-        ...
-
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         ...
 
