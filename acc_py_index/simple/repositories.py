@@ -10,9 +10,6 @@ from .model import ProjectDetail, ProjectList
 
 
 class SimpleRepository(Protocol):
-    def __init__(self) -> None:
-        ...
-
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         ...
 
@@ -85,3 +82,18 @@ class HttpSimpleRepository(SimpleRepository):
             return parser.parse_json_project_list(body)
 
         raise errors.UnsupportedSerialization()
+
+
+class RepositoryContainer(SimpleRepository):
+    """A base class for components that enhance the functionality of a source
+    `SimpleRepository`. If not overridden, the methods provided by this class
+    will delegate to the corresponding methods of the source repository.
+    """
+    def __init__(self, source: SimpleRepository) -> None:
+        self.source = source
+
+    async def get_project_page(self, project_name: str) -> ProjectDetail:
+        return await self.source.get_project_page(project_name)
+
+    async def get_project_list(self) -> ProjectList:
+        return await self.source.get_project_list()
