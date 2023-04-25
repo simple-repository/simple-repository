@@ -2,3 +2,6 @@
 devpi/data
 **/venv
 */_version.py
+__pycache__/
+build/
+*.egg-info/
