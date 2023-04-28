@@ -15,19 +15,23 @@ def cache(tmp_path: pathlib.PosixPath) -> TTLDatabaseCache:
 
 def test_get_set(cache: TTLDatabaseCache) -> None:
     assert cache.get("pizza") is None
+    assert cache.get("pizza", "") == ""
 
-    cache.set("pizza", "margherita")
+    with pytest.raises(KeyError, match="pizza"):
+        cache["pizza"]
+
+    cache["pizza"] = "margherita"
     assert cache.get("pizza") == "margherita"
 
-    cache.set("pizza", "salame")
+    cache["pizza"] = "salame"
     assert cache.get("pizza") == "salame"
 
 
-def test_multi_set(cache: TTLDatabaseCache) -> None:
+def test_update(cache: TTLDatabaseCache) -> None:
     assert cache.get("pizza") is None
     assert cache.get("pasta") is None
 
-    cache.set({"pizza": "margherita", "pasta": "carbonara"})
+    cache.update({"pizza": "margherita", "pasta": "carbonara"})
 
     assert cache.get("pizza") == "margherita"
     assert cache.get("pasta") == "carbonara"
@@ -35,7 +39,7 @@ def test_multi_set(cache: TTLDatabaseCache) -> None:
 
 def test_ttl(cache: TTLDatabaseCache) -> None:
     cache.ttl = 0
-    cache.set("pizza", "margherita")
+    cache["pizza"] = "margherita"
     res = cache._database.execute(
         "SELECT value FROM my_table WHERE key = 'pizza'",
     ).fetchone()
@@ -43,18 +47,17 @@ def test_ttl(cache: TTLDatabaseCache) -> None:
 
     assert cache.get("pizza") is None
 
-    cache.set("pasta", "carbonara")
+    cache["pasta"] = "carbonara"
     res = cache._database.execute(
         "SELECT value FROM my_table WHERE key = 'pizza'",
     ).fetchone()
     assert res is None
 
 
-def test_subscriptions(cache: TTLDatabaseCache) -> None:
-    with pytest.raises(KeyError):
-        cache["pizza"]
+def test_contains(cache: TTLDatabaseCache) -> None:
+    assert ("pizza" in cache) is False
     cache["pizza"] = "margherita"
-    assert cache["pizza"] == "margherita"
+    assert ("pizza" in cache) is True
 
 
 def test_invalid_name() -> None:
