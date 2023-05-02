@@ -1,4 +1,4 @@
-class PackageNotFoundError(ValueError):
+class PackageNotFoundError(LookupError):
     msg_format = (
         "Package '{package_name}' was not found in the configured source"
     )
@@ -20,7 +20,7 @@ class UnsupportedSerialization(Exception):
     pass
 
 
-class ResourceUnavailable(ValueError):
+class ResourceUnavailable(LookupError):
     msg_format = (
         "Resource '{resource_name}' was not found in the configured source"
     )
