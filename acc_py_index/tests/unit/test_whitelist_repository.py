@@ -9,17 +9,11 @@ from acc_py_index.simple.white_list_repository import WhitelistRepository, get_s
 from ..mock_repository import MockRepository
 
 
-@pytest.fixture
-def special_case_file(tmp_path: pathlib.PosixPath) -> pathlib.PosixPath:
-    file = tmp_path / "special_cases.json"
-    file.write_text(
-        data='{"numpy": "url", "pandas": "url"}',
-    )
-    return file
-
-
 @pytest.mark.asyncio
-async def test_special_get_project_page(special_case_file: pathlib.PosixPath) -> None:
+async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
+    special_case_file = tmp_path / "special_cases.json"
+    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
+
     repo = WhitelistRepository(
         source=MockRepository(
             project_pages=[
@@ -41,7 +35,10 @@ async def test_special_get_project_page(special_case_file: pathlib.PosixPath) ->
 
 
 @pytest.mark.asyncio
-async def test_get_project_list(special_case_file: pathlib.PosixPath) -> None:
+async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
+    special_case_file = tmp_path / "special_cases.json"
+    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
+
     repo = WhitelistRepository(
         source=MockRepository(),
         special_case_file=special_case_file,
@@ -55,7 +52,10 @@ async def test_get_project_list(special_case_file: pathlib.PosixPath) -> None:
     )
 
 
-def test_get_special_cases(special_case_file: pathlib.PosixPath) -> None:
+def test_get_special_cases(tmp_path: pathlib.PosixPath) -> None:
+    special_case_file = tmp_path / "special_cases.json"
+    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
+
     special_cases = get_special_cases(special_case_file)
 
     for special_case, expected in zip(special_cases, ["numpy", "pandas"]):
@@ -73,7 +73,10 @@ async def test_not_normalized_package() -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resources(special_case_file: pathlib.PosixPath) -> None:
+async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
+    special_case_file = tmp_path / "special_cases.json"
+    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
+
     repo = WhitelistRepository(
         source=MockRepository(resources={"pyrbac-0.7.whl": "pyrbac_url", "numpy-0.7.whl": "numpy_url"}),
         special_case_file=special_case_file,
