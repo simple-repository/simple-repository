@@ -33,10 +33,10 @@ async def test_special_get_project_page(special_case_file: pathlib.PosixPath) ->
     resp = await repo.get_project_page("numpy")
     assert resp == ProjectDetail(Meta("1.0"), "numpy", files=[])
 
-    with pytest.raises(errors.PackageNotFoundError):
+    with pytest.raises(errors.PackageNotFoundError, match="package"):
         await repo.get_project_page("package")
 
-    with pytest.raises(errors.PackageNotFoundError):
+    with pytest.raises(errors.PackageNotFoundError, match="tensorflow"):
         await repo.get_project_page("tensorflow")
 
 
@@ -79,10 +79,16 @@ async def test_get_resources(special_case_file: pathlib.PosixPath) -> None:
         special_case_file=special_case_file,
     )
 
-    with pytest.raises(errors.ResourceUnavailable):
+    with pytest.raises(
+        errors.ResourceUnavailable,
+        match="pyrbac-0.7.whl",
+    ):
         await repo.get_resource("pyrbac", "pyrbac-0.7.whl")
 
-    with pytest.raises(errors.ResourceUnavailable):
+    with pytest.raises(
+        errors.ResourceUnavailable,
+        match="pandas.whl",
+    ):
         await repo.get_resource("pandas", "pandas.whl")
 
     result = await repo.get_resource("numpy", "numpy-0.7.whl")
