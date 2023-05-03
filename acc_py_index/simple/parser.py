@@ -1,7 +1,7 @@
 from html import unescape
 import json
 from typing import Optional, Union
-from urllib.parse import urldefrag
+from urllib.parse import quote, urldefrag
 
 from .. import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
@@ -60,7 +60,11 @@ def parse_json_project_page(body: str) -> ProjectDetail:
         files=[
             File(
                 filename=file["filename"],
-                url=file["url"],
+                # Temporary fix: Escape the URLs coming from the source
+                # since Nexus is not escaping them correctly. The "safe" parameter
+                # allows the escape function to be applied to the entire URL
+                # and avoids escaping the special characters ":" and "/".
+                url=quote(file["url"], safe=":/"),
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
                 dist_info_metadata=file.get("dist-info-metadata"),
@@ -151,7 +155,11 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
 
         file = File(
             filename=a_tag.content,
-            url=str(url),
+            # Temporary fix: Escape the URLs coming from the source
+            # since Nexus is not escaping them correctly. The "safe" parameter
+            # allows the escape function to be applied to the entire URL
+            # and avoids escaping the special characters ":" and "/".
+            url=quote(str(url), safe=":/"),
             hashes=hashes,
             requires_python=requires_python,
             dist_info_metadata=dist_info_metadata,
