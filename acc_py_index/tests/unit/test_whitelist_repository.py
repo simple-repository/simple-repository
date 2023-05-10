@@ -78,15 +78,15 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=MockRepository(resources={"pyrbac-0.7.whl": "pyrbac_url", "numpy-0.7.whl": "numpy_url"}),
+        source=MockRepository(resources={"gunicorn-0.7.whl": "gunicorn_url", "numpy-0.7.whl": "numpy_url"}),
         special_case_file=special_case_file,
     )
 
     with pytest.raises(
         errors.ResourceUnavailable,
-        match="pyrbac-0.7.whl",
+        match="gunicorn-0.7.whl",
     ):
-        await repo.get_resource("pyrbac", "pyrbac-0.7.whl")
+        await repo.get_resource("gunicorn", "gunicorn-0.7.whl")
 
     with pytest.raises(
         errors.ResourceUnavailable,
