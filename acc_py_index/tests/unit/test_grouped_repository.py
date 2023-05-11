@@ -4,7 +4,14 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.grouped_repository import GroupedRepository
-from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
+from acc_py_index.simple.model import (
+    File,
+    Meta,
+    ProjectDetail,
+    ProjectList,
+    ProjectListElement,
+    Resource,
+)
 
 from ..mock_repository import MockRepository
 
@@ -41,7 +48,7 @@ async def test_get_project_page() -> None:
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
     group_repository = GroupedRepository([
-        MockRepository() for i in range(3)
+        MockRepository() for _ in range(3)
     ])
     with pytest.raises(
         expected_exception=errors.PackageNotFoundError,
@@ -88,7 +95,7 @@ async def test_blended_get_project_list() -> None:
 async def test_blended_get_project_list_failed() -> None:
     repo = GroupedRepository(
         sources=[
-            mock.AsyncMock() for i in range(3)
+            mock.AsyncMock() for _ in range(3)
         ],
     )
     assert isinstance(repo.sources[2], mock.Mock)
@@ -127,7 +134,29 @@ def test_group_repository_failed_init() -> None:
 @pytest.mark.asyncio
 async def test_not_normalized_package() -> None:
     group_repository = GroupedRepository([
-        MockRepository() for i in range(3)
+        MockRepository() for _ in range(3)
     ])
     with pytest.raises(errors.NotNormalizedProjectName):
         await group_repository.get_project_page("non_normalized")
+
+
+@pytest.mark.asyncio
+async def test_get_resource() -> None:
+    group_repository = GroupedRepository([
+        MockRepository(),
+        MockRepository(resources={"numpy.whl": "url"}),
+        MockRepository(resources={"numpy.whl": "wrong"}),
+    ])
+
+    resp = await group_repository.get_resource("numpy", "numpy.whl")
+    assert resp == Resource("url")
+
+
+@pytest.mark.asyncio
+async def test_get_resource_failed() -> None:
+    group_repository = GroupedRepository([
+        MockRepository() for _ in range(3)
+    ])
+
+    with pytest.raises(errors.ResourceUnavailable, match="numpy.whl"):
+        await group_repository.get_resource("numpy", "numpy.whl")

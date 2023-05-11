@@ -33,3 +33,14 @@ async def test_get_project_list() -> None:
     )
     result = await repository.get_project_list()
     assert result.projects == {model.ProjectListElement("numpy")}
+
+
+@pytest.mark.asyncio
+async def test_get_resource() -> None:
+    repository = RepositoryContainer(
+        MockRepository(
+            resources={"numpy.whl": "numpy_url"},
+        ),
+    )
+    result = await repository.get_resource("numpy", "numpy.whl")
+    assert result.url == "numpy_url"

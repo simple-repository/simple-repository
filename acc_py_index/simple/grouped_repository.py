@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from packaging.utils import canonicalize_name
 
 from .. import errors
-from .model import ProjectDetail, ProjectList, ProjectListElement
+from .model import ProjectDetail, ProjectList, ProjectListElement, Resource
 from .repositories import SimpleRepository
 
 
@@ -78,3 +78,13 @@ class GroupedRepository(SimpleRepository):
                 ) for p in projects
             },
         )
+
+    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        for source in self.sources:
+            try:
+                resource = await source.get_resource(project_name, resource_name)
+            except errors.ResourceUnavailable:
+                pass
+            else:
+                return resource
+        raise errors.ResourceUnavailable(resource_name)
