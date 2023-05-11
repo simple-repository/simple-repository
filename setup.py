@@ -46,7 +46,6 @@ setup(
     maintainer_email="acc-python-support@cern.ch",
     url="https://gitlab.cern.ch/acc-co/devops/python/package-index/acc-py-index",
     packages=find_packages(),
-    package_data={"": ["log_config.json"]},
     python_requires="~=3.9",
     classifiers=[
         "Development Status :: 4 - Beta",
