@@ -20,6 +20,7 @@ REQUIREMENTS: dict[str, list[str]] = {
         "gunicorn",
         "packaging",
         "uvicorn[standard]",
+        "cmw-tracing",
     ],
     "test": [
         "httpx",  # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
