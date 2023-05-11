@@ -4,7 +4,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, ProjectListElement
-from acc_py_index.simple.white_list_repository import WhitelistRepository, get_special_cases
+from acc_py_index.simple.white_list_repository import WhitelistRepository
 
 from ..mock_repository import MockRepository
 
@@ -50,16 +50,6 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
         meta=Meta("1.0"),
         projects={ProjectListElement("numpy"), ProjectListElement("pandas")},
     )
-
-
-def test_get_special_cases(tmp_path: pathlib.PosixPath) -> None:
-    special_case_file = tmp_path / "special_cases.json"
-    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
-
-    special_cases = get_special_cases(special_case_file)
-
-    for special_case, expected in zip(special_cases, ["numpy", "pandas"]):
-        assert special_case == expected
 
 
 @pytest.mark.asyncio

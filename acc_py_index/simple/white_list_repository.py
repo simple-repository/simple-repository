@@ -1,21 +1,10 @@
-import json
 import pathlib
-import sys
-import typing
 
-import cachetools
 import packaging.utils
 
-from .. import errors
+from .. import errors, utils
 from .model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .repositories import SimpleRepository
-
-
-@cachetools.cached(cache=cachetools.TTLCache(maxsize=sys.maxsize, ttl=30))
-def get_special_cases(special_cases_file: pathlib.Path) -> typing.Iterable[str]:
-    with special_cases_file.open() as file:
-        special_cases: dict[str, str] = json.load(file)
-        return special_cases.keys()
 
 
 class WhitelistRepository(SimpleRepository):
@@ -40,7 +29,7 @@ class WhitelistRepository(SimpleRepository):
         if project_name != packaging.utils.canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
 
-        special_cases = get_special_cases(self.special_case_file)
+        special_cases = utils.load_cached_json_config(self.special_case_file)
 
         if project_name not in special_cases:
             raise errors.PackageNotFoundError(project_name)
@@ -52,11 +41,11 @@ class WhitelistRepository(SimpleRepository):
             meta=Meta("1.0"),
             projects={
                 ProjectListElement(name) for name in
-                get_special_cases(self.special_case_file)
+                utils.load_cached_json_config(self.special_case_file).keys()
             },
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        if project_name in get_special_cases(self.special_case_file):
+        if project_name in utils.load_cached_json_config(self.special_case_file):
             return await self.source.get_resource(project_name, resource_name)
         raise errors.ResourceUnavailable(resource_name)
