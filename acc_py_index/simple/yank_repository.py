@@ -1,17 +1,14 @@
 import fnmatch
 import html
-import logging
+import json
 import pathlib
-import re
 import sqlite3
 
 from packaging.utils import canonicalize_name
 
-from .. import utils
+from .. import errors
 from .model import ProjectDetail
 from .repositories import RepositoryContainer, SimpleRepository
-
-error_logger = logging.getLogger("gunicorn.error")
 
 
 def get_yanked_releases(project_name: str, database: sqlite3.Connection) -> dict[str, str]:
@@ -89,7 +86,7 @@ class ConfigurableYankRepository(RepositoryContainer):
         source: SimpleRepository,
         yank_config_file: pathlib.Path,
     ) -> None:
-        self._yank_config_file = yank_config_file
+        self._yank_config: dict[str, tuple[str, str]] = self._load_config_json(yank_config_file)
         super().__init__(source)
 
     async def get_project_page(
@@ -97,38 +94,41 @@ class ConfigurableYankRepository(RepositoryContainer):
         project_name: str,
     ) -> ProjectDetail:
         project_page = await super().get_project_page(project_name)
-        config = utils.load_cached_json_config(self._yank_config_file)
 
-        if not isinstance(config, dict):
-            error_logger.error(
-                "Yank configuration file must contain a dictionary.",
+        if value := self._yank_config.get(project_name):
+            pattern, reason = value
+            add_yanked_attribute(
+                project_page=project_page,
+                yanked_versions={
+                    file.filename: reason for file in project_page.files
+                    if fnmatch.fnmatch(file.filename, pattern)
+                },
             )
-            config = {}
-
-        value = None
-        for project in config:
-            if canonicalize_name(project) == project_name:
-                value = config.get(project)
-                break
-
-        if value:
-            if (
-                len(value) == 2
-                and isinstance(value[0], str)
-                and isinstance(value[1], str)
-            ):
-                pattern, reason = value
-                regex = re.compile(fnmatch.translate(pattern))
-                add_yanked_attribute(
-                    project_page=project_page,
-                    yanked_versions={
-                        file.filename: reason for file in project_page.files
-                        if regex.match(file.filename)
-                    },
-                )
-            else:
-                error_logger.error(
-                    f"Invalid json structure for the project {project_name}",
-                )
 
         return project_page
+
+    def _load_config_json(self, json_file: pathlib.Path) -> dict[str, tuple[str, str]]:
+        try:
+            json_config = json.loads(json_file.read_text())
+        except json.JSONDecodeError as e:
+            raise errors.InvalidConfiguration(f"Invalid json file: {str(e)}")
+        if not isinstance(json_config, dict):
+            raise errors.InvalidConfiguration(
+                "The yank configuration file must contain a dictionary mapping"
+                "project names to a tuple containg a glob pattern and the yank reason.",
+            )
+        config_dict: dict[str, tuple[str, str]] = {}
+        for key, value in json_config.items():
+            if (
+                not isinstance(key, str) or
+                not isinstance(value, list) or
+                len(value) != 2 or
+                not all(isinstance(elem, str) for elem in value)
+            ):
+                raise errors.InvalidConfiguration(
+                    "The yank configuration file must contain a dictionary mapping"
+                    "project names to a tuple containg a glob pattern and the yank reason.",
+                )
+            config_dict[canonicalize_name(key)] = (value[0], value[1])
+
+        return config_dict
