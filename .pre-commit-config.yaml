@@ -32,7 +32,6 @@ repos:
       - id: mypy
         additional_dependencies:
           [
-            types-cachetools,
             pytest,
             fastapi,
             uvicorn,

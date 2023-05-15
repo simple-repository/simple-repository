@@ -28,3 +28,7 @@ class ResourceUnavailable(LookupError):
     def __init__(self, resource_name: str, *args: object):
         msg = self.msg_format.format(resource_name=resource_name)
         super().__init__(msg, *args)
+
+
+class InvalidConfigurationError(ValueError):
+    pass
