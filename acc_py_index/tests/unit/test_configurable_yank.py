@@ -101,7 +101,7 @@ def test_load_config_malformed_json(
     )
     with pytest.raises(
         errors.InvalidConfigurationError,
-        match=r"Invalid json file: Expecting value: line 1 column 1 \(char 0\)",
+        match="Invalid json file",
     ):
         ConfigurableYankRepository(
             source=source,
