@@ -45,11 +45,10 @@ async def test_get_project_page(
 
 @pytest.mark.parametrize(
     "json_string", [
-        "42", "true", '["a", "b"]', "null", '"ciao"', '{"a": "b"}',
+        "42", "true", '["a", "b"]', "null", '"ciao"',
     ],
 )
-@pytest.mark.asyncio
-async def test_load_config_wrong_type(
+def test_load_config_wrong_type(
     json_string: str,
     tmp_path: pathlib.PosixPath,
     source: MockRepository,
@@ -59,10 +58,9 @@ async def test_load_config_wrong_type(
         data=json_string,
     )
     with pytest.raises(
-        errors.InvalidConfiguration,
+        errors.InvalidConfigurationError,
         match=(
-            "The yank configuration file must contain a dictionary mapping"
-            "project names to a tuple containg a glob pattern and the yank reason."
+            f"Invalid configuration file. {str(file)} must contain a dictionary."
         ),
     ):
         ConfigurableYankRepository(
@@ -71,8 +69,29 @@ async def test_load_config_wrong_type(
         )
 
 
-@pytest.mark.asyncio
-async def test_load_config_malformed_json(
+def test_load_config_wrong_format(
+    tmp_path: pathlib.PosixPath,
+    source: MockRepository,
+) -> None:
+    file = tmp_path / "yank_config.json"
+    file.write_text(
+        data='{"a": "b"}',
+    )
+    with pytest.raises(
+        errors.InvalidConfigurationError,
+        match=(
+            f'Invalid yank configuration file. {str(file)} must'
+            ' contain a dictionary mapping a project name to a tuple'
+            ' containing a glob pattern and a yank reason.'
+        ),
+    ):
+        ConfigurableYankRepository(
+            source=source,
+            yank_config_file=file,
+        )
+
+
+def test_load_config_malformed_json(
     tmp_path: pathlib.PosixPath,
     source: MockRepository,
 ) -> None:
@@ -81,7 +100,7 @@ async def test_load_config_malformed_json(
         data='a',
     )
     with pytest.raises(
-        errors.InvalidConfiguration,
+        errors.InvalidConfigurationError,
         match=r"Invalid json file: Expecting value: line 1 column 1 \(char 0\)",
     ):
         ConfigurableYankRepository(

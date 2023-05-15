@@ -1,12 +1,11 @@
 import fnmatch
 import html
-import json
 import pathlib
 import sqlite3
 
 from packaging.utils import canonicalize_name
 
-from .. import errors
+from .. import errors, utils
 from .model import ProjectDetail
 from .repositories import RepositoryContainer, SimpleRepository
 
@@ -108,15 +107,8 @@ class ConfigurableYankRepository(RepositoryContainer):
         return project_page
 
     def _load_config_json(self, json_file: pathlib.Path) -> dict[str, tuple[str, str]]:
-        try:
-            json_config = json.loads(json_file.read_text())
-        except json.JSONDecodeError as e:
-            raise errors.InvalidConfiguration(f"Invalid json file: {str(e)}")
-        if not isinstance(json_config, dict):
-            raise errors.InvalidConfiguration(
-                "The yank configuration file must contain a dictionary mapping"
-                "project names to a tuple containg a glob pattern and the yank reason.",
-            )
+        json_config = utils.load_config_json(json_file)
+
         config_dict: dict[str, tuple[str, str]] = {}
         for key, value in json_config.items():
             if (
@@ -125,9 +117,10 @@ class ConfigurableYankRepository(RepositoryContainer):
                 len(value) != 2 or
                 not all(isinstance(elem, str) for elem in value)
             ):
-                raise errors.InvalidConfiguration(
-                    "The yank configuration file must contain a dictionary mapping"
-                    "project names to a tuple containg a glob pattern and the yank reason.",
+                raise errors.InvalidConfigurationError(
+                    f'Invalid yank configuration file. {str(json_file)} must'
+                    ' contain a dictionary mapping a project name to a tuple'
+                    ' containing a glob pattern and a yank reason.',
                 )
             config_dict[canonicalize_name(key)] = (value[0], value[1])
 

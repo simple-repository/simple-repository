@@ -1,10 +1,9 @@
-import json
 import pathlib
 
 import packaging.utils
 from packaging.utils import canonicalize_name
 
-from .. import errors
+from .. import errors, utils
 from .model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .repositories import SimpleRepository
 
@@ -52,24 +51,18 @@ class WhitelistRepository(SimpleRepository):
         raise errors.ResourceUnavailable(resource_name)
 
     def _load_config_json(self, json_file: pathlib.Path) -> dict[str, str]:
-        try:
-            json_config = json.loads(json_file.read_text())
-        except json.JSONDecodeError as e:
-            raise errors.InvalidConfiguration(f"Invalid json file: {str(e)}")
-        if not isinstance(json_config, dict):
-            raise errors.InvalidConfiguration(
-                "The special case configuration file must contain a"
-                " dictionary mapping project names to repository URLs.",
-            )
+        json_config = utils.load_config_json(json_file)
+
         config_dict: dict[str, str] = {}
         for key, value in json_config.items():
             if (
                 not isinstance(key, str) or
                 not isinstance(value, str)
             ):
-                raise errors.InvalidConfiguration(
-                    "The special case configuration file must contain a"
-                    " dictionary mapping project names to repository URLs.",
+                raise errors.InvalidConfigurationError(
+                    f'Invalid spcial case configuration file. {str(json_file)} '
+                    'must contain a dictionary mapping a project name to a tuple'
+                    ' containing a glob pattern and a yank reason.',
                 )
             config_dict[canonicalize_name(key)] = value
 

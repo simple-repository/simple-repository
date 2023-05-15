@@ -30,6 +30,6 @@ class ResourceUnavailable(LookupError):
         super().__init__(msg, *args)
 
 
-class InvalidConfiguration(ValueError):
+class InvalidConfigurationError(ValueError):
     def __init__(self, msg: str, *args: object):
         super().__init__(msg, *args)

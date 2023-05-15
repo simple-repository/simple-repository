@@ -93,7 +93,7 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
 
 @pytest.mark.parametrize(
     "json_string", [
-        "42", "true", '["a", "b"]', "null", '"ciao"', '{"a": ["b", "c"]}',
+        "42", "true", '["a", "b"]', "null", '"ciao"',
     ],
 )
 @pytest.mark.asyncio
@@ -106,10 +106,30 @@ async def test_load_config_wrong_type(
         data=json_string,
     )
     with pytest.raises(
-        errors.InvalidConfiguration,
+        errors.InvalidConfigurationError,
         match=(
-            "The special case configuration file must contain a"
-            " dictionary mapping project names to repository URLs."
+            f"Invalid configuration file. {str(file)} must contain a dictionary."
+        ),
+    ):
+        WhitelistRepository(
+            source=MockRepository(),
+            special_case_file=file,
+        )
+
+
+def test_load_config_wrong_format(
+    tmp_path: pathlib.PosixPath,
+) -> None:
+    file = tmp_path / "yank_config.json"
+    file.write_text(
+        data='{"a": ["b", "c"]}',
+    )
+    with pytest.raises(
+        errors.InvalidConfigurationError,
+        match=(
+            f'Invalid spcial case configuration file. {str(file)} '
+            'must contain a dictionary mapping a project name to a tuple'
+            ' containing a glob pattern and a yank reason.'
         ),
     ):
         WhitelistRepository(
@@ -127,7 +147,7 @@ async def test_load_config_malformed_json(
         data='a',
     )
     with pytest.raises(
-        errors.InvalidConfiguration,
+        errors.InvalidConfigurationError,
         match=r"Invalid json file: Expecting value: line 1 column 1 \(char 0\)",
     ):
         WhitelistRepository(
