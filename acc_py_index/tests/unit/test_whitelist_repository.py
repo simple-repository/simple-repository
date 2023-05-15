@@ -53,10 +53,13 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
 
 
 @pytest.mark.asyncio
-async def test_not_normalized_package() -> None:
+async def test_not_normalized_package(tmp_path: pathlib.PosixPath) -> None:
+    special_case_file = tmp_path / "special_cases.json"
+    special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
+
     repo = WhitelistRepository(
         source=MockRepository(),
-        special_case_file=pathlib.Path("./test.json"),
+        special_case_file=special_case_file,
     )
     with pytest.raises(errors.NotNormalizedProjectName):
         await repo.get_project_page("non_normalized")
@@ -86,3 +89,48 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
 
     result = await repo.get_resource("numpy", "numpy-0.7.whl")
     assert result.url == "numpy_url"
+
+
+@pytest.mark.parametrize(
+    "json_string", [
+        "42", "true", '["a", "b"]', "null", '"ciao"', '{"a": ["b", "c"]}',
+    ],
+)
+@pytest.mark.asyncio
+async def test_load_config_wrong_type(
+    json_string: str,
+    tmp_path: pathlib.PosixPath,
+) -> None:
+    file = tmp_path / "yank_config.json"
+    file.write_text(
+        data=json_string,
+    )
+    with pytest.raises(
+        errors.InvalidConfiguration,
+        match=(
+            "The special case configuration file must contain a"
+            " dictionary mapping project names to repository URLs."
+        ),
+    ):
+        WhitelistRepository(
+            source=MockRepository(),
+            special_case_file=file,
+        )
+
+
+@pytest.mark.asyncio
+async def test_load_config_malformed_json(
+    tmp_path: pathlib.PosixPath,
+) -> None:
+    file = tmp_path / "yank_config.json"
+    file.write_text(
+        data='a',
+    )
+    with pytest.raises(
+        errors.InvalidConfiguration,
+        match=r"Invalid json file: Expecting value: line 1 column 1 \(char 0\)",
+    ):
+        WhitelistRepository(
+            source=MockRepository(),
+            special_case_file=file,
+        )

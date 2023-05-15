@@ -1,8 +1,8 @@
 import pathlib
-import typing
 
 import pytest
 
+from acc_py_index import errors
 from acc_py_index.simple import model
 from acc_py_index.simple.yank_repository import ConfigurableYankRepository
 from acc_py_index.tests.mock_repository import MockRepository
@@ -31,7 +31,7 @@ async def test_get_project_page(
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
-        data='{"numpy": ["*.whl", "bad"], "pandas": "*[!.whl]"}',
+        data='{"numpy": ["*.whl", "bad"], "pandas": ["*[!.whl]", "not supported"]}',
     )
 
     repo = ConfigurableYankRepository(
@@ -45,53 +45,46 @@ async def test_get_project_page(
 
 @pytest.mark.parametrize(
     "json_string", [
-        "42", "true", '["a", "b"]', "null", '"ciao"',
+        "42", "true", '["a", "b"]', "null", '"ciao"', '{"a": "b"}',
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page_wrong_type(
-    json_string: typing.Any,
+async def test_load_config_wrong_type(
+    json_string: str,
     tmp_path: pathlib.PosixPath,
     source: MockRepository,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
         data=json_string,
     )
-    repo = ConfigurableYankRepository(
-        source, file,
-    )
-    old_caplog_records = caplog.records.copy()
-    with caplog.at_level("ERROR", "gunicorn.error"):
-        await repo.get_project_page("numpy")
-
-    assert len(caplog.records) == len(old_caplog_records) + 1
-    assert any(
-        record.message == "Yank configuration file must contain a dictionary."
-        for record in caplog.records if record not in old_caplog_records
-    )
+    with pytest.raises(
+        errors.InvalidConfiguration,
+        match=(
+            "The yank configuration file must contain a dictionary mapping"
+            "project names to a tuple containg a glob pattern and the yank reason."
+        ),
+    ):
+        ConfigurableYankRepository(
+            source=source,
+            yank_config_file=file,
+        )
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_malformed(
+async def test_load_config_malformed_json(
     tmp_path: pathlib.PosixPath,
     source: MockRepository,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
-        data='{"numpy": "forgot reason!"}',
+        data='a',
     )
-    repo = ConfigurableYankRepository(
-        source, file,
-    )
-    old_caplog_records = caplog.records.copy()
-    with caplog.at_level("ERROR", "gunicorn.error"):
-        await repo.get_project_page("numpy")
-
-    assert len(caplog.records) == len(old_caplog_records) + 1
-    assert any(
-        record.message == "Invalid json structure for the project numpy"
-        for record in caplog.records if record not in old_caplog_records
-    )
+    with pytest.raises(
+        errors.InvalidConfiguration,
+        match=r"Invalid json file: Expecting value: line 1 column 1 \(char 0\)",
+    ):
+        ConfigurableYankRepository(
+            source=source,
+            yank_config_file=file,
+        )
