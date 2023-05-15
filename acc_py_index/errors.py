@@ -31,5 +31,4 @@ class ResourceUnavailable(LookupError):
 
 
 class InvalidConfigurationError(ValueError):
-    def __init__(self, msg: str, *args: object):
-        super().__init__(msg, *args)
+    pass
