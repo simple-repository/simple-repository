@@ -32,6 +32,11 @@ def test_parse_json_project_page() -> None:
                 "hashes": {},
                 "dist-info-metadata": {"sha256": "..."},
                 "yanked": true
+            },
+            {
+                "filename": "holygrail-1.2-py3-none-any.whl",
+                "url": "http://unnormalized url.whl",
+                "hashes": {}
             }
         ]
 
@@ -63,6 +68,11 @@ def test_parse_json_project_page() -> None:
                 dist_info_metadata={"sha256": "..."},
                 yanked=True,
             ),
+            model.File(
+                filename="holygrail-1.2-py3-none-any.whl",
+                url="http://unnormalized%20url.whl",
+                hashes={},
+            ),
         ],
     )
 
@@ -75,6 +85,9 @@ def test_parse_html_project_page() -> None:
 
         <a href="holygrail-1.1-py3-none-any.whl"
         >holygrail-1.1-py3-none-any.whl</a>
+
+        <a href="unnormalized url.whl"
+        >holygrail-1.2-py3-none-any.whl</a>
 
         <a>bad-project.whl</a>
         <a href="bad-project.whl></a>
@@ -95,6 +108,11 @@ def test_parse_html_project_page() -> None:
             model.File(
                 filename="holygrail-1.1-py3-none-any.whl",
                 url="holygrail-1.1-py3-none-any.whl",
+                hashes={},
+            ),
+            model.File(
+                filename="holygrail-1.2-py3-none-any.whl",
+                url="unnormalized%20url.whl",
                 hashes={},
             ),
         ],
