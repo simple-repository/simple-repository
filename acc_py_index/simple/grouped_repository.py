@@ -62,7 +62,7 @@ class GroupedRepository(SimpleRepository):
             for project in project_lists
         ):
             # TODO: Properly handle different API versions.
-            raise errors.UnsupportedSerialization()
+            raise errors.UnsupportedAPIVersion()
 
         projects = set().union(
             *[

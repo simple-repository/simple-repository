@@ -57,7 +57,7 @@ class HttpSimpleRepository(SimpleRepository):
         elif "application/vnd.pypi.simple.v1+json" in content_type:
             project_page = parser.parse_json_project_page(body)
         else:
-            raise errors.UnsupportedSerialization()
+            raise errors.UnsupportedSerialization(content_type)
 
         for file in project_page.files:
             # Make the URLs in the project page absolute, such that they can be
@@ -84,7 +84,7 @@ class HttpSimpleRepository(SimpleRepository):
         elif "application/vnd.pypi.simple.v1+json" in content_type:
             return parser.parse_json_project_list(body)
 
-        raise errors.UnsupportedSerialization()
+        raise errors.UnsupportedSerialization(content_type)
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
         try:

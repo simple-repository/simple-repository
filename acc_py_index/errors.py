@@ -16,7 +16,17 @@ class NotNormalizedProjectName(Exception):
     pass
 
 
-class UnsupportedSerialization(Exception):
+class UnsupportedSerialization(ValueError):
+    msg_format = (
+        "Unsupported format '{format_name}'."
+    )
+
+    def __init__(self, format_name: str, *args: object):
+        msg = self.msg_format.format(format_name=format_name)
+        super().__init__(msg, *args)
+
+
+class UnsupportedAPIVersion(Exception):
     pass
 
 
