@@ -127,7 +127,7 @@ def test_load_config_wrong_format(
     with pytest.raises(
         errors.InvalidConfigurationError,
         match=(
-            f'Invalid spcial case configuration file. {str(file)} '
+            f'Invalid special case configuration file. {str(file)} '
             'must contain a dictionary mapping a project name to a tuple'
             ' containing a glob pattern and a yank reason.'
         ),

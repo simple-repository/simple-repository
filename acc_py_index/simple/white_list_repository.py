@@ -11,7 +11,7 @@ from .repositories import SimpleRepository
 class WhitelistRepository(SimpleRepository):
     """Exposes only the whitelisted projects of the source repository.
     Projects available from the source but not added to the
-    whitelist file are made not available available from this repository.
+    whitelist file are not made available from this repository.
     """
     def __init__(
         self,
@@ -24,8 +24,10 @@ class WhitelistRepository(SimpleRepository):
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         """Returns the project page from the source if the project_name
-        is whitelisted. Raises PackageNotFoundError otherwise. Raises
-        NotNormalizedProjectName if project_name is not normalized.
+        is whitelisted.
+
+        Raises PackageNotFoundError otherwise.
+        Raises NotNormalizedProjectName if project_name is not normalized.
         """
 
         if project_name != packaging.utils.canonicalize_name(project_name):
@@ -60,7 +62,7 @@ class WhitelistRepository(SimpleRepository):
                 not isinstance(value, str)
             ):
                 raise errors.InvalidConfigurationError(
-                    f'Invalid spcial case configuration file. {str(json_file)} '
+                    f'Invalid special case configuration file. {json_file} '
                     'must contain a dictionary mapping a project name to a tuple'
                     ' containing a glob pattern and a yank reason.',
                 )
