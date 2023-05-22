@@ -118,18 +118,24 @@ class UnsafeMergedRepo(GroupedRepository):
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
-        for source in self.sources:
-            try:
-                project_page = await source.get_project_page(project_name)
-            except errors.PackageNotFoundError:
-                continue
+        project_pages: list[typing.Union[Exception, ProjectDetail]] = await asyncio.gather(
+            *(
+                source.get_project_page(project_name)
+                for source in self.sources
+            ),
+            return_exceptions=True,
+        )
 
-            for file in project_page.files:
-                # Only add the file if the filename hasn't been seen before.
-                files.setdefault(file.filename, file)
-
-            if result is None:
-                result = project_page
+        for project_page in project_pages:
+            if isinstance(project_page, Exception):
+                if not isinstance(project_page, errors.PackageNotFoundError):
+                    raise project_page
+            else:
+                for file in project_page.files:
+                    # Only add the file if the filename hasn't been seen before.
+                    files.setdefault(file.filename, file)
+                if result is None:
+                    result = project_page
 
         if result is None:
             # It wasn't found anywhere.
