@@ -1,0 +1,135 @@
+from pathlib import Path
+
+import pytest
+
+from acc_py_index import errors
+from acc_py_index.simple import model
+from acc_py_index.simple.local_repository import LocalRepository
+
+
+@pytest.fixture
+def simple_dir(tmp_path: Path) -> Path:
+    for project in ("numpy", "tensorflow", "pandas"):
+        (tmp_path / project).mkdir()
+    for file in ("numpy-1.0-any.whl", "numpy-1.1.tar.gz"):
+        (tmp_path / "numpy" / file).write_text("content")
+    return tmp_path
+
+
+@pytest.mark.asyncio
+async def test_get_project_list(simple_dir: Path) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+    project_list = await repo.get_project_list()
+
+    assert project_list == model.ProjectList(
+        meta=model.Meta("1.0"),
+        projects={
+            model.ProjectListElement("numpy"),
+            model.ProjectListElement("tensorflow"),
+            model.ProjectListElement("pandas"),
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_resource(simple_dir: Path) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+    resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
+
+    assert resource == model.Resource(
+        uri=str(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+        type=model.ResourceType.local_resource,
+    )
+
+
+@pytest.mark.parametrize(
+    ("project, resource"), [
+        ("numpy", "numpy-2.0.tar.gz"),
+        ("seaborn", "seaborn-1.0.tar.gz"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_get_resource_unavailable(
+    simple_dir: Path,
+    project: str,
+    resource: str,
+) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+    with pytest.raises(
+        errors.ResourceUnavailable,
+        match=f"Resource '{resource}' was not found in the configured source",
+    ):
+        await repo.get_resource(project, resource)
+
+
+@pytest.mark.parametrize(
+    ("project, resource"), [
+        ("numpy", "../../../etc/password"),
+        ("tensorflow", "../numpy/numpy-1.0.tar.gz"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_get_resource_path_traversial(
+    simple_dir: Path,
+    project: str,
+    resource: str,
+) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=f"{(simple_dir / project /resource).resolve()} is not contained in {repo._index_path / project}",
+    ):
+        await repo.get_resource(project, resource)
+
+
+@pytest.mark.asyncio
+async def test_get_project_page(simple_dir: Path) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+
+    project_details = await repo.get_project_page("numpy")
+    assert project_details == model.ProjectDetail(
+        meta=model.Meta("1.0"),
+        name="numpy",
+        files=[
+            model.File(
+                filename='numpy-1.0-any.whl',
+                url='http://base/url/numpy/numpy-1.0-any.whl',
+                hashes={},
+            ),
+            model.File(
+                filename='numpy-1.1.tar.gz',
+                url='http://base/url/numpy/numpy-1.1.tar.gz',
+                hashes={},
+            ),
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_project_page_not_found(simple_dir: Path) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+        base_url="http://base/url",
+    )
+
+    with pytest.raises(
+        errors.PackageNotFoundError,
+        match="seaborn",
+    ):
+        await repo.get_project_page("seaborn")
