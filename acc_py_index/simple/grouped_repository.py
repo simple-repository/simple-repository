@@ -94,11 +94,11 @@ class GroupedRepository(SimpleRepository):
         raise errors.ResourceUnavailable(resource_name)
 
 
-class UnsafeMergedRepo(GroupedRepository):
+class UnsafeMergedRepository(GroupedRepository):
     """
     Represents a merged view of all the given repositories
 
-    NOTICE: The UnsafeMergedRepo is combining the given repositories without
+    NOTICE: The UnsafeMergedRepository is combining the given repositories without
             giving exclusivity of a source of a specific package to any particular
             repository. As a result, this implementation is vulnerable to
             dependency confusion. There are cases where this behaviour is desirable
@@ -108,7 +108,10 @@ class UnsafeMergedRepo(GroupedRepository):
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources and blending them together.
-        Raises NotNormalizedProjectName is the project page is not normalized.
+
+        Raises:
+            NotNormalizedProjectName:
+                The project name is not normalized.
         """
         if project_name != canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
@@ -138,7 +141,6 @@ class UnsafeMergedRepo(GroupedRepository):
                     result = project_page
 
         if result is None:
-            # It wasn't found anywhere.
             raise errors.PackageNotFoundError(
                 package_name=project_name,
             )
