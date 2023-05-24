@@ -11,6 +11,7 @@ from acc_py_index.simple.model import (
     ProjectList,
     ProjectListElement,
     Resource,
+    ResourceType,
 )
 
 from ..mock_repository import MockRepository
@@ -149,7 +150,10 @@ async def test_get_resource() -> None:
     ])
 
     resp = await group_repository.get_resource("numpy", "numpy.whl")
-    assert resp == Resource("url")
+    assert resp == Resource(
+        value="url",
+        type=ResourceType.remote_resource,
+    )
 
 
 @pytest.mark.asyncio
