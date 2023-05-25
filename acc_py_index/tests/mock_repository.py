@@ -34,5 +34,5 @@ class MockRepository(SimpleRepository):
             raise errors.ResourceUnavailable(resource_name)
         return Resource(
             value=self.resources[resource_name],
-            type=ResourceType.remote_resource,
+            type=ResourceType.REMOTE_RESOURCE,
         )

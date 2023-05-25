@@ -152,7 +152,7 @@ async def test_get_resource() -> None:
     resp = await group_repository.get_resource("numpy", "numpy.whl")
     assert resp == Resource(
         value="url",
-        type=ResourceType.remote_resource,
+        type=ResourceType.REMOTE_RESOURCE,
     )
 
 

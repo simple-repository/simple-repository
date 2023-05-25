@@ -106,8 +106,8 @@ class ProjectList:
 
 
 class ResourceType(Enum):
-    remote_resource = auto()
-    metadata = auto()
+    REMOTE_RESOURCE = auto()
+    METADATA = auto()
 
 
 @dataclass(frozen=True)

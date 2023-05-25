@@ -98,7 +98,7 @@ class HttpSimpleRepository(SimpleRepository):
                 if resource_name == file.filename:
                     return Resource(
                         value=file.url,
-                        type=ResourceType.remote_resource,
+                        type=ResourceType.REMOTE_RESOURCE,
                     )
             raise errors.ResourceUnavailable(resource_name)
 
@@ -108,7 +108,7 @@ class HttpSimpleRepository(SimpleRepository):
             if distribution_name == file.filename and file.dist_info_metadata:
                 return Resource(
                     value=file.url + ".metadata",
-                    type=ResourceType.remote_resource,
+                    type=ResourceType.REMOTE_RESOURCE,
                 )
         raise errors.ResourceUnavailable(resource_name)
 
