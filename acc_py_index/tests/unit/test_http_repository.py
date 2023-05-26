@@ -231,7 +231,7 @@ async def test_get_resource(repository: HttpSimpleRepository, project_detail: Pr
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
         resouce = await repository.get_resource("numpy", "numpy-2.0.whl")
-        assert resouce.url == "my_url/numpy-2.0.whl"
+        assert resouce.value == "my_url/numpy-2.0.whl"
 
 
 @pytest.mark.asyncio
@@ -255,7 +255,7 @@ async def test_get_resource_metadata(repository: HttpSimpleRepository, project_d
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
         resouce = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
-        assert resouce.url == "my_url/numpy-1.0.whl.metadata"
+        assert resouce.value == "my_url/numpy-1.0.whl.metadata"
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
             resouce = await repository.get_resource("numpy", "numpy-2.0.whl.metadata")

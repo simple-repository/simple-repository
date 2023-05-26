@@ -6,7 +6,7 @@ import packaging.utils
 
 from . import parser
 from .. import errors, utils
-from .model import ProjectDetail, ProjectList, Resource
+from .model import ProjectDetail, ProjectList, Resource, ResourceType
 
 
 class SimpleRepository(Protocol):
@@ -96,14 +96,20 @@ class HttpSimpleRepository(SimpleRepository):
         else:
             for file in project_page.files:
                 if resource_name == file.filename:
-                    return Resource(file.url)
+                    return Resource(
+                        value=file.url,
+                        type=ResourceType.REMOTE_RESOURCE,
+                    )
             raise errors.ResourceUnavailable(resource_name)
 
     async def get_metadata(self, project_page: ProjectDetail, resource_name: str) -> Resource:
         distribution_name = resource_name.removesuffix(".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
-                return Resource(file.url + ".metadata")
+                return Resource(
+                    value=file.url + ".metadata",
+                    type=ResourceType.REMOTE_RESOURCE,
+                )
         raise errors.ResourceUnavailable(resource_name)
 
 

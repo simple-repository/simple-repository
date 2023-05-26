@@ -23,6 +23,7 @@ brackets, for example ``[additional context]``.
 
 """
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Optional, Union
 
 
@@ -104,6 +105,12 @@ class ProjectList:
     projects: set[ProjectListElement]
 
 
+class ResourceType(Enum):
+    REMOTE_RESOURCE = auto()
+    METADATA = auto()
+
+
 @dataclass(frozen=True)
 class Resource:
-    url: str
+    value: str
+    type: ResourceType

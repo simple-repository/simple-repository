@@ -88,7 +88,7 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
         await repo.get_resource("pandas", "pandas.whl")
 
     result = await repo.get_resource("numpy", "numpy-0.7.whl")
-    assert result.url == "numpy_url"
+    assert result.value == "numpy_url"
 
 
 @pytest.mark.parametrize(

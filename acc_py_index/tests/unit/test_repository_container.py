@@ -43,4 +43,4 @@ async def test_get_resource() -> None:
         ),
     )
     result = await repository.get_resource("numpy", "numpy.whl")
-    assert result.url == "numpy_url"
+    assert result.value == "numpy_url"

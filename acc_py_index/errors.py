@@ -32,3 +32,7 @@ class ResourceUnavailable(LookupError):
 
 class InvalidConfigurationError(ValueError):
     pass
+
+
+class InvalidPackageError(ValueError):
+    pass
