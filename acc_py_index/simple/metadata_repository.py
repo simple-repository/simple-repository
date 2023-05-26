@@ -5,20 +5,9 @@ import zipfile
 
 import aiohttp
 
-from .. import cache, errors
+from .. import cache, errors, utils
 from .model import ProjectDetail, Resource, ResourceType
 from .repositories import RepositoryContainer, SimpleRepository
-
-
-async def download_package(
-    download_url: str,
-    dest_file: pathlib.Path,
-    session: aiohttp.ClientSession,
-) -> None:
-    with dest_file.open('wb') as file:
-        async with session.get(download_url) as data:
-            async for chunk in data.content.iter_chunked(1024):
-                file.write(chunk)
 
 
 def get_metadata_from_wheel(package_dir: pathlib.Path, package_name: str) -> str:
@@ -59,7 +48,7 @@ async def download_metadata(
 ) -> str:
     with tempfile.TemporaryDirectory() as dir:
         file_path = pathlib.Path(dir) / package_name
-        await download_package(download_url, file_path, session)
+        await utils.download_file(download_url, file_path, session)
         return get_metadata_from_package(file_path, package_name)
 
 

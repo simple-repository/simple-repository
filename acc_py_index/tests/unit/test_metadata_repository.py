@@ -2,7 +2,6 @@ import pathlib
 import sqlite3
 from unittest import mock
 
-from aiohttp import ClientSession
 import pytest
 
 from acc_py_index import errors
@@ -55,17 +54,6 @@ def test_get_metadata_from_package_missing_metadata() -> None:
                 package_name='trvial_name-0.0.1-anylinux.whl',
             )
     assert isinstance(exc_info.value.__cause__, KeyError)
-
-
-@pytest.mark.asyncio
-async def test_download_package(tmp_path: pathlib.PosixPath) -> None:
-    download_url = "https://example.com/package.tar.gz"
-    dest_file = tmp_path / "package.tar.gz"
-    async with ClientSession() as session:
-        await metadata_repository.download_package(download_url, dest_file, session)
-
-    assert dest_file.exists()
-    assert dest_file.stat().st_size > 0
 
 
 @pytest.fixture
@@ -129,3 +117,22 @@ async def test_get_resource_not_metadata(
     response = await repository.get_resource("numpy", resource_name)
     assert response.value == "numpy_url"
     assert response.type == model.ResourceType.REMOTE_RESOURCE
+
+
+@pytest.mark.asyncio
+async def test_download_metadata() -> None:
+    mock_session = mock.Mock()
+    get_metadata_from_package_mock = mock.Mock()
+    download_file_mock = mock.AsyncMock()
+
+    with mock.patch(
+        "acc_py_index.simple.metadata_repository.get_metadata_from_package",
+        get_metadata_from_package_mock,
+    ), mock.patch(
+        "acc_py_index.utils.download_file",
+        download_file_mock,
+    ):
+        await metadata_repository.download_metadata("name", "url", mock_session)
+
+    get_metadata_from_package_mock.assert_called_once()
+    download_file_mock.assert_awaited_once()
