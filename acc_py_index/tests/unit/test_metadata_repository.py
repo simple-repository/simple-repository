@@ -1,5 +1,6 @@
 import pathlib
 import sqlite3
+import typing
 from unittest import mock
 import zipfile
 
@@ -36,11 +37,11 @@ def test_get_metadata_from_package() -> None:
     read_method = m_zipfile_cls.return_value.__enter__.return_value.read
 
     with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
-        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir'), 'trvial_name-0.0.1-anylinux.whl')
+        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl')
         read_method.assert_called_once_with('trvial_name-0.0.1.dist-info/METADATA')
 
     with pytest.raises(ValueError, match="Package provided is not a wheel"):
-        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir'), 'package.mp4')
+        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir') / 'package.mp4')
 
 
 def test_get_metadata_from_package__missing_metadata() -> None:
@@ -54,8 +55,7 @@ def test_get_metadata_from_package__missing_metadata() -> None:
             match="Provided wheel doesn't contain a metadata file.",
         ) as exc_info:
             metadata_repository.get_metadata_from_package(
-                package_path=pathlib.Path('trivial_dir'),
-                package_name='trvial_name-0.0.1-anylinux.whl',
+                package_path=pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl',
             )
     assert isinstance(exc_info.value.__cause__, KeyError)
 
@@ -119,11 +119,10 @@ async def test_get_resource__not_http_resource(tmp_db: sqlite3.Connection) -> No
     source_repo = mock.Mock(spec=SimpleRepository)
     source_repo.get_resource.side_effect = [errors.ResourceUnavailable('name'), model.Resource('/etc/passwd', model.ResourceType.METADATA)]
     repo = metadata_repository.MetadataInjectorRepository(
-        source=source_repo,
+        source=typing.cast(SimpleRepository, source_repo),
         database=tmp_db,
         session=mock.AsyncMock(),
     )
-    # repository.source.get_resource.return_value = model.Resource('/etc/passwd', model.ResourceType.METADATA)
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
         await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 

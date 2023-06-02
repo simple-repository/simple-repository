@@ -10,11 +10,11 @@ from .model import ProjectDetail, Resource, ResourceType
 from .repositories import RepositoryContainer, SimpleRepository
 
 
-def get_metadata_from_wheel(package_path: pathlib.Path, package_name: str) -> str:
-    package_tokens = package_name.split('-')
+def get_metadata_from_wheel(package_path: pathlib.Path) -> str:
+    package_tokens = package_path.name.split('-')
     if len(package_tokens) < 2:
         raise ValueError(
-            f"Package name {package_name} is not normalized according to PEP-427",
+            f"Filename {package_path.name} is not normalized according to PEP-427",
         )
     name_ver = package_tokens[0] + '-' + package_tokens[1]
 
@@ -32,9 +32,9 @@ def get_metadata_from_wheel(package_path: pathlib.Path, package_name: str) -> st
         ) from e
 
 
-def get_metadata_from_package(package_path: pathlib.Path, package_name: str) -> str:
-    if package_name.endswith('.whl'):
-        return get_metadata_from_wheel(package_path, package_name)
+def get_metadata_from_package(package_path: pathlib.Path) -> str:
+    if package_path.name.endswith('.whl'):
+        return get_metadata_from_wheel(package_path)
     raise ValueError("Package provided is not a wheel")
 
 
@@ -46,7 +46,7 @@ async def download_metadata(
     with tempfile.TemporaryDirectory() as tmpdir:
         pkg_path = pathlib.Path(tmpdir) / package_name
         await utils.download_file(download_url, pkg_path, session)
-        return get_metadata_from_package(pkg_path, package_name)
+        return get_metadata_from_package(pkg_path)
 
 
 def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
@@ -84,22 +84,20 @@ class MetadataInjectorRepository(RepositoryContainer):
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        # Attempt to get the resource from upstream.
         try:
+            # Attempt to get the resource from upstream.
             return await super().get_resource(project_name, resource_name)
         except errors.ResourceUnavailable:
             if not resource_name.endswith(".metadata"):
-                # If we tried to get a resource that wasn't a .metadata one and it failed,
-                # propagate it. Otherwise, we move on to trying to handle metadata files not
-                # available in the source.
+                # If we tried to get a resource that wasn't a .metadata one, and it failed,
+                # propagate the error.
                 raise
 
-        # The resource doesn't exist upstream, and ends with .metadata - let's try to
-        # fetch the underlying resource and compute the metadata.
+        # The resource doesn't exist upstream, and looks like a metadata file has been
+        # requested. Let's try to fetch the underlying resource and compute the metadata.
 
         # First, let's attempt to get the metadata out of the cache.
         metadata = self._cache.get(project_name + "/" + resource_name)
-
         if not metadata:
             # Get hold of the actual artefact from which we want to extract
             # the metadata.
