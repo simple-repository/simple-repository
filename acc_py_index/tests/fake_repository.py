@@ -5,7 +5,7 @@ from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, Resource
 from acc_py_index.simple.repositories import SimpleRepository
 
 
-class MockRepository(SimpleRepository):
+class FakeRepository(SimpleRepository):
     def __init__(
         self,
         project_list: ProjectList = ProjectList(Meta('1.0'), set()),

@@ -6,7 +6,7 @@ import pytest
 
 from acc_py_index.simple import yank_repository
 from acc_py_index.simple.model import File, Meta, ProjectDetail
-from acc_py_index.tests.mock_repository import MockRepository
+from acc_py_index.tests.fake_repository import FakeRepository
 
 
 @pytest.mark.parametrize(
@@ -57,7 +57,7 @@ async def test_get_project_page(
     yanked_value: Optional[Union[bool, str]],
 ) -> None:
     repository = yank_repository.YankRepository(
-        MockRepository(
+        FakeRepository(
             project_pages=[
                 ProjectDetail(
                     Meta("1.0"), name="project", files=[

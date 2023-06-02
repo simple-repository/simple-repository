@@ -14,14 +14,14 @@ from acc_py_index.simple.model import (
     ResourceType,
 )
 
-from ..mock_repository import MockRepository
+from ..fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
     group_repository = GroupedRepository([
-        MockRepository(),
-        MockRepository(
+        FakeRepository(),
+        FakeRepository(
             project_pages=[
                 ProjectDetail(
                     Meta('1.0'),
@@ -30,7 +30,7 @@ async def test_get_project_page() -> None:
                 ),
             ],
         ),
-        MockRepository(
+        FakeRepository(
             project_pages=[
                 ProjectDetail(
                     Meta('1.0'),
@@ -49,7 +49,7 @@ async def test_get_project_page() -> None:
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
     group_repository = GroupedRepository([
-        MockRepository() for _ in range(3)
+        FakeRepository() for _ in range(3)
     ])
     with pytest.raises(
         expected_exception=errors.PackageNotFoundError,
@@ -75,7 +75,7 @@ async def test_blended_get_project_list() -> None:
 
     group_repository = GroupedRepository(
         sources=[
-            MockRepository(ProjectList(Meta("1.0"), p)) for p in projects_elements
+            FakeRepository(ProjectList(Meta("1.0"), p)) for p in projects_elements
         ],
     )
 
@@ -109,7 +109,7 @@ async def test_blended_get_project_list_failed() -> None:
 async def test_blended_get_project_page_failed() -> None:
     repo = GroupedRepository(
         sources=[
-            MockRepository(
+            FakeRepository(
                 project_pages=[
                    ProjectDetail(Meta("1.0"), name="numpy", files=[]),
                 ],
@@ -129,13 +129,13 @@ def test_group_repository_failed_init() -> None:
     with pytest.raises(ValueError):
         GroupedRepository([])
     with pytest.raises(ValueError):
-        GroupedRepository([MockRepository()])
+        GroupedRepository([FakeRepository()])
 
 
 @pytest.mark.asyncio
 async def test_not_normalized_package() -> None:
     group_repository = GroupedRepository([
-        MockRepository() for _ in range(3)
+        FakeRepository() for _ in range(3)
     ])
     with pytest.raises(errors.NotNormalizedProjectName):
         await group_repository.get_project_page("non_normalized")
@@ -144,9 +144,9 @@ async def test_not_normalized_package() -> None:
 @pytest.mark.asyncio
 async def test_get_resource() -> None:
     group_repository = GroupedRepository([
-        MockRepository(),
-        MockRepository(resources={"numpy.whl": "url"}),
-        MockRepository(resources={"numpy.whl": "wrong"}),
+        FakeRepository(),
+        FakeRepository(resources={"numpy.whl": "url"}),
+        FakeRepository(resources={"numpy.whl": "wrong"}),
     ])
 
     resp = await group_repository.get_resource("numpy", "numpy.whl")
@@ -159,7 +159,7 @@ async def test_get_resource() -> None:
 @pytest.mark.asyncio
 async def test_get_resource_failed() -> None:
     group_repository = GroupedRepository([
-        MockRepository() for _ in range(3)
+        FakeRepository() for _ in range(3)
     ])
 
     with pytest.raises(errors.ResourceUnavailable, match="numpy.whl"):

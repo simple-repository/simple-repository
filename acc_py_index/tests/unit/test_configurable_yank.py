@@ -5,12 +5,12 @@ import pytest
 from acc_py_index import errors
 from acc_py_index.simple import model
 from acc_py_index.simple.yank_repository import ConfigurableYankRepository
-from acc_py_index.tests.mock_repository import MockRepository
+from acc_py_index.tests.fake_repository import FakeRepository
 
 
 @pytest.fixture
-def source() -> MockRepository:
-    return MockRepository(
+def source() -> FakeRepository:
+    return FakeRepository(
         project_pages=[
             model.ProjectDetail(
                 model.Meta("1.0"),
@@ -27,7 +27,7 @@ def source() -> MockRepository:
 @pytest.mark.asyncio
 async def test_get_project_page(
     tmp_path: pathlib.PosixPath,
-    source: MockRepository,
+    source: FakeRepository,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
@@ -51,7 +51,7 @@ async def test_get_project_page(
 def test_load_config_wrong_type(
     json_string: str,
     tmp_path: pathlib.PosixPath,
-    source: MockRepository,
+    source: FakeRepository,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
@@ -71,7 +71,7 @@ def test_load_config_wrong_type(
 
 def test_load_config_wrong_format(
     tmp_path: pathlib.PosixPath,
-    source: MockRepository,
+    source: FakeRepository,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
@@ -93,7 +93,7 @@ def test_load_config_wrong_format(
 
 def test_load_config_malformed_json(
     tmp_path: pathlib.PosixPath,
-    source: MockRepository,
+    source: FakeRepository,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(

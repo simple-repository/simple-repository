@@ -6,14 +6,14 @@ import pytest
 from acc_py_index.cache import URLCache
 from acc_py_index.simple import model
 
-from ..mock_repository import MockRepository
+from ..fake_repository import FakeRepository
 
 
 @pytest.fixture
 def url_cache(tmp_path: pathlib.PosixPath) -> URLCache:
     db = sqlite3.connect(tmp_path / "test.db")
     return URLCache(
-        MockRepository(
+        FakeRepository(
             project_pages=[
                 model.ProjectDetail(
                     model.Meta("1.0"), "numpy", [model.File("numpy-1.0-any.whl", "url/numpy", {})],
