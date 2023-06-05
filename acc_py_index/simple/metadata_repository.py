@@ -104,21 +104,22 @@ class MetadataInjectorRepository(RepositoryContainer):
             resource = await super().get_resource(
                 project_name, resource_name.removesuffix(".metadata"),
             )
-            if resource.type != ResourceType.REMOTE_RESOURCE:
+            if resource.type == ResourceType.REMOTE_RESOURCE:
+                try:
+                    metadata = await download_metadata(
+                        package_name=resource_name.removesuffix(".metadata"),
+                        download_url=resource.value,
+                        session=self._session,
+                    )
+                except ValueError as e:
+                    # If we can't get hold of the metadata from the file then raise
+                    # a resource unavailable.
+                    raise errors.ResourceUnavailable(resource_name) from e
+            else:
                 raise errors.ResourceUnavailable(
                     resource_name.removesuffix(".metadata"),
                     "Unable to fetch the resource needed to extract the metadata.",
                 )
-            try:
-                metadata = await download_metadata(
-                    package_name=resource_name.removesuffix(".metadata"),
-                    download_url=resource.value,
-                    session=self._session,
-                )
-            except ValueError as e:
-                # If we can't get hold of the metadata from the file then raise
-                # a resource unavailable.
-                raise errors.ResourceUnavailable(resource_name) from e
 
             # Cache the result for a faster response in the future.
             self._cache[project_name + "/" + resource_name] = metadata
