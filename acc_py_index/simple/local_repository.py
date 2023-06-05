@@ -82,6 +82,6 @@ class LocalRepository(SimpleRepository):
             raise errors.ResourceUnavailable(resource_name)
 
         return Resource(
-            uri=str(resource_uri),
-            type=ResourceType.local_resource,
+            value=str(resource_uri),
+            type=ResourceType.LOCAL_RESOURCE,
         )
