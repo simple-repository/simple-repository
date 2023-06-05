@@ -32,22 +32,31 @@ class HttpSimpleRepository(SimpleRepository):
             "text/html;q=0.01",
         ])
 
+    async def _fetch_simple_page(
+        self,
+        page_url: str,
+    ) -> tuple[str, str]:
+        headers = {"Accept": self.downstream_content_types}
+        async with self.session.get(page_url, headers=headers) as response:
+            response.raise_for_status()
+            body: str = await response.text()
+            content_type = response.headers.get("content-type", "")
+        return body, content_type
+
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         if project_name != packaging.utils.canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
 
-        headers = {"Accept": self.downstream_content_types}
-
         page_url = urljoin(self.source_url, f"{project_name}/")
-        async with self.session.get(page_url, headers=headers) as response:
-            if response.status == 404:
+        try:
+            body, content_type = await self._fetch_simple_page(page_url)
+        except aiohttp.ClientResponseError as e:
+            if e.status == 404:
                 raise errors.PackageNotFoundError(
                     package_name=project_name,
-                )
-            response.raise_for_status()
-
-            body: str = await response.text()
-            content_type = response.headers.get("content-type", "")
+                ) from e
+            else:
+                raise e
 
         if (
             "application/vnd.pypi.simple.v1+html" in content_type or
@@ -66,15 +75,10 @@ class HttpSimpleRepository(SimpleRepository):
         return project_page
 
     async def get_project_list(self) -> ProjectList:
-        headers = {"Accept": self.downstream_content_types}
-
-        async with self.session.get(self.source_url, headers=headers) as response:
-            if response.status == 404:
-                raise errors.SourceRepositoryUnavailable()
-            response.raise_for_status()
-
-            body = await response.text()
-            content_type = response.headers.get("content-type", "")
+        try:
+            body, content_type = await self._fetch_simple_page(self.source_url)
+        except aiohttp.ClientResponseError as e:
+            raise errors.SourceRepositoryUnavailable() from e
 
         if (
             "application/vnd.pypi.simple.v1+html" in content_type or
