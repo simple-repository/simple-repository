@@ -6,7 +6,7 @@ from acc_py_index import errors
 from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, ProjectListElement
 from acc_py_index.simple.white_list_repository import WhitelistRepository
 
-from ..mock_repository import MockRepository
+from ..fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
@@ -15,7 +15,7 @@ async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=MockRepository(
+        source=FakeRepository(
             project_pages=[
                 ProjectDetail(Meta("1.0"), "numpy", files=[]),
                 ProjectDetail(Meta("1.0"), "tensorflow", files=[]),
@@ -40,7 +40,7 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=MockRepository(),
+        source=FakeRepository(),
         special_case_file=special_case_file,
     )
 
@@ -58,7 +58,7 @@ async def test_not_normalized_package(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=MockRepository(),
+        source=FakeRepository(),
         special_case_file=special_case_file,
     )
     with pytest.raises(errors.NotNormalizedProjectName):
@@ -71,7 +71,7 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=MockRepository(resources={"gunicorn-0.7.whl": "gunicorn_url", "numpy-0.7.whl": "numpy_url"}),
+        source=FakeRepository(resources={"gunicorn-0.7.whl": "gunicorn_url", "numpy-0.7.whl": "numpy_url"}),
         special_case_file=special_case_file,
     )
 
@@ -112,7 +112,7 @@ async def test_load_config_wrong_type(
         ),
     ):
         WhitelistRepository(
-            source=MockRepository(),
+            source=FakeRepository(),
             special_case_file=file,
         )
 
@@ -133,7 +133,7 @@ def test_load_config_wrong_format(
         ),
     ):
         WhitelistRepository(
-            source=MockRepository(),
+            source=FakeRepository(),
             special_case_file=file,
         )
 
@@ -151,6 +151,6 @@ async def test_load_config_malformed_json(
         match="Invalid json file",
     ):
         WhitelistRepository(
-            source=MockRepository(),
+            source=FakeRepository(),
             special_case_file=file,
         )

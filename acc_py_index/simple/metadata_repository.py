@@ -10,34 +10,31 @@ from .model import ProjectDetail, Resource, ResourceType
 from .repositories import RepositoryContainer, SimpleRepository
 
 
-def get_metadata_from_wheel(package_dir: pathlib.Path, package_name: str) -> str:
-    package_tokens = package_name.split('-')
+def get_metadata_from_wheel(package_path: pathlib.Path) -> str:
+    package_tokens = package_path.name.split('-')
     if len(package_tokens) < 2:
         raise ValueError(
-            f"Package name {package_name} is not normalized according to PEP-427",
+            f"Filename {package_path.name} is not normalized according to PEP-427",
         )
     name_ver = package_tokens[0] + '-' + package_tokens[1]
 
     try:
-        ziparchive = zipfile.ZipFile(package_dir)
+        with zipfile.ZipFile(package_path, 'r') as ziparchive:
+            try:
+                return ziparchive.read(name_ver + ".dist-info/METADATA").decode()
+            except KeyError as e:
+                raise errors.InvalidPackageError(
+                    "Provided wheel doesn't contain a metadata file.",
+                ) from e
     except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
         raise errors.InvalidPackageError(
             "Unable to decompress the provided wheel.",
         ) from e
 
-    try:
-        return ziparchive.read(name_ver + ".dist-info/METADATA").decode()
-    except KeyError as e:
-        raise errors.InvalidPackageError(
-            "Provided wheel doesn't contain a metadata file.",
-        ) from e
-    finally:
-        ziparchive.close()
 
-
-def get_metadata_from_package(package_dir: pathlib.Path, package_name: str) -> str:
-    if package_name.endswith('.whl'):
-        return get_metadata_from_wheel(package_dir, package_name)
+def get_metadata_from_package(package_path: pathlib.Path) -> str:
+    if package_path.name.endswith('.whl'):
+        return get_metadata_from_wheel(package_path)
     raise ValueError("Package provided is not a wheel")
 
 
@@ -46,10 +43,10 @@ async def download_metadata(
     download_url: str,
     session: aiohttp.ClientSession,
 ) -> str:
-    with tempfile.TemporaryDirectory() as dir:
-        file_path = pathlib.Path(dir) / package_name
-        await utils.download_file(download_url, file_path, session)
-        return get_metadata_from_package(file_path, package_name)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pkg_path = pathlib.Path(tmpdir) / package_name
+        await utils.download_file(download_url, pkg_path, session)
+        return get_metadata_from_package(pkg_path)
 
 
 def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
@@ -87,23 +84,44 @@ class MetadataInjectorRepository(RepositoryContainer):
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        if not resource_name.endswith(".metadata"):
+        try:
+            # Attempt to get the resource from upstream.
             return await super().get_resource(project_name, resource_name)
+        except errors.ResourceUnavailable:
+            if not resource_name.endswith(".metadata"):
+                # If we tried to get a resource that wasn't a .metadata one, and it failed,
+                # propagate the error.
+                raise
 
+        # The resource doesn't exist upstream, and looks like a metadata file has been
+        # requested. Let's try to fetch the underlying resource and compute the metadata.
+
+        # First, let's attempt to get the metadata out of the cache.
         metadata = self._cache.get(project_name + "/" + resource_name)
         if not metadata:
+            # Get hold of the actual artefact from which we want to extract
+            # the metadata.
             resource = await super().get_resource(
                 project_name, resource_name.removesuffix(".metadata"),
             )
-            try:
-                metadata = await download_metadata(
-                    package_name=resource_name.removesuffix(".metadata"),
-                    download_url=resource.value,
-                    session=self._session,
+            if resource.type == ResourceType.REMOTE_RESOURCE:
+                try:
+                    metadata = await download_metadata(
+                        package_name=resource_name.removesuffix(".metadata"),
+                        download_url=resource.value,
+                        session=self._session,
+                    )
+                except ValueError as e:
+                    # If we can't get hold of the metadata from the file then raise
+                    # a resource unavailable.
+                    raise errors.ResourceUnavailable(resource_name) from e
+            else:
+                raise errors.ResourceUnavailable(
+                    resource_name.removesuffix(".metadata"),
+                    "Unable to fetch the resource needed to extract the metadata.",
                 )
-            except ValueError as e:
-                raise errors.ResourceUnavailable(resource_name) from e
 
+            # Cache the result for a faster response in the future.
             self._cache[project_name + "/" + resource_name] = metadata
 
         return Resource(

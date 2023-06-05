@@ -3,13 +3,13 @@ import pytest
 from acc_py_index import errors
 from acc_py_index.simple import model
 from acc_py_index.simple.repositories import RepositoryContainer
-from acc_py_index.tests.mock_repository import MockRepository
+from acc_py_index.tests.fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
     repository = RepositoryContainer(
-        MockRepository(
+        FakeRepository(
             project_pages=[
                 model.ProjectDetail(model.Meta("1.0"), "numpy", files=[]),
             ],
@@ -24,7 +24,7 @@ async def test_get_project_page() -> None:
 @pytest.mark.asyncio
 async def test_get_project_list() -> None:
     repository = RepositoryContainer(
-        MockRepository(
+        FakeRepository(
             project_list=model.ProjectList(
                 meta=model.Meta("1.0"),
                 projects={model.ProjectListElement("numpy")},
@@ -38,7 +38,7 @@ async def test_get_project_list() -> None:
 @pytest.mark.asyncio
 async def test_get_resource() -> None:
     repository = RepositoryContainer(
-        MockRepository(
+        FakeRepository(
             resources={"numpy.whl": "numpy_url"},
         ),
     )
