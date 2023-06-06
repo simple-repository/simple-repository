@@ -3,16 +3,8 @@ from unittest import mock
 import pytest
 
 from acc_py_index import errors
+from acc_py_index.simple import model
 from acc_py_index.simple.grouped_repository import GroupedRepository
-from acc_py_index.simple.model import (
-    File,
-    Meta,
-    ProjectDetail,
-    ProjectList,
-    ProjectListElement,
-    Resource,
-    ResourceType,
-)
 
 from ..fake_repository import FakeRepository
 
@@ -23,19 +15,19 @@ async def test_get_project_page() -> None:
         FakeRepository(),
         FakeRepository(
             project_pages=[
-                ProjectDetail(
-                    Meta('1.0'),
+                model.ProjectDetail(
+                    model.Meta('1.0'),
                     "numpy",
-                    files=[File("1", "1", {}), File("2", "2", {})],
+                    files=[model.File("1", "1", {}), model.File("2", "2", {})],
                 ),
             ],
         ),
         FakeRepository(
             project_pages=[
-                ProjectDetail(
-                    Meta('1.0'),
+                model.ProjectDetail(
+                    model.Meta('1.0'),
                     "numpy",
-                    files=[File("3", "3", {})],
+                    files=[model.File("3", "3", {})],
                 ),
             ],
         ),
@@ -43,7 +35,13 @@ async def test_get_project_page() -> None:
 
     resp = await group_repository.get_project_page(project_name="numpy")
 
-    assert resp == ProjectDetail(Meta('1.0'), "numpy", files=[File("1", "1", {}), File("2", "2", {})])
+    assert resp == model.ProjectDetail(
+        model.Meta('1.0'),
+        "numpy",
+        files=[
+            model.File("1", "1", {}), model.File("2", "2", {}),
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -60,34 +58,36 @@ async def test_get_project_page_failed() -> None:
 
 @pytest.mark.asyncio
 async def test_blended_get_project_list() -> None:
-    meta = Meta(api_version="1.0")
+    meta = model.Meta(api_version="1.0")
     projects_elements = [
         {
-            ProjectListElement("a_"),
-            ProjectListElement("c"),
+            model.ProjectListElement("a_"),
+            model.ProjectListElement("c"),
         }, {
-            ProjectListElement("a-"),
-            ProjectListElement("b"),
+            model.ProjectListElement("a-"),
+            model.ProjectListElement("b"),
         }, {
-            ProjectListElement("d"),
+            model.ProjectListElement("d"),
         },
     ]
 
     group_repository = GroupedRepository(
         sources=[
-            FakeRepository(ProjectList(Meta("1.0"), p)) for p in projects_elements
+            FakeRepository(
+                model.ProjectList(model.Meta("1.0"), p),
+            ) for p in projects_elements
         ],
     )
 
     result = await group_repository.get_project_list()
     # We expect only normalized results, and no duplicates.
-    assert result == ProjectList(
+    assert result == model.ProjectList(
         meta=meta,
         projects={
-            ProjectListElement("a-"),
-            ProjectListElement("b"),
-            ProjectListElement("c"),
-            ProjectListElement("d"),
+            model.ProjectListElement("a-"),
+            model.ProjectListElement("b"),
+            model.ProjectListElement("c"),
+            model.ProjectListElement("d"),
         },
     )
 
@@ -111,7 +111,11 @@ async def test_blended_get_project_page_failed() -> None:
         sources=[
             FakeRepository(
                 project_pages=[
-                   ProjectDetail(Meta("1.0"), name="numpy", files=[]),
+                    model.ProjectDetail(
+                        meta=model.Meta("1.0"),
+                        name="numpy",
+                        files=[],
+                    ),
                 ],
             ),
             mock.AsyncMock(),
@@ -122,7 +126,9 @@ async def test_blended_get_project_page_failed() -> None:
 
     res = await repo.get_project_page("numpy")
 
-    assert res == ProjectDetail(Meta("1.0"), name="numpy", files=[])
+    assert res == model.ProjectDetail(
+        model.Meta("1.0"), name="numpy", files=[],
+    )
 
 
 def test_group_repository_failed_init() -> None:
@@ -145,14 +151,26 @@ async def test_not_normalized_package() -> None:
 async def test_get_resource() -> None:
     group_repository = GroupedRepository([
         FakeRepository(),
-        FakeRepository(resources={"numpy.whl": "url"}),
-        FakeRepository(resources={"numpy.whl": "wrong"}),
+        FakeRepository(
+            resources={
+                "numpy.whl": model.Resource(
+                    "url", model.ResourceType.REMOTE_RESOURCE,
+                ),
+            },
+        ),
+        FakeRepository(
+            resources={
+                "numpy.whl": model.Resource(
+                    "wrog", model.ResourceType.REMOTE_RESOURCE,
+                ),
+            },
+        ),
     ])
 
     resp = await group_repository.get_resource("numpy", "numpy.whl")
-    assert resp == Resource(
+    assert resp == model.Resource(
         value="url",
-        type=ResourceType.REMOTE_RESOURCE,
+        type=model.ResourceType.REMOTE_RESOURCE,
     )
 
 

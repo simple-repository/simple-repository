@@ -3,7 +3,7 @@ import pathlib
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, ProjectListElement
+from acc_py_index.simple import model
 from acc_py_index.simple.white_list_repository import WhitelistRepository
 
 from ..fake_repository import FakeRepository
@@ -17,15 +17,15 @@ async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
     repo = WhitelistRepository(
         source=FakeRepository(
             project_pages=[
-                ProjectDetail(Meta("1.0"), "numpy", files=[]),
-                ProjectDetail(Meta("1.0"), "tensorflow", files=[]),
+                model.ProjectDetail(model.Meta("1.0"), "numpy", files=[]),
+                model.ProjectDetail(model.Meta("1.0"), "tensorflow", files=[]),
             ],
         ),
         special_case_file=special_case_file,
     )
 
     resp = await repo.get_project_page("numpy")
-    assert resp == ProjectDetail(Meta("1.0"), "numpy", files=[])
+    assert resp == model.ProjectDetail(model.Meta("1.0"), "numpy", files=[])
 
     with pytest.raises(errors.PackageNotFoundError, match="package"):
         await repo.get_project_page("package")
@@ -46,9 +46,9 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
 
     res = await repo.get_project_list()
 
-    assert res == ProjectList(
-        meta=Meta("1.0"),
-        projects={ProjectListElement("numpy"), ProjectListElement("pandas")},
+    assert res == model.ProjectList(
+        meta=model.Meta("1.0"),
+        projects={model.ProjectListElement("numpy"), model.ProjectListElement("pandas")},
     )
 
 
@@ -71,7 +71,16 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
     repo = WhitelistRepository(
-        source=FakeRepository(resources={"gunicorn-0.7.whl": "gunicorn_url", "numpy-0.7.whl": "numpy_url"}),
+        source=FakeRepository(
+            resources={
+                "gunicorn-0.7.whl": model.Resource(
+                    "gunicorn_url", model.ResourceType.REMOTE_RESOURCE,
+                ),
+                "numpy-0.7.whl": model.Resource(
+                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                ),
+            },
+        ),
         special_case_file=special_case_file,
     )
 

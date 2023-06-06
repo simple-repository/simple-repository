@@ -19,7 +19,11 @@ def url_cache(tmp_path: pathlib.PosixPath) -> URLCache:
                     model.Meta("1.0"), "numpy", [model.File("numpy-1.0-any.whl", "url/numpy", {})],
                 ),
             ],
-            resources={"numpy-1.0-any.whl": "url/numpy/resource"},
+            resources={
+                "numpy-1.0-any.whl": model.Resource(
+                    "url/numpy/resource", model.ResourceType.REMOTE_RESOURCE,
+                ),
+            },
         ),
         db,
     )
