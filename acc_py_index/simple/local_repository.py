@@ -1,3 +1,4 @@
+import hashlib
 import pathlib
 
 from packaging.utils import canonicalize_name
@@ -14,6 +15,19 @@ from acc_py_index.simple.model import (
 
 from .. import errors
 from .repositories import SimpleRepository
+
+
+def sha256sum(file_path: pathlib.Path) -> str:
+    sha256 = hashlib.sha256()
+    BUF_SIZE = 1024 * 64
+
+    with open(file_path, 'rb') as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            sha256.update(data)
+    return sha256.hexdigest()
 
 
 class LocalRepository(SimpleRepository):
@@ -62,7 +76,9 @@ class LocalRepository(SimpleRepository):
                 File(
                     filename=file.name,
                     url=f"{self._base_url}/{project_name}/{file.name}",
-                    hashes={},
+                    hashes={
+                        "sha256": sha256sum(file),
+                    },
                 ) for file in project_dir.iterdir() if file.is_file()
             ],
         )

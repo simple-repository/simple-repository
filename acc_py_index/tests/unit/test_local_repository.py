@@ -4,7 +4,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.local_repository import LocalRepository
+from acc_py_index.simple.local_repository import LocalRepository, sha256sum
 
 
 @pytest.fixture
@@ -110,12 +110,16 @@ async def test_get_project_page(simple_dir: Path) -> None:
             model.File(
                 filename='numpy-1.0-any.whl',
                 url='http://base/url/numpy/numpy-1.0-any.whl',
-                hashes={},
+                hashes={
+                    "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+                },
             ),
             model.File(
                 filename='numpy-1.1.tar.gz',
                 url='http://base/url/numpy/numpy-1.1.tar.gz',
-                hashes={},
+                hashes={
+                    "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
+                },
             ),
         ],
     )
@@ -133,3 +137,10 @@ async def test_get_project_page_not_found(simple_dir: Path) -> None:
         match="seaborn",
     ):
         await repo.get_project_page("seaborn")
+
+
+def test_sha256sum(tmp_path: Path) -> None:
+    file = tmp_path / "my_file.txt"
+    file.write_text("ciao\n")
+
+    assert sha256sum(file) == "6f0378f21a495f5c13247317d158e9d51da45a5bf68fc2f366e450deafdc8302"
