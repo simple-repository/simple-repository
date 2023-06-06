@@ -36,6 +36,9 @@ class HttpSimpleRepository(SimpleRepository):
         self,
         page_url: str,
     ) -> tuple[str, str]:
+        """Retrieves a simple page from the given url.
+        Returns the body and the content type received.
+        """
         headers = {"Accept": self.downstream_content_types}
         async with self.session.get(page_url, headers=headers) as response:
             response.raise_for_status()
@@ -55,8 +58,7 @@ class HttpSimpleRepository(SimpleRepository):
                 raise errors.PackageNotFoundError(
                     package_name=project_name,
                 ) from e
-            else:
-                raise e
+            raise e
 
         if (
             "application/vnd.pypi.simple.v1+html" in content_type or
