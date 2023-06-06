@@ -80,3 +80,19 @@ async def test_get_resource__path_traversal(repository: cache.ResourceCache) -> 
             project_name="not_used",
             resource_name="../../../etc/passwords",
         )
+
+
+def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
+    real_repo = tmp_path / "dir" / "cache_repo"
+    real_repo.mkdir(parents=True)
+
+    symlink = tmp_path / "link"
+    symlink.symlink_to(real_repo)
+
+    repo = cache.ResourceCache(
+        source=mock.AsyncMock(),
+        cache_path=symlink,
+        session=mock.MagicMock(),
+    )
+    assert str(symlink) != str(real_repo)
+    assert str(repo._cache_path) == str(real_repo)
