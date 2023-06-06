@@ -39,7 +39,11 @@ async def test_get_project_list() -> None:
 async def test_get_resource() -> None:
     repository = RepositoryContainer(
         FakeRepository(
-            resources={"numpy.whl": "numpy_url"},
+            resources={
+                "numpy.whl": model.Resource(
+                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                ),
+            },
         ),
     )
     result = await repository.get_resource("numpy", "numpy.whl")

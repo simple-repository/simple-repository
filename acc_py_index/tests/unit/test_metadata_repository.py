@@ -78,8 +78,12 @@ def repository(tmp_db: sqlite3.Connection) -> metadata_repository.MetadataInject
                 ),
             ],
             resources={
-                "numpy-1.0-any.whl": "numpy_url",
-                "numpy-1.0.tar.gz": "numpy_url",
+                "numpy-1.0-any.whl": model.Resource(
+                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                ),
+                "numpy-1.0.tar.gz": model.Resource(
+                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                ),
             },
         ),
         database=tmp_db,

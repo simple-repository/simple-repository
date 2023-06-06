@@ -1,7 +1,7 @@
 from typing import Optional
 
 from acc_py_index import errors
-from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, Resource, ResourceType
+from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, Resource
 from acc_py_index.simple.repositories import SimpleRepository
 
 
@@ -10,7 +10,7 @@ class FakeRepository(SimpleRepository):
         self,
         project_list: ProjectList = ProjectList(Meta('1.0'), set()),
         project_pages: Optional[list[ProjectDetail]] = None,
-        resources: Optional[dict[str, str]] = None,
+        resources: Optional[dict[str, Resource]] = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:
@@ -30,9 +30,6 @@ class FakeRepository(SimpleRepository):
         return self.project_list
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        if resource_name not in self.resources:
-            raise errors.ResourceUnavailable(resource_name)
-        return Resource(
-            value=self.resources[resource_name],
-            type=ResourceType.REMOTE_RESOURCE,
-        )
+        if resource := self.resources.get(resource_name):
+            return resource
+        raise errors.ResourceUnavailable(resource_name)
