@@ -52,7 +52,8 @@ class LocalRepository(SimpleRepository):
             meta=Meta("1.0"),
             projects={
                 ProjectListElement(x.name)
-                for x in self._index_path.iterdir() if x.is_dir()
+                for x in self._index_path.iterdir()
+                if x.is_dir() and x.name == canonicalize_name(x.name)
             },
         )
 

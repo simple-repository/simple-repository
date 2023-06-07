@@ -9,7 +9,7 @@ from acc_py_index.simple.local_repository import LocalRepository, sha256sum
 
 @pytest.fixture
 def simple_dir(tmp_path: Path) -> Path:
-    for project in ("numpy", "tensorflow", "pandas"):
+    for project in ("numpy", "tensorflow", "pandas", ".not_normalized"):
         (tmp_path / project).mkdir()
     for file in ("numpy-1.0-any.whl", "numpy-1.1.tar.gz"):
         (tmp_path / "numpy" / file).write_text("content")
