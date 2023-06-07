@@ -113,5 +113,11 @@ class ResourceType(Enum):
 
 @dataclass(frozen=True)
 class Resource:
+    """Resource downloadble through the index.
+
+    For local resources, no downstream validation is
+    performed to ensure that the resource is accessible, so
+    they can potentially leak content from the file system.
+    """
     value: str
     type: ResourceType
