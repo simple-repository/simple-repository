@@ -37,20 +37,15 @@ class LocalRepository(SimpleRepository):
     named as the normalized project name. Each subdirectory will
     contain the distributions associated with that project.
     Each file in a project page is mapped to a URL with the
-    following structure: base_url / project_name / file_name.
-
-    Note: It is not the responsibility of this class to map
-    requests to a file url to a call to get_resource.
+    following structure: file:// index_path / project_name / file_name.
     """
     def __init__(
         self,
         index_path: pathlib.Path,
-        base_url: str,
     ) -> None:
         if not index_path.is_dir():
             raise ValueError("index_path must be a directory")
-        self._index_path = index_path
-        self._base_url = base_url
+        self._index_path = index_path.absolute()
 
     async def get_project_list(self) -> ProjectList:
         return ProjectList(
@@ -75,7 +70,7 @@ class LocalRepository(SimpleRepository):
             files=[
                 File(
                     filename=file.name,
-                    url=f"{self._base_url}/{project_name}/{file.name}",
+                    url=f"file://{str(self._index_path)}/{project_name}/{file.name}",
                     hashes={
                         "sha256": sha256sum(file),
                     },

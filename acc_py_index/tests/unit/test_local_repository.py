@@ -20,7 +20,6 @@ def simple_dir(tmp_path: Path) -> Path:
 async def test_get_project_list(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
     project_list = await repo.get_project_list()
 
@@ -38,7 +37,6 @@ async def test_get_project_list(simple_dir: Path) -> None:
 async def test_get_resource(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
     resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
 
@@ -62,7 +60,6 @@ async def test_get_resource_unavailable(
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
     with pytest.raises(
         errors.ResourceUnavailable,
@@ -85,7 +82,6 @@ async def test_get_resource_path_traversial(
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
 
     with pytest.raises(
@@ -99,7 +95,6 @@ async def test_get_resource_path_traversial(
 async def test_get_project_page(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
 
     project_details = await repo.get_project_page("numpy")
@@ -109,14 +104,14 @@ async def test_get_project_page(simple_dir: Path) -> None:
         files=[
             model.File(
                 filename='numpy-1.0-any.whl',
-                url='http://base/url/numpy/numpy-1.0-any.whl',
+                url="file://" + str(simple_dir / 'numpy/numpy-1.0-any.whl'),
                 hashes={
                     "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 },
             ),
             model.File(
                 filename='numpy-1.1.tar.gz',
-                url='http://base/url/numpy/numpy-1.1.tar.gz',
+                url="file://" + str(simple_dir / 'numpy/numpy-1.1.tar.gz'),
                 hashes={
                     "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
@@ -129,7 +124,6 @@ async def test_get_project_page(simple_dir: Path) -> None:
 async def test_get_project_page_not_found(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
-        base_url="http://base/url",
     )
 
     with pytest.raises(
