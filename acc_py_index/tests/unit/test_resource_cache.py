@@ -1,4 +1,7 @@
+from datetime import datetime
 import pathlib
+import sqlite3
+import typing
 from unittest import mock
 
 import pytest
@@ -10,7 +13,8 @@ from ..fake_repository import FakeRepository
 
 
 @pytest.fixture
-def repository(tmp_path: pathlib.Path) -> cache.ResourceCache:
+def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, None, None]:
+    database = sqlite3.connect(tmp_path / "tmp.db")
     source = FakeRepository(
         resources={
             "numpy-1.0-any.whl": model.Resource(
@@ -21,11 +25,15 @@ def repository(tmp_path: pathlib.Path) -> cache.ResourceCache:
             ),
         },
     )
-    return cache.ResourceCache(
-        source=source,
-        cache_path=tmp_path,
-        session=mock.MagicMock,
-    )
+    try:
+        yield cache.ResourceCache(
+            source=source,
+            cache_path=tmp_path,
+            session=mock.MagicMock(),
+            database=database,
+        )
+    finally:
+        database.close()
 
 
 @pytest.mark.asyncio
@@ -93,6 +101,46 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
         source=mock.AsyncMock(),
         cache_path=symlink,
         session=mock.MagicMock(),
+        database=mock.Mock(),
     )
     assert str(symlink) != str(real_repo)
     assert str(repo._cache_path) == str(real_repo)
+
+
+def test_refresh_element_access(repository: cache.ResourceCache) -> None:
+    query = f"SELECT last_access FROM {repository._table_name} WHERE key = :key"
+
+    res: typing.Optional[tuple[str]] = repository._database.execute(
+        query, {"key": "my_element"},
+    ).fetchone()
+    assert res is None
+
+    with mock.patch(
+        "datetime.datetime",
+        mock.Mock(
+            now=mock.Mock(return_value=datetime.fromisoformat("2006-07-09")),
+            fromisoformat=datetime.fromisoformat,
+        ),
+    ):
+        repository._refresh_element_access("my_element")
+
+    res = repository._database.execute(
+        query, {"key": "my_element"},
+    ).fetchone()
+
+    assert res == ("2006-07-09 00:00:00",)
+
+    with mock.patch(
+        "datetime.datetime",
+        mock.Mock(
+            now=mock.Mock(return_value=datetime.fromisoformat("2047-07-09")),
+            fromisoformat=datetime.fromisoformat,
+        ),
+    ):
+        repository._refresh_element_access("my_element")
+
+    res = repository._database.execute(
+        query, {"key": "my_element"},
+    ).fetchone()
+
+    assert res == ("2047-07-09 00:00:00",)
