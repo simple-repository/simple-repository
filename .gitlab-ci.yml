@@ -1,5 +1,5 @@
-# Use the acc-py-devtools templates found at
-# https://gitlab.cern.ch/-/ide/project/acc-co/devops/python/acc-py-devtools/blob/master/-/acc_py_devtools/templates/gitlab-ci/python.yml.
+# Use the acc-py-gitlab templates found at
+# https://gitlab.cern.ch/acc-co/devops/python/acc-py-gitlab-ci-templates/-/blob/master/v2/python.gitlab-ci.yml.
 stages:
   - build
   - test
@@ -14,34 +14,10 @@ variables:
   project_root: .
   PY_VERSION: '3.9'
   ACC_PY_BASE_IMAGE_TAG: '2021.12'
-  # Use this directory to install extra wheels (such as those fetched from upstream repos)
-  PIP_FIND_LINKS: "file://${CI_PROJECT_DIR}/extra-wheels/"
+
 
 pre-commit:
   extends: .acc_py_pre-commit
-
-fetch_external_deps:
-  # Whether triggered by an upstream pipeline or not, fetch the upstream built dependencies,
-  # and have them installed by the ``PIP_FIND_LINKS`` environment variable.
-  stage: build
-  variables:  # Default values. These can be overridden by upstream trigger jobs as required.
-    UPSTREAM_TRIGGER_PROJECT: acc-co/devops/python/package-index/indexing
-    UPSTREAM_TRIGGER_WHEEL_JOB: build_wheel
-    UPSTREAM_TRIGGER_REF: master
-  needs:
-    - project: "${UPSTREAM_TRIGGER_PROJECT}"
-      job: "${UPSTREAM_TRIGGER_WHEEL_JOB}"
-      ref: "${UPSTREAM_TRIGGER_REF}"
-      artifacts: true
-  script:
-    - mkdir -p ./extra-wheels/
-    - cp ./dist/* ./extra-wheels/
-    - echo "Dependencies fetched into extra-wheels. They will be installed as a result of the PIP_FIND_LINKS environment variable (currently set as ${PIP_FIND_LINKS})."
-    - export FL_DIR=$(echo "${PIP_FIND_LINKS}" | sed 's\file://\\'); echo ${FL_DIR}
-    - ls -ltr ${FL_DIR} || true
-  artifacts:
-    paths:
-      - ./extra-wheels/
 
 
 build_wheel:
@@ -53,7 +29,6 @@ freeze_wheel:
   stage: build
   needs:
     - build_wheel
-    - fetch_external_deps
   # NOTE: use a "_ci" image with the same tag as your Dockerfile
   image: registry.cern.ch/acc/acc-py_cc7_ci:2021.12
   script:
@@ -79,8 +54,6 @@ wheel_test:
 # A development installation of acc-py-index, tested with pytest.
 test_dev:
   extends: .acc_py_dev_test
-  needs:
-   - fetch_external_deps
 
 
 build_and_publish_container_image:
@@ -116,3 +89,8 @@ build_docs:
 build_docs_on_tag:
   stage: publish
   extends: .acc_py_build_docs_on_tag
+
+
+publish_package_to_index:
+  stage: publish
+  extends: .acc_py_publish
