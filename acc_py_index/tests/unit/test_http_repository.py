@@ -1,5 +1,6 @@
 from unittest import mock
 
+import aiohttp
 import pytest
 
 from acc_py_index import errors
@@ -123,10 +124,11 @@ async def test_get_project_page_unsupported_serialization(repository: HttpSimple
 
 @pytest.mark.asyncio
 async def test_get_project_page_failed(repository: HttpSimpleRepository) -> None:
-    response_mock = mock.Mock()
-    response_mock.status = 404
-
-    repository.session.get.return_value = MockedRequestContextManager(response_mock)
+    repository.session.get.side_effect = aiohttp.ClientResponseError(
+        request_info=mock.Mock(),
+        history=mock.Mock(),
+        status=404,
+    )
 
     with pytest.raises(errors.PackageNotFoundError):
         await repository.get_project_page("project")
@@ -187,13 +189,11 @@ async def test_get_project_list(text: str, header: str, repository: HttpSimpleRe
 
 @pytest.mark.asyncio
 async def test_get_project_list_failed(repository: HttpSimpleRepository) -> None:
-    response_mock = mock.Mock()
-    response_mock.status = 404
-
-    mocked_session = mock.MagicMock()
-    mocked_session.get.return_value = MockedRequestContextManager(response_mock)
-
-    repository.session = mocked_session
+    repository.session.get.side_effect = aiohttp.ClientResponseError(
+        request_info=mock.Mock(),
+        history=mock.Mock(),
+        status=404,
+    )
 
     with pytest.raises(errors.SourceRepositoryUnavailable):
         await repository.get_project_list()
