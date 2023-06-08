@@ -13,6 +13,7 @@ def simple_dir(tmp_path: Path) -> Path:
         (tmp_path / project).mkdir()
     for file in ("numpy-1.0-any.whl", "numpy-1.1.tar.gz"):
         (tmp_path / "numpy" / file).write_text("content")
+    (tmp_path / ".not_normalized" / "unreachable_resource").touch()
     return tmp_path
 
 
@@ -53,7 +54,7 @@ async def test_get_resource(simple_dir: Path) -> None:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(
+async def test_get_resource__unavailable(
     simple_dir: Path,
     project: str,
     resource: str,
@@ -75,7 +76,7 @@ async def test_get_resource_unavailable(
     ],
 )
 @pytest.mark.asyncio
-async def test_get_resource_path_traversial(
+async def test_get_resource__path_traversal(
     simple_dir: Path,
     project: str,
     resource: str,
@@ -89,6 +90,20 @@ async def test_get_resource_path_traversial(
         match=f"{(simple_dir / project /resource).resolve()} is not contained in {repo._index_path / project}",
     ):
         await repo.get_resource(project, resource)
+
+
+@pytest.mark.asyncio
+async def test_get_resource__not_normalized(
+    simple_dir: Path,
+) -> None:
+    repo = LocalRepository(
+        index_path=simple_dir,
+    )
+
+    with pytest.raises(
+        errors.NotNormalizedProjectName,
+    ):
+        await repo.get_resource(".not_normalized", "unreachable_resource")
 
 
 @pytest.mark.asyncio
@@ -121,7 +136,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_not_found(simple_dir: Path) -> None:
+async def test_get_project_page__not_found(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )

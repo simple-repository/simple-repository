@@ -71,7 +71,7 @@ class LocalRepository(SimpleRepository):
             files=[
                 File(
                     filename=file.name,
-                    url=f"file://{str(self._index_path)}/{project_name}/{file.name}",
+                    url=f"file://{file.absolute()}",
                     hashes={
                         "sha256": sha256sum(file),
                     },
@@ -80,6 +80,9 @@ class LocalRepository(SimpleRepository):
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+        if project_name != canonicalize_name(project_name):
+            raise errors.NotNormalizedProjectName()
+
         repository_uri = (self._index_path / project_name).resolve()
         resource_uri = (repository_uri / resource_name).resolve()
 
