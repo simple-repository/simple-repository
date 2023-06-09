@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime
 import pathlib
 import sqlite3
@@ -14,7 +15,6 @@ from ..fake_repository import FakeRepository
 
 @pytest.fixture
 def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, None, None]:
-    database = sqlite3.connect(tmp_path / "tmp.db")
     source = FakeRepository(
         resources={
             "numpy-1.0-any.whl": model.Resource(
@@ -25,15 +25,13 @@ def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, 
             ),
         },
     )
-    try:
+    with contextlib.closing(sqlite3.connect(tmp_path / "tmp.db")) as database:
         yield cache.ResourceCache(
             source=source,
             cache_path=tmp_path,
             session=mock.MagicMock(),
             database=database,
         )
-    finally:
-        database.close()
 
 
 @pytest.mark.asyncio
@@ -107,40 +105,94 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     assert str(repo._cache_path) == str(real_repo)
 
 
-def test_refresh_element_access(repository: cache.ResourceCache) -> None:
+def get_last_access_for(repository: cache.ResourceCache, key: str) -> typing.Optional[str]:
     query = f"SELECT last_access FROM {repository._table_name} WHERE key = :key"
-
-    res: typing.Optional[tuple[str]] = repository._database.execute(
-        query, {"key": "my_element"},
+    res: tuple[str] = repository._database.execute(
+        query, {"key": key},
     ).fetchone()
-    assert res is None
+    if res:
+        return res[0]
+    else:
+        return None
+
+
+def test_update_last_access_for(repository: cache.ResourceCache) -> None:
+    assert get_last_access_for(repository, "my_element") is None
 
     with mock.patch(
         "datetime.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2006-07-09")),
             fromisoformat=datetime.fromisoformat,
+            spec=datetime,
         ),
     ):
-        repository._refresh_element_access("my_element")
+        repository._update_last_access_for("my_element")
 
-    res = repository._database.execute(
-        query, {"key": "my_element"},
-    ).fetchone()
-
-    assert res == ("2006-07-09 00:00:00",)
+    assert get_last_access_for(repository, "my_element") == "2006-07-09 00:00:00"
 
     with mock.patch(
         "datetime.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2047-07-09")),
             fromisoformat=datetime.fromisoformat,
+            spec=datetime,
         ),
     ):
-        repository._refresh_element_access("my_element")
+        repository._update_last_access_for("my_element")
 
-    res = repository._database.execute(
-        query, {"key": "my_element"},
-    ).fetchone()
+    assert get_last_access_for(repository, "my_element") == "2047-07-09 00:00:00"
 
-    assert res == ("2047-07-09 00:00:00",)
+
+@pytest.mark.asyncio
+async def test_update_last_access_for__cache_hit_called(repository: cache.ResourceCache) -> None:
+    cached_file = (repository._cache_path / "my_resource")
+    cached_file.touch()
+
+    update_last_access_for_mock = mock.Mock()
+    with mock.patch.object(
+        target=cache.ResourceCache,
+        attribute="_update_last_access_for",
+        new=update_last_access_for_mock,
+    ):
+        await repository.get_resource(
+            project_name="not_used",
+            resource_name="my_resource",
+        )
+
+    update_last_access_for_mock.assert_called_once_with("my_resource")
+
+
+@pytest.mark.asyncio
+async def test_update_last_access_for__cache_miss_local_not_called(repository: cache.ResourceCache) -> None:
+    update_last_access_for_mock = mock.Mock()
+    with mock.patch.object(
+        target=cache.ResourceCache,
+        attribute="_update_last_access_for",
+        new=update_last_access_for_mock,
+    ):
+        await repository.get_resource(
+            project_name="numpy",
+            resource_name="numpy-1.0.tar.gz",
+        )
+    update_last_access_for_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_last_access_for__cache_miss_remote_called(repository: cache.ResourceCache) -> None:
+    update_last_access_for_mock = mock.Mock()
+    with mock.patch(
+        "acc_py_index.utils.download_file",
+        mock.AsyncMock(
+            side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
+        ),
+    ), mock.patch.object(
+        target=cache.ResourceCache,
+        attribute="_update_last_access_for",
+        new=update_last_access_for_mock,
+    ):
+        await repository.get_resource(
+            project_name="not_used",
+            resource_name="numpy-1.0-any.whl",
+        )
+    update_last_access_for_mock.assert_called_once_with("numpy-1.0-any.whl")
