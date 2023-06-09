@@ -67,7 +67,9 @@ def parse_json_project_page(body: str) -> ProjectDetail:
                 url=quote(file["url"], safe=":/"),
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
-                dist_info_metadata=file.get("dist-info-metadata"),
+                # PEP-714: Clients consuming the JSON represenation of the Simple API MUST
+                #          read the PEP 658 metadata from the key core-metadata if it is present.
+                dist_info_metadata=file.get("core-metadata"),
                 gpg_sig=file.get("gpg-sig"),
                 yanked=file.get("yanked"),
             )
@@ -113,11 +115,21 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
                 yanked = True
 
         dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None
-        if "data-dist-info-metadata" in a_tag.attrs:
+        # PEP-714: Clients consuming any of the HTML representations of the Simple API MUST
+        #          read the PEP 658 metadata from the key data-core-metadata if it is present.
+        #          They MAY optionally use the legacy data-dist-info-metadata if it is present
+        #          but data-core-metadata is not.
+        if (
+            "data-core-metadata" in a_tag.attrs or
+            "data-dist-info-metadata" in a_tag.attrs
+        ):
             # PEP-658: The repository SHOULD provide the hash of the Core Metadata file
             #          as the data-dist-info-metadata attribute’s value using
             #          the syntax <hashname>=<hashvalue>
-            metadata_val = a_tag.attrs.get("data-dist-info-metadata")
+            metadata_val = (
+                a_tag.attrs.get("data-core-metadata") or
+                a_tag.attrs.get("data-dist-info-metadata")
+            )
             if metadata_val is None:
                 # data-dist-info-metadata is set but doesn't have a value.
                 dist_info_metadata = True
