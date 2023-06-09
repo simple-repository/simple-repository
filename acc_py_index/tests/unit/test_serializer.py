@@ -67,8 +67,8 @@ def test_serialize_file_html_yank(
 @pytest.mark.parametrize(
     "metadata_attr, metadata_value",
     [
-        (' data-dist-info-metadata="true"', True),
-        (' data-dist-info-metadata="sha=..."', {"sha": "..."}),
+        (' data-core-metadata="true" data-dist-info-metadata="true"', True),
+        (' data-core-metadata="sha=..." data-dist-info-metadata="sha=..."', {"sha": "..."}),
         ('', None),
         ('', False),
     ],
@@ -219,7 +219,7 @@ def test_serialize_project_page_json() -> None:
                     "url": "test2.whl",
                     "hashes": {"hash": "test_hash"},
                     "requires-python": ">4.0",
-                    "dist-info-metadata": true,
+                    "core-metadata": true,
                     "yanked": "yanked",
                     "gpg-sig": true
                 },
@@ -227,7 +227,7 @@ def test_serialize_project_page_json() -> None:
                     "filename": "test3.whl",
                     "url": "test3.whl",
                     "hashes": {},
-                    "dist-info-metadata": {"sha": "..."},
+                    "core-metadata": {"sha": "..."},
                     "yanked": true
                 }
             ]

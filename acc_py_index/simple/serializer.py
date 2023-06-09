@@ -55,8 +55,11 @@ class SerializerJsonV1(Serializer):
         }
         if file.requires_python is not None:
             file_dict["requires-python"] = file.requires_python
+        # From PEP-714: The PEP 658 metadata, when used in the PEP 691
+        # JSON representation of the Simple API, MUST be emitted using
+        # the key core-metadata, with the supported values remaining the same.
         if file.dist_info_metadata is not None:
-            file_dict["dist-info-metadata"] = file.dist_info_metadata
+            file_dict["core-metadata"] = file.dist_info_metadata
         if file.gpg_sig is not None:
             file_dict["gpg-sig"] = file.gpg_sig
         if file.yanked is not None:
@@ -139,8 +142,13 @@ class SerializerHtmlV1(Serializer):
         # where <hashname> is the lower cased name of the hash function used, and <hashvalue>
         # is the hex encoded digest. The repository MAY use true as the attribute’s value
         # if a hash is unavailable.
+
+        # From PEP 714: To support clients that used the previous key names, the HTML
+        # representation MAY also be emitted using the data-dist-info-metadata,
+        # and if it does so it MUST match the value of data-core-metadata.
         if file.dist_info_metadata:
             if file.dist_info_metadata is True:
+                attributes.append('data-core-metadata="true"')
                 attributes.append('data-dist-info-metadata="true"')
             else:
                 hash_fun = (
@@ -148,6 +156,7 @@ class SerializerHtmlV1(Serializer):
                     else next(iter(file.dist_info_metadata))
                 )
                 hash_value = file.dist_info_metadata[hash_fun]
+                attributes.append(f'data-core-metadata="{hash_fun}={hash_value}"')
                 attributes.append(f'data-dist-info-metadata="{hash_fun}={hash_value}"')
 
         # From PEP 592: The value of the data-yanked attribute, if present, is an arbitrary
