@@ -24,13 +24,13 @@ def test_parse_json_project_page() -> None:
                 "filename": "holygrail-1.0-py3-none-any.whl",
                 "url": "holygrail-1.0-py3-none-any.whl",
                 "hashes": {},
-                "dist-info-metadata": true
+                "core-metadata": true
             },
             {
                 "filename": "holygrail-1.1-py3-none-any.whl",
                 "url": "holygrail-1.0-py3-none-any.whl",
                 "hashes": {},
-                "dist-info-metadata": {"sha256": "..."},
+                "core-metadata": {"sha256": "..."},
                 "yanked": true
             },
             {
@@ -193,6 +193,11 @@ def test_parse_html_project_page_yank(
         ('data-dist-info-metadata="true"', True),
         ('data-dist-info-metadata="something incompatible"', True),
         ('data-dist-info-metadata="sha=..."', {"sha": "..."}),
+        ('data-core-metadata', True),
+        ('data-core-metadata="true"', True),
+        ('data-core-metadata="something incompatible"', True),
+        ('data-core-metadata="sha=..."', {"sha": "..."}),
+        ('data-core-metadata="sha=..." data-dist-info-metadata="true"', {"sha": "..."}),
         ('', None),
     ],
 )
