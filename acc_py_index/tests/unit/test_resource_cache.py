@@ -105,10 +105,10 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     assert str(repo._cache_path) == str(real_repo)
 
 
-def get_last_access_for(repository: cache.ResourceCache, key: str) -> typing.Optional[str]:
-    query = f"SELECT last_access FROM {repository._table_name} WHERE key = :key"
+def get_last_access_for(repository: cache.ResourceCache, resource: str) -> typing.Optional[str]:
+    query = f"SELECT last_access FROM {repository._table_name} WHERE resource = :resource"
     res: tuple[str] = repository._database.execute(
-        query, {"key": key},
+        query, {"resource": resource},
     ).fetchone()
     if res:
         return res[0]
@@ -156,11 +156,11 @@ async def test_update_last_access_for__cache_hit_called(repository: cache.Resour
         new=update_last_access_for_mock,
     ):
         await repository.get_resource(
-            project_name="not_used",
+            project_name="project",
             resource_name="my_resource",
         )
 
-    update_last_access_for_mock.assert_called_once_with("my_resource")
+    update_last_access_for_mock.assert_called_once_with("project/my_resource")
 
 
 @pytest.mark.asyncio
@@ -192,7 +192,7 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: cach
         new=update_last_access_for_mock,
     ):
         await repository.get_resource(
-            project_name="not_used",
+            project_name="project",
             resource_name="numpy-1.0-any.whl",
         )
-    update_last_access_for_mock.assert_called_once_with("numpy-1.0-any.whl")
+    update_last_access_for_mock.assert_called_once_with("project/numpy-1.0-any.whl")
