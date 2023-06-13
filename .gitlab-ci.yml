@@ -34,9 +34,9 @@ freeze_wheel:
   script:
     # Figure out the wheel to install, compatible with this python version.
     - python -m pip wheel ${project_name}
-      --no-deps --no-index
-      --find-links ${project_root}/dist/
-      --wheel-dir ${project_root}/.wheel-to-deploy
+        --no-deps --no-index
+        --find-links ${project_root}/dist/
+        --wheel-dir ${project_root}/.wheel-to-deploy
     # Lock the wheel using the existing lock-files.
     - acc-py -vv app lock ${project_root}/.wheel-to-deploy/*.whl
   artifacts:
@@ -72,12 +72,11 @@ build_and_publish_container_image:
   script:
     - mkdir -p ${project_root}/context/
     - cp -r ${project_root}/.wheel-to-deploy ${project_root}/context/
-    - cp -r ${project_root}/extra-wheels ${project_root}/context
     - /kaniko/executor
-      --context ${project_root}/context
-      --dockerfile ${project_root}/Dockerfile
-      --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
-      --destination "${CI_REGISTRY_IMAGE}:latest"
+        --context ${project_root}/context
+        --dockerfile ${project_root}/Dockerfile
+        --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
+        --destination "${CI_REGISTRY_IMAGE}:latest"
 
 
 # A dev build of the documentation, made available through cern.ch/acc-py.
