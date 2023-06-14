@@ -5,9 +5,9 @@ import zipfile
 
 import aiohttp
 
-from .. import cache, errors, utils
-from .model import ProjectDetail, Resource, ResourceType
-from .repositories import RepositoryContainer, SimpleRepository
+from ... import errors, ttl_cache, utils
+from ..model import ProjectDetail, Resource, ResourceType
+from .core import RepositoryContainer, SimpleRepository
 
 
 def get_metadata_from_wheel(package_path: pathlib.Path) -> str:
@@ -71,7 +71,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         table_name: str = "metadata_cache",
     ) -> None:
         self._session = session
-        self._cache = cache.TTLDatabaseCache(
+        self._cache = ttl_cache.TTLDatabaseCache(
             database=database,
             ttl_seconds=ttl_days * 60 * 60 * 24,
             table_name=table_name,

@@ -2,8 +2,9 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.repositories import RepositoryContainer
-from acc_py_index.tests.fake_repository import FakeRepository
+from acc_py_index.simple.repositories.core import RepositoryContainer
+
+from .fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio

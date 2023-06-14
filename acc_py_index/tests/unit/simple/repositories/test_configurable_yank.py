@@ -4,8 +4,9 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.yank_repository import ConfigurableYankRepository
-from acc_py_index.tests.fake_repository import FakeRepository
+from acc_py_index.simple.repositories.yanking import ConfigurableYankRepository
+
+from .fake_repository import FakeRepository
 
 
 @pytest.fixture

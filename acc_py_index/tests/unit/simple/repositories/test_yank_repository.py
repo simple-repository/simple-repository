@@ -4,9 +4,10 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index.simple import yank_repository
 from acc_py_index.simple.model import File, Meta, ProjectDetail
-from acc_py_index.tests.fake_repository import FakeRepository
+import acc_py_index.simple.repositories.yanking as yank_repository
+
+from .fake_repository import FakeRepository
 
 
 @pytest.mark.parametrize(
@@ -70,7 +71,7 @@ async def test_get_project_page(
     )
 
     with mock.patch(
-        "acc_py_index.simple.yank_repository.get_yanked_releases",
+        "acc_py_index.simple.repositories.yanking.get_yanked_releases",
         return_value=yanked_versions,
     ):
         result = await repository.get_project_page("project")

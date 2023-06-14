@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index.cache import TTLDatabaseCache
+from acc_py_index.ttl_cache import TTLDatabaseCache
 
 
 @pytest.fixture

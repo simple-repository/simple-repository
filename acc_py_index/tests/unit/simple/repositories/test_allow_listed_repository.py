@@ -4,9 +4,9 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.white_list_repository import WhitelistRepository
+from acc_py_index.simple.repositories.allow_listed import AllowListedRepository
 
-from ..fake_repository import FakeRepository
+from .fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
@@ -14,7 +14,7 @@ async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
     special_case_file = tmp_path / "special_cases.json"
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
-    repo = WhitelistRepository(
+    repo = AllowListedRepository(
         source=FakeRepository(
             project_pages=[
                 model.ProjectDetail(model.Meta("1.0"), "numpy", files=[]),
@@ -39,7 +39,7 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
     special_case_file = tmp_path / "special_cases.json"
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
-    repo = WhitelistRepository(
+    repo = AllowListedRepository(
         source=FakeRepository(),
         special_case_file=special_case_file,
     )
@@ -57,7 +57,7 @@ async def test_not_normalized_package(tmp_path: pathlib.PosixPath) -> None:
     special_case_file = tmp_path / "special_cases.json"
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
-    repo = WhitelistRepository(
+    repo = AllowListedRepository(
         source=FakeRepository(),
         special_case_file=special_case_file,
     )
@@ -70,7 +70,7 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
     special_case_file = tmp_path / "special_cases.json"
     special_case_file.write_text('{"numpy": "url", "pandas": "url"}')
 
-    repo = WhitelistRepository(
+    repo = AllowListedRepository(
         source=FakeRepository(
             resources={
                 "gunicorn-0.7.whl": model.Resource(
@@ -120,7 +120,7 @@ async def test_load_config_wrong_type(
             f"Invalid configuration file. {str(file)} must contain a dictionary."
         ),
     ):
-        WhitelistRepository(
+        AllowListedRepository(
             source=FakeRepository(),
             special_case_file=file,
         )
@@ -141,7 +141,7 @@ def test_load_config_wrong_format(
             ' containing a glob pattern and a yank reason.'
         ),
     ):
-        WhitelistRepository(
+        AllowListedRepository(
             source=FakeRepository(),
             special_case_file=file,
         )
@@ -159,7 +159,7 @@ async def test_load_config_malformed_json(
         errors.InvalidConfigurationError,
         match="Invalid json file",
     ):
-        WhitelistRepository(
+        AllowListedRepository(
             source=FakeRepository(),
             special_case_file=file,
         )

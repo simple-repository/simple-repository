@@ -2,7 +2,7 @@ from typing import Optional
 
 from acc_py_index import errors
 from acc_py_index.simple.model import Meta, ProjectDetail, ProjectList, Resource
-from acc_py_index.simple.repositories import SimpleRepository
+from acc_py_index.simple.repositories.core import SimpleRepository
 
 
 class FakeRepository(SimpleRepository):

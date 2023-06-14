@@ -5,9 +5,9 @@ import sqlite3
 
 from packaging.utils import canonicalize_name
 
-from .. import errors, utils
-from .model import ProjectDetail
-from .repositories import RepositoryContainer, SimpleRepository
+from ... import errors, utils
+from ..model import ProjectDetail
+from .core import RepositoryContainer, SimpleRepository
 
 
 def get_yanked_releases(project_name: str, database: sqlite3.Connection) -> dict[str, str]:

@@ -6,8 +6,8 @@ from unittest import mock
 import aiohttp
 import pytest
 
-from acc_py_index.cache import CachedHttpRepository
 from acc_py_index.simple import model
+from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
 
 
 @pytest.fixture

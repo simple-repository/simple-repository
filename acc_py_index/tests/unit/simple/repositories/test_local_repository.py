@@ -4,7 +4,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.local_repository import LocalRepository, sha256sum
+from acc_py_index.simple.repositories.local import LocalRepository, sha256sum
 
 
 @pytest.fixture

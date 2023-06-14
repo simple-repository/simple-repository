@@ -7,14 +7,14 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index import cache
 from acc_py_index.simple import model
+from acc_py_index.simple.repositories.resource_cache import ResourceCacheRepository
 
-from ..fake_repository import FakeRepository
+from .fake_repository import FakeRepository
 
 
 @pytest.fixture
-def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, None, None]:
+def repository(tmp_path: pathlib.Path) -> typing.Generator[ResourceCacheRepository, None, None]:
     source = FakeRepository(
         resources={
             "numpy-1.0-any.whl": model.Resource(
@@ -26,7 +26,7 @@ def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, 
         },
     )
     with contextlib.closing(sqlite3.connect(tmp_path / "tmp.db")) as database:
-        yield cache.ResourceCache(
+        yield ResourceCacheRepository(
             source=source,
             cache_path=tmp_path,
             session=mock.MagicMock(),
@@ -35,7 +35,7 @@ def repository(tmp_path: pathlib.Path) -> typing.Generator[cache.ResourceCache, 
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_hit(repository: cache.ResourceCache) -> None:
+async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> None:
     cached_file = (repository._cache_path / "my_resource")
     cached_file.touch()
 
@@ -49,7 +49,7 @@ async def test_get_resource__cache_hit(repository: cache.ResourceCache) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss_remote(repository: cache.ResourceCache) -> None:
+async def test_get_resource__cache_miss_remote(repository: ResourceCacheRepository) -> None:
     with mock.patch(
         "acc_py_index.utils.download_file",
         mock.AsyncMock(
@@ -66,7 +66,7 @@ async def test_get_resource__cache_miss_remote(repository: cache.ResourceCache) 
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss_local(repository: cache.ResourceCache) -> None:
+async def test_get_resource__cache_miss_local(repository: ResourceCacheRepository) -> None:
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0.tar.gz",
@@ -77,7 +77,7 @@ async def test_get_resource__cache_miss_local(repository: cache.ResourceCache) -
 
 
 @pytest.mark.asyncio
-async def test_get_resource__path_traversal(repository: cache.ResourceCache) -> None:
+async def test_get_resource__path_traversal(repository: ResourceCacheRepository) -> None:
     with pytest.raises(
         ValueError,
         match="is not contained in",
@@ -95,7 +95,7 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     symlink = tmp_path / "link"
     symlink.symlink_to(real_repo)
 
-    repo = cache.ResourceCache(
+    repo = ResourceCacheRepository(
         source=mock.AsyncMock(),
         cache_path=symlink,
         session=mock.MagicMock(),
@@ -105,7 +105,7 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     assert str(repo._cache_path) == str(real_repo)
 
 
-def get_last_access_for(repository: cache.ResourceCache, resource: str) -> typing.Optional[str]:
+def get_last_access_for(repository: ResourceCacheRepository, resource: str) -> typing.Optional[str]:
     query = f"SELECT last_access FROM {repository._table_name} WHERE resource = :resource"
     res: tuple[str] = repository._database.execute(
         query, {"resource": resource},
@@ -116,7 +116,7 @@ def get_last_access_for(repository: cache.ResourceCache, resource: str) -> typin
         return None
 
 
-def test_update_last_access_for(repository: cache.ResourceCache) -> None:
+def test_update_last_access_for(repository: ResourceCacheRepository) -> None:
     assert get_last_access_for(repository, "my_element") is None
 
     with mock.patch(
@@ -145,13 +145,13 @@ def test_update_last_access_for(repository: cache.ResourceCache) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_hit_called(repository: cache.ResourceCache) -> None:
+async def test_update_last_access_for__cache_hit_called(repository: ResourceCacheRepository) -> None:
     cached_file = (repository._cache_path / "my_resource")
     cached_file.touch()
 
     update_last_access_for_mock = mock.Mock()
     with mock.patch.object(
-        target=cache.ResourceCache,
+        target=ResourceCacheRepository,
         attribute="_update_last_access_for",
         new=update_last_access_for_mock,
     ):
@@ -164,10 +164,10 @@ async def test_update_last_access_for__cache_hit_called(repository: cache.Resour
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_miss_local_not_called(repository: cache.ResourceCache) -> None:
+async def test_update_last_access_for__cache_miss_local_not_called(repository: ResourceCacheRepository) -> None:
     update_last_access_for_mock = mock.Mock()
     with mock.patch.object(
-        target=cache.ResourceCache,
+        target=ResourceCacheRepository,
         attribute="_update_last_access_for",
         new=update_last_access_for_mock,
     ):
@@ -179,7 +179,7 @@ async def test_update_last_access_for__cache_miss_local_not_called(repository: c
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_miss_remote_called(repository: cache.ResourceCache) -> None:
+async def test_update_last_access_for__cache_miss_remote_called(repository: ResourceCacheRepository) -> None:
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
         "acc_py_index.utils.download_file",
@@ -187,7 +187,7 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: cach
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),
     ), mock.patch.object(
-        target=cache.ResourceCache,
+        target=ResourceCacheRepository,
         attribute="_update_last_access_for",
         new=update_last_access_for_mock,
     ):

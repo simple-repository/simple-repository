@@ -13,8 +13,8 @@ from acc_py_index.simple.model import (
     ResourceType,
 )
 
-from .. import errors
-from .repositories import SimpleRepository
+from ... import errors
+from .core import SimpleRepository
 
 
 def sha256sum(file_path: pathlib.Path) -> str:
