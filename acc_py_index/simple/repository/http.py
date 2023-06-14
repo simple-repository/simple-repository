@@ -1,27 +1,16 @@
-from typing import Protocol
 from urllib.parse import urljoin
 
 import aiohttp
 import packaging.utils
 
-from . import parser
-from .. import errors, utils
-from .model import ProjectDetail, ProjectList, Resource, ResourceType
+from .. import parser
+from ... import errors, utils
+from ..model import ProjectDetail, ProjectList, Resource, ResourceType
+from .core import SimpleRepository
 
 
-class SimpleRepository(Protocol):
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
-        ...
-
-    async def get_project_list(self) -> ProjectList:
-        ...
-
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        ...
-
-
-class HttpSimpleRepository(SimpleRepository):
-    """Proxys a remote simple repository"""
+class HttpRepository(SimpleRepository):
+    """Proxy of a remote simple repository"""
 
     def __init__(self, url: str, session: aiohttp.ClientSession):
         self.source_url = url
@@ -117,21 +106,3 @@ class HttpSimpleRepository(SimpleRepository):
                     type=ResourceType.REMOTE_RESOURCE,
                 )
         raise errors.ResourceUnavailable(resource_name)
-
-
-class RepositoryContainer(SimpleRepository):
-    """A base class for components that enhance the functionality of a source
-    `SimpleRepository`. If not overridden, the methods provided by this class
-    will delegate to the corresponding methods of the source repository.
-    """
-    def __init__(self, source: SimpleRepository) -> None:
-        self.source = source
-
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
-        return await self.source.get_project_page(project_name)
-
-    async def get_project_list(self) -> ProjectList:
-        return await self.source.get_project_list()
-
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        return await self.source.get_resource(project_name, resource_name)

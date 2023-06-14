@@ -3,12 +3,12 @@ import pathlib
 import packaging.utils
 from packaging.utils import canonicalize_name
 
-from .. import errors, utils
-from .model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
-from .repositories import SimpleRepository
+from ... import errors, utils
+from ..model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
+from .core import SimpleRepository
 
 
-class WhitelistRepository(SimpleRepository):
+class AllowListedRepository(SimpleRepository):
     """Exposes only the whitelisted projects of the source repository.
     Projects available from the source but not added to the
     whitelist file are not made available from this repository.

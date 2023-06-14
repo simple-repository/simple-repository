@@ -4,14 +4,14 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.grouped_repository import GroupedRepository
+from acc_py_index.simple.repository.priority_selected import PrioritySelectedProjectsRepository
 
-from ..fake_repository import FakeRepository
+from .fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
-    group_repository = GroupedRepository([
+    group_repository = PrioritySelectedProjectsRepository([
         FakeRepository(),
         FakeRepository(
             project_pages=[
@@ -46,7 +46,7 @@ async def test_get_project_page() -> None:
 
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
-    group_repository = GroupedRepository([
+    group_repository = PrioritySelectedProjectsRepository([
         FakeRepository() for _ in range(3)
     ])
     with pytest.raises(
@@ -71,7 +71,7 @@ async def test_blended_get_project_list() -> None:
         },
     ]
 
-    group_repository = GroupedRepository(
+    group_repository = PrioritySelectedProjectsRepository(
         sources=[
             FakeRepository(
                 model.ProjectList(model.Meta("1.0"), p),
@@ -94,7 +94,7 @@ async def test_blended_get_project_list() -> None:
 
 @pytest.mark.asyncio
 async def test_blended_get_project_list_failed() -> None:
-    repo = GroupedRepository(
+    repo = PrioritySelectedProjectsRepository(
         sources=[
             mock.AsyncMock() for _ in range(3)
         ],
@@ -107,7 +107,7 @@ async def test_blended_get_project_list_failed() -> None:
 
 @pytest.mark.asyncio
 async def test_blended_get_project_page_failed() -> None:
-    repo = GroupedRepository(
+    repo = PrioritySelectedProjectsRepository(
         sources=[
             FakeRepository(
                 project_pages=[
@@ -133,14 +133,14 @@ async def test_blended_get_project_page_failed() -> None:
 
 def test_group_repository_failed_init() -> None:
     with pytest.raises(ValueError):
-        GroupedRepository([])
+        PrioritySelectedProjectsRepository([])
     with pytest.raises(ValueError):
-        GroupedRepository([FakeRepository()])
+        PrioritySelectedProjectsRepository([FakeRepository()])
 
 
 @pytest.mark.asyncio
 async def test_not_normalized_package() -> None:
-    group_repository = GroupedRepository([
+    group_repository = PrioritySelectedProjectsRepository([
         FakeRepository() for _ in range(3)
     ])
     with pytest.raises(errors.NotNormalizedProjectName):
@@ -149,7 +149,7 @@ async def test_not_normalized_package() -> None:
 
 @pytest.mark.asyncio
 async def test_get_resource() -> None:
-    group_repository = GroupedRepository([
+    group_repository = PrioritySelectedProjectsRepository([
         FakeRepository(),
         FakeRepository(
             resources={
@@ -176,7 +176,7 @@ async def test_get_resource() -> None:
 
 @pytest.mark.asyncio
 async def test_get_resource_failed() -> None:
-    group_repository = GroupedRepository([
+    group_repository = PrioritySelectedProjectsRepository([
         FakeRepository() for _ in range(3)
     ])
 

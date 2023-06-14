@@ -5,13 +5,13 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
-from acc_py_index.simple.repositories import HttpSimpleRepository
+from acc_py_index.simple.repository.http import HttpRepository
 from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
 
 
 @pytest.fixture
-def repository() -> HttpSimpleRepository:
-    repo = HttpSimpleRepository(
+def repository() -> HttpRepository:
+    repo = HttpRepository(
         url="https://example.com/simple/",
         session=mock.MagicMock(),
     )
@@ -78,7 +78,7 @@ def repository() -> HttpSimpleRepository:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page(text: str, header: str, repository: HttpSimpleRepository) -> None:
+async def test_get_project_page(text: str, header: str, repository: HttpRepository) -> None:
     response_mock = mock.Mock()
     response_mock.status = 200
 
@@ -109,7 +109,7 @@ async def test_get_project_page(text: str, header: str, repository: HttpSimpleRe
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_unsupported_serialization(repository: HttpSimpleRepository) -> None:
+async def test_get_project_page_unsupported_serialization(repository: HttpRepository) -> None:
     response_mock = mock.Mock()
     response_mock.status = 200
 
@@ -123,7 +123,7 @@ async def test_get_project_page_unsupported_serialization(repository: HttpSimple
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_failed(repository: HttpSimpleRepository) -> None:
+async def test_get_project_page_failed(repository: HttpRepository) -> None:
     repository.session.get.side_effect = aiohttp.ClientResponseError(
         request_info=mock.Mock(),
         history=mock.Mock(),
@@ -163,7 +163,7 @@ async def test_get_project_page_failed(repository: HttpSimpleRepository) -> None
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_list(text: str, header: str, repository: HttpSimpleRepository) -> None:
+async def test_get_project_list(text: str, header: str, repository: HttpRepository) -> None:
     response_mock = mock.Mock()
     response_mock.status = 200
 
@@ -188,7 +188,7 @@ async def test_get_project_list(text: str, header: str, repository: HttpSimpleRe
 
 
 @pytest.mark.asyncio
-async def test_get_project_list_failed(repository: HttpSimpleRepository) -> None:
+async def test_get_project_list_failed(repository: HttpRepository) -> None:
     repository.session.get.side_effect = aiohttp.ClientResponseError(
         request_info=mock.Mock(),
         history=mock.Mock(),
@@ -200,7 +200,7 @@ async def test_get_project_list_failed(repository: HttpSimpleRepository) -> None
 
 
 @pytest.mark.asyncio
-async def test_not_normalized_package(repository: HttpSimpleRepository) -> None:
+async def test_not_normalized_package(repository: HttpRepository) -> None:
     with pytest.raises(errors.NotNormalizedProjectName):
         await repository.get_project_page("non_normalized")
 
@@ -227,33 +227,33 @@ def project_detail() -> ProjectDetail:
 
 
 @pytest.mark.asyncio
-async def test_get_resource(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+async def test_get_resource(repository: HttpRepository, project_detail: ProjectDetail) -> None:
     m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", m):
         resouce = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert resouce.value == "my_url/numpy-2.0.whl"
 
 
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+async def test_get_resource_unavailable(repository: HttpRepository, project_detail: ProjectDetail) -> None:
     m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", m):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
-async def test_get_resource_project_unavailable(repository: HttpSimpleRepository) -> None:
+async def test_get_resource_project_unavailable(repository: HttpRepository) -> None:
     m = mock.AsyncMock(side_effect=errors.PackageNotFoundError("numpy"))
-    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", m):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
-async def test_get_resource_metadata(repository: HttpSimpleRepository, project_detail: ProjectDetail) -> None:
+async def test_get_resource_metadata(repository: HttpRepository, project_detail: ProjectDetail) -> None:
     m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpSimpleRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", m):
         resouce = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert resouce.value == "my_url/numpy-1.0.whl.metadata"
 

@@ -7,10 +7,11 @@ import zipfile
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple import metadata_repository, model
-from acc_py_index.simple.repositories import SimpleRepository
+import acc_py_index.simple.model as model
+from acc_py_index.simple.repository.core import SimpleRepository
+import acc_py_index.simple.repository.metadata_injector as metadata_repository
 
-from ..fake_repository import FakeRepository
+from .fake_repository import FakeRepository
 
 
 def test_add_metadata_attribute() -> None:
@@ -109,7 +110,7 @@ async def test_get_resource__cached(repository: metadata_repository.MetadataInje
 @pytest.mark.asyncio
 async def test_get_resource__not_cached(repository: metadata_repository.MetadataInjectorRepository) -> None:
     with mock.patch(
-        "acc_py_index.simple.metadata_repository.download_metadata",
+        "acc_py_index.simple.repository.metadata_injector.download_metadata",
         mock.AsyncMock(return_value="downloaded_meta"),
     ):
         response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata")
@@ -151,7 +152,7 @@ async def test_download_metadata() -> None:
     download_file_mock = mock.AsyncMock()
 
     with mock.patch(
-        "acc_py_index.simple.metadata_repository.get_metadata_from_package",
+        "acc_py_index.simple.repository.metadata_injector.get_metadata_from_package",
         get_metadata_from_package_mock,
     ), mock.patch(
         "acc_py_index.utils.download_file",

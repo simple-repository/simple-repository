@@ -1,15 +1,15 @@
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple.grouped_repository import UnsafeMergedRepository
 from acc_py_index.simple.model import File, Meta, ProjectDetail
+from acc_py_index.simple.repository.merged import MergedRepository
 
-from ..fake_repository import FakeRepository
+from .fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
-    repo = UnsafeMergedRepository(
+    repo = MergedRepository(
         [
             FakeRepository(),
             FakeRepository(
@@ -54,7 +54,7 @@ async def test_get_project_page() -> None:
 
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
-    repo = UnsafeMergedRepository([
+    repo = MergedRepository([
         FakeRepository() for _ in range(3)
     ])
 
@@ -67,7 +67,7 @@ async def test_get_project_page_failed() -> None:
 
 @pytest.mark.asyncio
 async def test_not_normalized_package() -> None:
-    repo = UnsafeMergedRepository([
+    repo = MergedRepository([
         FakeRepository() for _ in range(3)
     ])
     with pytest.raises(errors.NotNormalizedProjectName):
