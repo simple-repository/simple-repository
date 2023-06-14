@@ -7,7 +7,7 @@ This is because it (html.parser.HTMLParser) does not throw errors, but gives str
 from acc_py_index.html_parser import HTMLElement, SimpleHTMLParser
 
 
-def test_parser():
+def test_parser() -> None:
     parser = SimpleHTMLParser()
     data = """<!DOCTYPE html>
 <html>

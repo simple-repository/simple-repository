@@ -20,7 +20,10 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
     """
     def __init__(self, sources: Sequence[SimpleRepository]) -> None:
         if len(sources) < 2:
-            raise ValueError("A grouped repository must have two or more source repositories")
+            raise ValueError(
+                "A priority selected repository must have two or more "
+                "source repositories",
+            )
         self.sources = sources
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:

@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from acc_py_index.simple import model
-from acc_py_index.simple.repository.resource_cache import ResourceCacheRepository
+from acc_py_index.simple.repositories.resource_cache import ResourceCacheRepository
 
 from .fake_repository import FakeRepository
 

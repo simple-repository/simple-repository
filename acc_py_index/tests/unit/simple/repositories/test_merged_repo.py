@@ -2,7 +2,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.model import File, Meta, ProjectDetail
-from acc_py_index.simple.repository.merged import MergedRepository
+from acc_py_index.simple.repositories.merged import MergedRepository
 
 from .fake_repository import FakeRepository
 

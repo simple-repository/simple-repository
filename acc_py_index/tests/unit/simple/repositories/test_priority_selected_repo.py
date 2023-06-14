@@ -4,7 +4,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.repository.priority_selected import PrioritySelectedProjectsRepository
+from acc_py_index.simple.repositories.priority_selected import PrioritySelectedProjectsRepository
 
 from .fake_repository import FakeRepository
 

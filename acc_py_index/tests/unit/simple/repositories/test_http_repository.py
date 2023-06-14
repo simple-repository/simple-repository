@@ -5,7 +5,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
-from acc_py_index.simple.repository.http import HttpRepository
+from acc_py_index.simple.repositories.http import HttpRepository
 from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
 
 

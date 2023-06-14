@@ -17,7 +17,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
 
     NOTICE: The MergedRepository is combining the given repositories without
             giving exclusivity of a source of a specific package to any particular
-            repository. As a result, this implementation is vulnerable to
+            repositories. As a result, this implementation is vulnerable to
             dependency confusion. There are cases where this behaviour is desirable
             hence its existence, but if you are unsure of those reasons, consider
             using the :class:`PrioritySelectedProjectsRepository` instead.

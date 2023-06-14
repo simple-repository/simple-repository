@@ -4,7 +4,7 @@ import sqlite3
 import pytest
 
 from acc_py_index.simple import model
-from acc_py_index.simple.repository.resource_url_cache import ResourceURLCacheRepository
+from acc_py_index.simple.repositories.resource_url_cache import ResourceURLCacheRepository
 
 from .fake_repository import FakeRepository
 

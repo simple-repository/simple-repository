@@ -7,7 +7,7 @@ import aiohttp
 import pytest
 
 from acc_py_index.simple import model
-from acc_py_index.simple.repository.http_cached import CachedHttpRepository
+from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
 
 
 @pytest.fixture
