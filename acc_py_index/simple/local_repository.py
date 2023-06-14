@@ -75,7 +75,7 @@ class LocalRepository(SimpleRepository):
                     hashes={
                         "sha256": sha256sum(file),
                     },
-                ) for file in project_dir.iterdir() if file.is_file()
+                ) for file in sorted(project_dir.iterdir()) if file.is_file()
             ],
         )
 

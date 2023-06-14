@@ -26,6 +26,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, Union
 
+import packaging.utils
+
 
 @dataclass
 class File:
@@ -96,6 +98,10 @@ class ProjectDetail:
 @dataclass(frozen=True)
 class ProjectListElement:
     name: str  # not necessarily normalized.
+
+    @property
+    def normalized_name(self) -> str:
+        return packaging.utils.canonicalize_name(self.name)
 
 
 @dataclass
