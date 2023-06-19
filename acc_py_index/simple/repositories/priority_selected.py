@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from packaging.utils import canonicalize_name
 
 from ... import errors
-from ..model import ProjectDetail, ProjectList, ProjectListElement, Resource
+from ..model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .core import SimpleRepository
 
 
@@ -60,21 +60,15 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
                 # multiple exceptions together.
                 raise project_list
 
-        if not all(
-            project.meta.api_version == project_lists[0].meta.api_version
-            for project in project_lists
-        ):
-            # TODO: Properly handle different API versions.
-            raise errors.UnsupportedAPIVersion()
-
         projects = set().union(
             *[
                 index.projects for index in project_lists
             ],
         )
 
+        # TODO: Handle different API versions.
         return ProjectList(
-            meta=project_lists[0].meta,
+            meta=Meta("1.0"),
             projects={
                 ProjectListElement(
                     name=canonicalize_name(p.name),
