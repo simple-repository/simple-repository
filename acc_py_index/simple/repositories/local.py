@@ -72,9 +72,7 @@ class LocalRepository(SimpleRepository):
                 File(
                     filename=file.name,
                     url=f"file://{file.absolute()}",
-                    hashes={
-                        "sha256": sha256sum(file),
-                    },
+                    hashes={},
                 ) for file in sorted(project_dir.iterdir()) if file.is_file()
             ],
         )

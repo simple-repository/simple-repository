@@ -120,15 +120,16 @@ async def test_get_project_page(simple_dir: Path) -> None:
             model.File(
                 filename='numpy-1.0-any.whl',
                 url="file://" + str(simple_dir / 'numpy/numpy-1.0-any.whl'),
+                # On the fly hashes currently disabled for local repository.
                 hashes={
-                    "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+                    # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 },
             ),
             model.File(
                 filename='numpy-1.1.tar.gz',
                 url="file://" + str(simple_dir / 'numpy/numpy-1.1.tar.gz'),
                 hashes={
-                    "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
+                    # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
             ),
         ],
