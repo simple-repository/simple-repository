@@ -115,6 +115,11 @@ class MetadataInjectorRepository(RepositoryContainer):
                     # If we can't get hold of the metadata from the file then raise
                     # a resource unavailable.
                     raise errors.ResourceUnavailable(resource_name) from e
+            elif resource.type == ResourceType.LOCAL_RESOURCE:
+                try:
+                    metadata = get_metadata_from_package(pathlib.Path(resource.value))
+                except ValueError as e:
+                    raise errors.ResourceUnavailable(resource_name) from e
             else:
                 raise errors.ResourceUnavailable(
                     resource_name.removesuffix(".metadata"),
