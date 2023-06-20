@@ -85,6 +85,9 @@ def repository(tmp_db: sqlite3.Connection) -> metadata_repository.MetadataInject
                 "numpy-1.0.tar.gz": model.Resource(
                     "numpy_url", model.ResourceType.REMOTE_RESOURCE,
                 ),
+                "numpy-2.0-any.whl": model.Resource(
+                    "file/path", model.ResourceType.LOCAL_RESOURCE,
+                ),
             },
         ),
         database=tmp_db,
@@ -120,7 +123,19 @@ async def test_get_resource__not_cached(repository: metadata_repository.Metadata
 
 
 @pytest.mark.asyncio
-async def test_get_resource__not_http_resource(tmp_db: sqlite3.Connection) -> None:
+async def test_get_resource__local_resource(repository: metadata_repository.MetadataInjectorRepository) -> None:
+    with mock.patch(
+        "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
+        return_value="downloaded_meta",
+    ):
+        response = await repository.get_resource("numpy", "numpy-2.0-any.whl.metadata")
+
+    assert response.value == "downloaded_meta"
+    assert response.type == model.ResourceType.METADATA
+
+
+@pytest.mark.asyncio
+async def test_get_resource__not_valid_resource(tmp_db: sqlite3.Connection) -> None:
     source_repo = mock.Mock(spec=SimpleRepository)
     source_repo.get_resource.side_effect = [errors.ResourceUnavailable('name'), model.Resource('/etc/passwd', model.ResourceType.METADATA)]
     repo = metadata_repository.MetadataInjectorRepository(
