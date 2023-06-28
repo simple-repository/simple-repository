@@ -4,7 +4,7 @@ import pytest
 
 from acc_py_index import errors
 from acc_py_index.simple import model
-from acc_py_index.simple.repositories.local import LocalRepository, sha256sum
+from acc_py_index.simple.repositories.local import LocalRepository
 
 
 @pytest.fixture
@@ -147,10 +147,3 @@ async def test_get_project_page__not_found(simple_dir: Path) -> None:
         match="seaborn",
     ):
         await repo.get_project_page("seaborn")
-
-
-def test_sha256sum(tmp_path: Path) -> None:
-    file = tmp_path / "my_file.txt"
-    file.write_text("ciao\n")
-
-    assert sha256sum(file) == "6f0378f21a495f5c13247317d158e9d51da45a5bf68fc2f366e450deafdc8302"
