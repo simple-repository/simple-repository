@@ -117,29 +117,21 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
         dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None
         # PEP-714: Clients consuming any of the HTML representations of the Simple API MUST
         #          read the PEP 658 metadata from the key data-core-metadata if it is present.
-        #          They MAY optionally use the legacy data-dist-info-metadata if it is present
-        #          but data-core-metadata is not.
-        if (
-            "data-core-metadata" in a_tag.attrs or
-            "data-dist-info-metadata" in a_tag.attrs
-        ):
+        if "data-core-metadata" in a_tag.attrs:
             # PEP-658: The repository SHOULD provide the hash of the Core Metadata file
             #          as the data-dist-info-metadata attribute’s value using
             #          the syntax <hashname>=<hashvalue>
-            metadata_val = (
-                a_tag.attrs.get("data-core-metadata") or
-                a_tag.attrs.get("data-dist-info-metadata")
-            )
+            metadata_val = a_tag.attrs.get("data-core-metadata")
             if metadata_val is None:
-                # data-dist-info-metadata is set but doesn't have a value.
+                # data-core-metadata is set but doesn't have a value.
                 dist_info_metadata = True
             else:
                 metadata_attr_tokens = metadata_val.split("=", 1)
                 if len(metadata_attr_tokens) == 2:
-                    # the value of data-dist-info-metadata can be parsed as <hash_fun>=<hash_val>.
+                    # the value of data-core-metadata can be parsed as <hash_fun>=<hash_val>.
                     dist_info_metadata = {metadata_attr_tokens[0]: metadata_attr_tokens[1]}
                 else:
-                    # the value of data-dist-info-metadata is a placeholder. It doesn't follow
+                    # the value of data-core-metadata is a placeholder. It doesn't follow
                     # the SHOULD recommendation, but it is still indicating that the
                     # metadata exists.
                     dist_info_metadata = True
