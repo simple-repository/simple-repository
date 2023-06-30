@@ -50,7 +50,7 @@ async def download_metadata(
 
 
 def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
-    """Add the data-dist-info-metadata to all the packages distributed as wheels"""
+    """Add the data-core-metadata to all the packages distributed as wheels"""
     for file in project_page.files:
         if file.url and file.filename.endswith(".whl") and file.dist_info_metadata is None:
             file.dist_info_metadata = True

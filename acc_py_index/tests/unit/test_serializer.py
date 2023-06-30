@@ -67,8 +67,8 @@ def test_serialize_file_html_yank(
 @pytest.mark.parametrize(
     "metadata_attr, metadata_value",
     [
-        (' data-core-metadata="true" data-dist-info-metadata="true"', True),
-        (' data-core-metadata="sha=..." data-dist-info-metadata="sha=..."', {"sha": "..."}),
+        (' data-core-metadata="true"', True),
+        (' data-core-metadata="sha=..."', {"sha": "..."}),
         ('', None),
         ('', False),
     ],

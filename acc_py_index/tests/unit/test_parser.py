@@ -189,10 +189,10 @@ def test_parse_html_project_page_yank(
 @pytest.mark.parametrize(
     "metadata_attr, metadata_value",
     [
-        ('data-dist-info-metadata', True),
-        ('data-dist-info-metadata="true"', True),
-        ('data-dist-info-metadata="something incompatible"', True),
-        ('data-dist-info-metadata="sha=..."', {"sha": "..."}),
+        ('data-dist-info-metadata', None),
+        ('data-dist-info-metadata="true"', None),
+        ('data-dist-info-metadata="something incompatible"', None),
+        ('data-dist-info-metadata="sha=..."', None),
         ('data-core-metadata', True),
         ('data-core-metadata="true"', True),
         ('data-core-metadata="something incompatible"', True),

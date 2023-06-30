@@ -143,13 +143,12 @@ class SerializerHtmlV1(Serializer):
         # is the hex encoded digest. The repository MAY use true as the attribute’s value
         # if a hash is unavailable.
 
-        # From PEP 714: To support clients that used the previous key names, the HTML
-        # representation MAY also be emitted using the data-dist-info-metadata,
-        # and if it does so it MUST match the value of data-core-metadata.
+        # From PEP 714: The PEP 658 metadata, when used in the HTML representation of the Simple
+        # API, MUST be emitted using the attribute name data-core-metadata, with the supported
+        # values remaining the same.
         if file.dist_info_metadata:
             if file.dist_info_metadata is True:
                 attributes.append('data-core-metadata="true"')
-                attributes.append('data-dist-info-metadata="true"')
             else:
                 hash_fun = (
                     "sha256" if "sha256" in file.dist_info_metadata
@@ -157,7 +156,6 @@ class SerializerHtmlV1(Serializer):
                 )
                 hash_value = file.dist_info_metadata[hash_fun]
                 attributes.append(f'data-core-metadata="{hash_fun}={hash_value}"')
-                attributes.append(f'data-dist-info-metadata="{hash_fun}={hash_value}"')
 
         # From PEP 592: The value of the data-yanked attribute, if present, is an arbitrary
         # string that represents the reason for why the file has been yanked.
