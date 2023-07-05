@@ -1,3 +1,4 @@
+from dataclasses import replace
 import pathlib
 import sqlite3
 import tempfile
@@ -51,9 +52,12 @@ async def download_metadata(
 
 def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
     """Add the data-core-metadata to all the packages distributed as wheels"""
+    files = []
     for file in project_page.files:
         if file.url and file.filename.endswith(".whl") and file.dist_info_metadata is None:
-            file.dist_info_metadata = True
+            file = replace(file, dist_info_metadata=True)
+        files.append(file)
+    project_page = replace(project_page, files=files)
     return project_page
 
 
