@@ -29,7 +29,7 @@ from typing import Optional, Union
 import packaging.utils
 
 
-@dataclass
+@dataclass(frozen=True)
 class File:
     """
     Simple representation of a distribution file.
@@ -79,7 +79,7 @@ class File:
             raise ValueError("The yanked attribute may not be an empty string")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Meta:
     """Responses metadata defined in PEP-629:
     https://peps.python.org/pep-0629/
@@ -87,12 +87,12 @@ class Meta:
     api_version: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectDetail:
     """Model of a project page as described in PEP-691"""
     meta: Meta
     name: str
-    files: list[File]
+    files: tuple[File, ...]
 
 
 @dataclass(frozen=True)
@@ -104,11 +104,11 @@ class ProjectListElement:
         return packaging.utils.canonicalize_name(self.name)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectList:
     """Model of the project list as described in PEP-691"""
     meta: Meta
-    projects: set[ProjectListElement]
+    projects: frozenset[ProjectListElement]
 
 
 class ResourceType(Enum):

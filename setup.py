@@ -15,7 +15,8 @@ with (HERE / "README.md").open("rt") as fh:
 REQUIREMENTS: dict[str, list[str]] = {
     "core": [
         "aiohttp",
-        "fastapi>=0.93.0",
+        # FastAPI 0.100 requries a migration to pydantic 2.0
+        "fastapi>=0.93.0,<0.100.0",
         "gunicorn",
         "packaging",
         "uvicorn[standard]",

@@ -119,7 +119,7 @@ async def test_get_project_page__cached(
         meta=model.Meta(
             api_version="1.0",
         ),
-        files=[
+        files=(
             model.File(
                 filename="test1.whl",
                 url="https://example.com/simple/project/test1.whl",
@@ -130,7 +130,7 @@ async def test_get_project_page__cached(
                 url="http://test2.whl",
                 hashes={},
             ),
-        ],
+        ),
     )
 
 
@@ -150,8 +150,8 @@ async def test_get_project_list__cached(
         meta=model.Meta(
             api_version="1.0",
         ),
-        projects={
+        projects=frozenset([
             model.ProjectListElement(name="p1"),
             model.ProjectListElement(name="p2"),
-        },
+        ]),
     )

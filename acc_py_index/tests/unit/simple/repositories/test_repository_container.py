@@ -12,12 +12,12 @@ async def test_get_project_page() -> None:
     repository = RepositoryContainer(
         FakeRepository(
             project_pages=[
-                model.ProjectDetail(model.Meta("1.0"), "numpy", files=[]),
+                model.ProjectDetail(model.Meta("1.0"), "numpy", files=()),
             ],
         ),
     )
     result = await repository.get_project_page("numpy")
-    assert result == model.ProjectDetail(model.Meta("1.0"), "numpy", files=[])
+    assert result == model.ProjectDetail(model.Meta("1.0"), "numpy", files=())
     with pytest.raises(errors.PackageNotFoundError):
         await repository.get_project_page("pandas")
 
@@ -28,12 +28,12 @@ async def test_get_project_list() -> None:
         FakeRepository(
             project_list=model.ProjectList(
                 meta=model.Meta("1.0"),
-                projects={model.ProjectListElement("numpy")},
+                projects=frozenset([model.ProjectListElement("numpy")]),
             ),
         ),
     )
     result = await repository.get_project_list()
-    assert result.projects == {model.ProjectListElement("numpy")}
+    assert result.projects == frozenset([model.ProjectListElement("numpy")])
 
 
 @pytest.mark.asyncio

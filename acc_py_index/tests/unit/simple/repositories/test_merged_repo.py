@@ -17,10 +17,10 @@ async def test_get_project_page() -> None:
                     ProjectDetail(
                         Meta('1.0'),
                         "numpy",
-                        files=[
+                        files=(
                             File("numpy-1.1.whl", "url1", {}),
                             File("numpy-1.2.whl", "url1", {}),
-                        ],
+                        ),
                     ),
                 ],
             ),
@@ -29,10 +29,10 @@ async def test_get_project_page() -> None:
                     ProjectDetail(
                         Meta('1.0'),
                         "numpy",
-                        files=[
+                        files=(
                             File("numpy-1.1.whl", "url2", {}),
                             File("numpy-1.3.whl", "url2", {}),
-                        ],
+                        ),
                     ),
                 ],
             ),
@@ -44,11 +44,11 @@ async def test_get_project_page() -> None:
     assert resp == ProjectDetail(
         Meta('1.0'),
         "numpy",
-        files=[
+        files=(
             File("numpy-1.1.whl", "url1", {}),
             File("numpy-1.2.whl", "url1", {}),
             File("numpy-1.3.whl", "url2", {}),
-        ],
+        ),
     )
 
 

@@ -1,7 +1,9 @@
+from dataclasses import replace
 import fnmatch
 import html
 import pathlib
 import sqlite3
+import typing
 
 from packaging.utils import canonicalize_name
 
@@ -23,13 +25,17 @@ def add_yanked_attribute(
     project_page: ProjectDetail,
     yanked_versions: dict[str, str],
 ) -> ProjectDetail:
+    files = []
     for file in project_page.files:
         reason = yanked_versions.get(file.filename)
         if (not file.yanked) and (reason is not None):
             if reason == '':
-                file.yanked = True
+                yanked: typing.Union[bool, str] = True
             else:
-                file.yanked = html.escape(reason)
+                yanked = html.escape(reason)
+            file = replace(file, yanked=yanked)
+        files.append(file)
+    project_page = replace(project_page, files=tuple(files))
     return project_page
 
 
@@ -96,7 +102,7 @@ class ConfigurableYankRepository(RepositoryContainer):
 
         if value := self._yank_config.get(project_name):
             pattern, reason = value
-            add_yanked_attribute(
+            project_page = add_yanked_attribute(
                 project_page=project_page,
                 yanked_versions={
                     file.filename: reason for file in project_page.files

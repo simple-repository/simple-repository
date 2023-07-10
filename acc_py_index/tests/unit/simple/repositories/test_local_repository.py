@@ -26,11 +26,11 @@ async def test_get_project_list(simple_dir: Path) -> None:
 
     assert project_list == model.ProjectList(
         meta=model.Meta("1.0"),
-        projects={
+        projects=frozenset([
             model.ProjectListElement("numpy"),
             model.ProjectListElement("tensorflow"),
             model.ProjectListElement("pandas"),
-        },
+        ]),
     )
 
 
@@ -116,7 +116,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
     assert project_details == model.ProjectDetail(
         meta=model.Meta("1.0"),
         name="numpy",
-        files=[
+        files=(
             model.File(
                 filename='numpy-1.0-any.whl',
                 url="file://" + str(simple_dir / 'numpy/numpy-1.0-any.whl'),
@@ -132,7 +132,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
             ),
-        ],
+        ),
     )
 
 

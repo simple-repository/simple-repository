@@ -41,10 +41,10 @@ class AllowListedRepository(SimpleRepository):
     async def get_project_list(self) -> ProjectList:
         return ProjectList(
             meta=Meta("1.0"),
-            projects={
+            projects=frozenset(
                 ProjectListElement(name) for name in
                 self._special_cases.keys()
-            },
+            ),
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:

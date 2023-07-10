@@ -1,3 +1,4 @@
+from dataclasses import replace
 from urllib.parse import urljoin
 
 import aiohttp
@@ -59,10 +60,13 @@ class HttpRepository(SimpleRepository):
         else:
             raise errors.UnsupportedSerialization(content_type)
 
-        for file in project_page.files:
-            # Make the URLs in the project page absolute, such that they can be
-            # resolved upstream without knowing the original source URLs.
-            file.url = utils.url_absolutizer(file.url, page_url)
+        # Make the URLs in the project page absolute, such that they can be
+        # resolved upstream without knowing the original source URLs.
+        files = tuple(
+            replace(file, url=utils.url_absolutizer(file.url, page_url))
+            for file in project_page.files
+        )
+        project_page = replace(project_page, files=files)
         return project_page
 
     async def get_project_list(self) -> ProjectList:

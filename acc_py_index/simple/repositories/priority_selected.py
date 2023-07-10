@@ -69,11 +69,11 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
         # TODO: Handle different API versions.
         return ProjectList(
             meta=Meta("1.0"),
-            projects={
+            projects=frozenset(
                 ProjectListElement(
                     name=canonicalize_name(p.name),
                 ) for p in projects
-            },
+            ),
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:

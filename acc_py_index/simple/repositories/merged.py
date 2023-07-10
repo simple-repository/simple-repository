@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 import typing
 
 from packaging.utils import canonicalize_name
@@ -62,5 +63,5 @@ class MergedRepository(PrioritySelectedProjectsRepository):
                 package_name=project_name,
             )
 
-        result.files = list(files.values())
+        result = replace(result, files=tuple(files.values()))
         return result
