@@ -22,7 +22,7 @@ def test_add_yanked_attribute(
     project_page = ProjectDetail(
         name="project",
         meta=Meta("1.0"),
-        files=[
+        files=(
             File(
               filename="project-1.0.0-any.whl",
               url="url",
@@ -33,7 +33,7 @@ def test_add_yanked_attribute(
               url="url",
               hashes={},
             ),
-        ],
+        ),
     )
 
     yanked_data = {"project-1.0.0-any.whl": yank_reason}
@@ -61,9 +61,9 @@ async def test_get_project_page(
         FakeRepository(
             project_pages=[
                 ProjectDetail(
-                    Meta("1.0"), name="project", files=[
+                    Meta("1.0"), name="project", files=(
                         File("project1.0.whl", "url", {}), File("project1.1.whl", "url", {}),
-                    ],
+                    ),
                 ),
             ],
         ),

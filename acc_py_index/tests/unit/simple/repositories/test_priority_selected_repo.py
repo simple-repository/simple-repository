@@ -18,7 +18,7 @@ async def test_get_project_page() -> None:
                 model.ProjectDetail(
                     model.Meta('1.0'),
                     "numpy",
-                    files=[model.File("1", "1", {}), model.File("2", "2", {})],
+                    files=(model.File("1", "1", {}), model.File("2", "2", {})),
                 ),
             ],
         ),
@@ -27,7 +27,7 @@ async def test_get_project_page() -> None:
                 model.ProjectDetail(
                     model.Meta('1.0'),
                     "numpy",
-                    files=[model.File("3", "3", {})],
+                    files=(model.File("3", "3", {}),),
                 ),
             ],
         ),
@@ -38,9 +38,9 @@ async def test_get_project_page() -> None:
     assert resp == model.ProjectDetail(
         model.Meta('1.0'),
         "numpy",
-        files=[
+        files=(
             model.File("1", "1", {}), model.File("2", "2", {}),
-        ],
+        ),
     )
 
 
@@ -60,15 +60,15 @@ async def test_get_project_page_failed() -> None:
 async def test_blended_get_project_list() -> None:
     meta = model.Meta(api_version="1.0")
     projects_elements = [
-        {
+        frozenset([
             model.ProjectListElement("a_"),
             model.ProjectListElement("c"),
-        }, {
+        ]), frozenset([
             model.ProjectListElement("a-"),
             model.ProjectListElement("b"),
-        }, {
+        ]), frozenset([
             model.ProjectListElement("d"),
-        },
+        ]),
     ]
 
     group_repository = PrioritySelectedProjectsRepository(
@@ -83,12 +83,12 @@ async def test_blended_get_project_list() -> None:
     # We expect only normalized results, and no duplicates.
     assert result == model.ProjectList(
         meta=meta,
-        projects={
+        projects=frozenset([
             model.ProjectListElement("a-"),
             model.ProjectListElement("b"),
             model.ProjectListElement("c"),
             model.ProjectListElement("d"),
-        },
+        ]),
     )
 
 
@@ -114,7 +114,7 @@ async def test_blended_get_project_page_failed() -> None:
                     model.ProjectDetail(
                         meta=model.Meta("1.0"),
                         name="numpy",
-                        files=[],
+                        files=(),
                     ),
                 ],
             ),
@@ -127,7 +127,7 @@ async def test_blended_get_project_page_failed() -> None:
     res = await repo.get_project_page("numpy")
 
     assert res == model.ProjectDetail(
-        model.Meta("1.0"), name="numpy", files=[],
+        model.Meta("1.0"), name="numpy", files=(),
     )
 
 

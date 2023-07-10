@@ -9,11 +9,11 @@ from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
 
 def parse_json_project_list(page: str) -> ProjectList:
     project_dict = json.loads(page)
-    projects = {
+    projects = frozenset(
         ProjectListElement(
             name=project.get("name"),
         ) for project in project_dict["projects"]
-    }
+    )
     return ProjectList(
         meta=Meta(
             api_version=project_dict["meta"]["api-version"],
@@ -34,13 +34,13 @@ def parse_html_project_list(page: str) -> ProjectList:
         if element.tag == "a"
     )
 
-    projects = {
+    projects = frozenset(
         ProjectListElement(
             name=element.content,
         )
         for element in a_tags
         if element.content is not None
-    }
+    )
 
     return ProjectList(
         meta=Meta(
@@ -57,7 +57,7 @@ def parse_json_project_page(body: str) -> ProjectDetail:
         meta=Meta(
             api_version=page_dict["meta"]["api-version"],
         ),
-        files=[
+        files=tuple(
             File(
                 filename=file["filename"],
                 # Temporary fix: Escape the URLs coming from the source
@@ -74,7 +74,7 @@ def parse_json_project_page(body: str) -> ProjectDetail:
                 yanked=file.get("yanked"),
             )
             for file in page_dict["files"]
-        ],
+        ),
     )
 
 
@@ -178,5 +178,5 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
         meta=Meta(
             api_version="1.0",
         ),
-        files=files,
+        files=tuple(files),
     )

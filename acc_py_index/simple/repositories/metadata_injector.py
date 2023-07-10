@@ -57,7 +57,7 @@ def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
         if file.url and file.filename.endswith(".whl") and file.dist_info_metadata is None:
             file = replace(file, dist_info_metadata=True)
         files.append(file)
-    project_page = replace(project_page, files=files)
+    project_page = replace(project_page, files=tuple(files))
     return project_page
 
 

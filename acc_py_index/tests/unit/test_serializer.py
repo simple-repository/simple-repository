@@ -122,10 +122,10 @@ def test_serialize_project_page_html() -> None:
     project_page = ProjectDetail(
         meta=Meta(api_version="1.0"),
         name="test-project",
-        files=[
+        files=(
             File(filename="test.html", url="https://example.com/test.html", hashes={}),
             File(filename="test.txt", url="test.txt", hashes={}),
-        ],
+        ),
     )
     expected = """<!DOCTYPE html>
     <html>
@@ -146,10 +146,10 @@ def test_serialize_project_page_html() -> None:
 def test_serialize_project_list_html() -> None:
     project_list = ProjectList(
         meta=Meta(api_version="1.0"),
-        projects={
+        projects=frozenset([
             ProjectListElement(name="test-project-1"),
             ProjectListElement(name="test-project-2"),
-        },
+        ]),
     )
     expected_header = """<!DOCTYPE html>
     <html>
@@ -175,7 +175,7 @@ def test_serialize_project_page_json() -> None:
     page = ProjectDetail(
         Meta("1.0"),
         "project",
-        files=[
+        files=(
             File(
                 filename="test1.whl",
                 url="test1.whl",
@@ -197,7 +197,7 @@ def test_serialize_project_page_json() -> None:
                 dist_info_metadata={"sha": "..."},
                 yanked=True,
             ),
-        ],
+        ),
     )
     serializer = SerializerJsonV1()
     res = serializer.serialize_project_page(page)
@@ -238,9 +238,9 @@ def test_serialize_project_page_json() -> None:
 def test_serialize_project_list_json() -> None:
     page = ProjectList(
         Meta("1.0"),
-        projects={
+        projects=frozenset([
             ProjectListElement("a"),
-        },
+        ]),
     )
     serializer = SerializerJsonV1()
     res = serializer.serialize_project_list(page)

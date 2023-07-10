@@ -18,13 +18,13 @@ def test_add_metadata_attribute() -> None:
     project_page = model.ProjectDetail(
        model.Meta("1.0"),
        "numpy",
-       [
+       (
             model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}),
             model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
             model.File(
                 "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
             ),
-       ],
+       ),
     )
     result = metadata_repository.add_metadata_attribute(project_page)
 
@@ -72,10 +72,10 @@ def repository(tmp_db: sqlite3.Connection) -> metadata_repository.MetadataInject
         source=FakeRepository(
             project_pages=[
                 model.ProjectDetail(
-                    model.Meta("1.0"), "numpy", files=[
+                    model.Meta("1.0"), "numpy", files=(
                         model.File("numpy-1.0-any.whl", "url", {}),
                         model.File("numpy-1.0.tar.gz", "url", {}),
-                    ],
+                    ),
                 ),
             ],
             resources={

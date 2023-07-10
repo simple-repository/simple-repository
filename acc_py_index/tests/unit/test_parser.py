@@ -47,7 +47,7 @@ def test_parse_json_project_page() -> None:
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="https://example.com/files/holygrail-1.0.tar.gz",
@@ -73,7 +73,7 @@ def test_parse_json_project_page() -> None:
                 url="http://unnormalized%20url.whl",
                 hashes={},
             ),
-        ],
+        ),
     )
 
 
@@ -98,7 +98,7 @@ def test_parse_html_project_page() -> None:
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
@@ -115,7 +115,7 @@ def test_parse_html_project_page() -> None:
                 url="unnormalized%20url.whl",
                 hashes={},
             ),
-        ],
+        ),
     )
 
 
@@ -140,13 +140,13 @@ def test_parse_html_project_page_URL_fragment(
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes=hashes,
             ),
-        ],
+        ),
     )
 
 
@@ -175,14 +175,14 @@ def test_parse_html_project_page_yank(
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
                 yanked=yank_value,
             ),
-        ],
+        ),
     )
 
 
@@ -216,14 +216,14 @@ def test_parse_html_project_page_metadata(
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
                 dist_info_metadata=metadata_value,
             ),
-        ],
+        ),
     )
 
 
@@ -248,14 +248,14 @@ def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: Optional[bool]) -
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
-        [
+        (
             model.File(
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
                 gpg_sig=gpg_value,
             ),
-        ],
+        ),
     )
 
 
@@ -279,10 +279,10 @@ def test_parse_json_project_list() -> None:
 
     assert result == model.ProjectList(
         model.Meta("1.0"),
-        {
+        frozenset([
             model.ProjectListElement("gym"),
             model.ProjectListElement("acc_py_index"),
-        },
+        ]),
     )
 
 
@@ -296,8 +296,8 @@ def test_parse_html_project_list() -> None:
 
     assert result == model.ProjectList(
         model.Meta("1.0"),
-        {
+        frozenset([
             model.ProjectListElement("gym"),
             model.ProjectListElement("acc_py_index"),
-        },
+        ]),
     )

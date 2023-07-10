@@ -8,7 +8,7 @@ from acc_py_index.simple.repositories.core import SimpleRepository
 class FakeRepository(SimpleRepository):
     def __init__(
         self,
-        project_list: ProjectList = ProjectList(Meta('1.0'), set()),
+        project_list: ProjectList = ProjectList(Meta('1.0'), frozenset()),
         project_pages: Optional[list[ProjectDetail]] = None,
         resources: Optional[dict[str, Resource]] = None,
     ) -> None:

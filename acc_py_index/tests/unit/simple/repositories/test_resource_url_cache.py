@@ -16,7 +16,7 @@ def url_cache(tmp_path: pathlib.PosixPath) -> ResourceURLCacheRepository:
         FakeRepository(
             project_pages=[
                 model.ProjectDetail(
-                    model.Meta("1.0"), "numpy", [model.File("numpy-1.0-any.whl", "url/numpy", {})],
+                    model.Meta("1.0"), "numpy", (model.File("numpy-1.0-any.whl", "url/numpy", {}),),
                 ),
             ],
             resources={
@@ -33,7 +33,7 @@ def url_cache(tmp_path: pathlib.PosixPath) -> ResourceURLCacheRepository:
 async def test_get_project_page(url_cache: ResourceURLCacheRepository) -> None:
     response = await url_cache.get_project_page("numpy")
     assert response == model.ProjectDetail(
-        model.Meta("1.0"), "numpy", [model.File("numpy-1.0-any.whl", "url/numpy", {})],
+        model.Meta("1.0"), "numpy", (model.File("numpy-1.0-any.whl", "url/numpy", {}),),
     )
     assert url_cache._cache["numpy/numpy-1.0-any.whl"] == "url/numpy"
 

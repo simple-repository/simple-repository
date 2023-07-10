@@ -16,10 +16,10 @@ def source() -> FakeRepository:
             model.ProjectDetail(
                 model.Meta("1.0"),
                 "numpy",
-                [
+                (
                     model.File("numpy-1.0.whl", "url", {}),
                     model.File("numpy-1.0.tar.gz", "url", {}),
-                ],
+                ),
             ),
         ],
     )

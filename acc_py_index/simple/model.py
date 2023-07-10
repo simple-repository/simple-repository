@@ -92,7 +92,7 @@ class ProjectDetail:
     """Model of a project page as described in PEP-691"""
     meta: Meta
     name: str
-    files: list[File]
+    files: tuple[File, ...]
 
 
 @dataclass(frozen=True)
@@ -108,7 +108,7 @@ class ProjectListElement:
 class ProjectList:
     """Model of the project list as described in PEP-691"""
     meta: Meta
-    projects: set[ProjectListElement]
+    projects: frozenset[ProjectListElement]
 
 
 class ResourceType(Enum):

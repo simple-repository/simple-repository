@@ -62,10 +62,10 @@ class HttpRepository(SimpleRepository):
 
         # Make the URLs in the project page absolute, such that they can be
         # resolved upstream without knowing the original source URLs.
-        files = [
+        files = tuple(
             replace(file, url=utils.url_absolutizer(file.url, page_url))
             for file in project_page.files
-        ]
+        )
         project_page = replace(project_page, files=files)
         return project_page
 

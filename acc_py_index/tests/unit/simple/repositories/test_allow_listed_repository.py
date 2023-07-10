@@ -17,15 +17,15 @@ async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
     repo = AllowListedRepository(
         source=FakeRepository(
             project_pages=[
-                model.ProjectDetail(model.Meta("1.0"), "numpy", files=[]),
-                model.ProjectDetail(model.Meta("1.0"), "tensorflow", files=[]),
+                model.ProjectDetail(model.Meta("1.0"), "numpy", files=()),
+                model.ProjectDetail(model.Meta("1.0"), "tensorflow", files=()),
             ],
         ),
         special_case_file=special_case_file,
     )
 
     resp = await repo.get_project_page("numpy")
-    assert resp == model.ProjectDetail(model.Meta("1.0"), "numpy", files=[])
+    assert resp == model.ProjectDetail(model.Meta("1.0"), "numpy", files=())
 
     with pytest.raises(errors.PackageNotFoundError, match="package"):
         await repo.get_project_page("package")
@@ -48,7 +48,7 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
 
     assert res == model.ProjectList(
         meta=model.Meta("1.0"),
-        projects={model.ProjectListElement("numpy"), model.ProjectListElement("pandas")},
+        projects=frozenset([model.ProjectListElement("numpy"), model.ProjectListElement("pandas")]),
     )
 
 

@@ -50,11 +50,11 @@ class LocalRepository(SimpleRepository):
     async def get_project_list(self) -> ProjectList:
         return ProjectList(
             meta=Meta("1.0"),
-            projects={
+            projects=frozenset(
                 ProjectListElement(x.name)
                 for x in self._index_path.iterdir()
                 if x.is_dir() and x.name == canonicalize_name(x.name)
-            },
+            ),
         )
 
     async def get_project_page(self, project_name: str) -> ProjectDetail:
@@ -68,13 +68,13 @@ class LocalRepository(SimpleRepository):
         return ProjectDetail(
             meta=Meta("1.0"),
             name=project_name,
-            files=[
+            files=tuple(
                 File(
                     filename=file.name,
                     url=f"file://{file.absolute()}",
                     hashes={},
                 ) for file in sorted(project_dir.iterdir()) if file.is_file()
-            ],
+            ),
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:

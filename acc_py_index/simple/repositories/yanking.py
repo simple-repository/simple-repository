@@ -35,7 +35,7 @@ def add_yanked_attribute(
                 yanked = html.escape(reason)
             file = replace(file, yanked=yanked)
         files.append(file)
-    project_page = replace(project_page, files=files)
+    project_page = replace(project_page, files=tuple(files))
     return project_page
 
 

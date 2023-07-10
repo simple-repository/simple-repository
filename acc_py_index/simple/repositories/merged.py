@@ -63,5 +63,5 @@ class MergedRepository(PrioritySelectedProjectsRepository):
                 package_name=project_name,
             )
 
-        result = replace(result, files=list(files.values()))
+        result = replace(result, files=tuple(files.values()))
         return result

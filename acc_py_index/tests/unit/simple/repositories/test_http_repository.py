@@ -93,7 +93,7 @@ async def test_get_project_page(text: str, header: str, repository: HttpReposito
         meta=Meta(
             api_version="1.0",
         ),
-        files=[
+        files=(
             File(
                 filename="test1.whl",
                 url="https://example.com/simple/project/test1.whl",
@@ -104,7 +104,7 @@ async def test_get_project_page(text: str, header: str, repository: HttpReposito
                 url="http://test2.whl",
                 hashes={},
             ),
-        ],
+        ),
     )
 
 
@@ -180,10 +180,10 @@ async def test_get_project_list(text: str, header: str, repository: HttpReposito
         meta=Meta(
             api_version="1.0",
         ),
-        projects={
+        projects=frozenset([
             ProjectListElement(name="p1"),
             ProjectListElement(name="p2"),
-        },
+        ]),
     )
 
 
@@ -210,7 +210,7 @@ def project_detail() -> ProjectDetail:
     return ProjectDetail(
         meta=Meta("1.0"),
         name="numpy",
-        files=[
+        files=(
             File(
                 filename="numpy-1.0.whl",
                 url="my_url/numpy-1.0.whl",
@@ -222,7 +222,7 @@ def project_detail() -> ProjectDetail:
                 url="my_url/numpy-2.0.whl",
                 hashes={},
             ),
-        ],
+        ),
     )
 
 
