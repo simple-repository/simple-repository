@@ -33,6 +33,6 @@ repos:
         additional_dependencies:
           [
             pytest,
-            fastapi,
+            "fastapi>=0.93.0,<0.100.0",
             uvicorn,
           ]
