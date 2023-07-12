@@ -1,3 +1,5 @@
+from datetime import datetime
+import os
 import pathlib
 
 from packaging.utils import canonicalize_name
@@ -51,16 +53,27 @@ class LocalRepository(SimpleRepository):
         if not project_dir.is_dir():
             raise errors.PackageNotFoundError(project_name)
 
-        return ProjectDetail(
-            meta=Meta("1.0"),
-            name=project_name,
-            files=tuple(
+        files = []
+        for file in sorted(project_dir.iterdir()):
+            if not file.is_file():
+                continue
+            file_stat = os.stat(file)
+            files.append(
                 File(
                     filename=file.name,
                     url=f"file://{file.absolute()}",
                     hashes={},
-                ) for file in sorted(project_dir.iterdir()) if file.is_file()
-            ),
+                    upload_time=datetime.utcfromtimestamp(
+                        file_stat.st_ctime,
+                    ),
+                    size=file_stat.st_size,
+                ),
+            )
+
+        return ProjectDetail(
+            meta=Meta("1.1"),
+            name=project_name,
+            files=tuple(files),
         )
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
