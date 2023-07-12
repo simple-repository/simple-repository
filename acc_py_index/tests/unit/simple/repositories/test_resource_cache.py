@@ -17,12 +17,8 @@ from .fake_repository import FakeRepository
 def repository(tmp_path: pathlib.Path) -> typing.Generator[ResourceCacheRepository, None, None]:
     source = FakeRepository(
         resources={
-            "numpy-1.0-any.whl": model.Resource(
-                "numpy_url/numpy-1.0-any.whl", model.ResourceType.REMOTE_RESOURCE,
-            ),
-            "numpy-1.0.tar.gz": model.Resource(
-                "numpy_path", model.ResourceType.LOCAL_RESOURCE,
-            ),
+            "numpy-1.0-any.whl": model.HttpResource("numpy_url/numpy-1.0-any.whl"),
+            "numpy-1.0.tar.gz": model.LocalResource(pathlib.Path("numpy_path")),
         },
     )
     with contextlib.closing(sqlite3.connect(tmp_path / "tmp.db")) as database:
@@ -44,8 +40,8 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
         resource_name="my_resource",
     )
 
-    assert resource.value == str(cached_file)
-    assert resource.type == model.ResourceType.LOCAL_RESOURCE
+    assert isinstance(resource, model.LocalResource)
+    assert resource.path == cached_file
 
 
 @pytest.mark.asyncio
@@ -61,8 +57,8 @@ async def test_get_resource__cache_miss_remote(repository: ResourceCacheReposito
             resource_name="numpy-1.0-any.whl",
         )
 
-    assert response.type == model.ResourceType.LOCAL_RESOURCE
-    assert response.value == str(repository._cache_path / "numpy-1.0-any.whl")
+    assert isinstance(response, model.LocalResource)
+    assert response.path == repository._cache_path / "numpy-1.0-any.whl"
 
 
 @pytest.mark.asyncio
@@ -72,8 +68,8 @@ async def test_get_resource__cache_miss_local(repository: ResourceCacheRepositor
         resource_name="numpy-1.0.tar.gz",
     )
 
-    assert resource.type == model.ResourceType.LOCAL_RESOURCE
-    assert resource.value == "numpy_path"
+    assert isinstance(resource, model.LocalResource)
+    assert resource.path == pathlib.Path("numpy_path")
 
 
 @pytest.mark.asyncio

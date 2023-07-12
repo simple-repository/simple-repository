@@ -4,12 +4,12 @@ from packaging.utils import canonicalize_name
 
 from acc_py_index.simple.model import (
     File,
+    LocalResource,
     Meta,
     ProjectDetail,
     ProjectList,
     ProjectListElement,
     Resource,
-    ResourceType,
 )
 
 from ... import errors
@@ -80,7 +80,6 @@ class LocalRepository(SimpleRepository):
         if not resource_uri.is_file():
             raise errors.ResourceUnavailable(resource_name)
 
-        return Resource(
-            value=str(resource_uri),
-            type=ResourceType.LOCAL_RESOURCE,
+        return LocalResource(
+            path=resource_uri,
         )

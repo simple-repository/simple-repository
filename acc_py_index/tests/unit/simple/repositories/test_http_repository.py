@@ -4,7 +4,14 @@ import aiohttp
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
+from acc_py_index.simple.model import (
+    File,
+    HttpResource,
+    Meta,
+    ProjectDetail,
+    ProjectList,
+    ProjectListElement,
+)
 from acc_py_index.simple.repositories.http import HttpRepository
 from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
 
@@ -230,8 +237,9 @@ def project_detail() -> ProjectDetail:
 async def test_get_resource(repository: HttpRepository, project_detail: ProjectDetail) -> None:
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpRepository, "get_project_page", m):
-        resouce = await repository.get_resource("numpy", "numpy-2.0.whl")
-        assert resouce.value == "my_url/numpy-2.0.whl"
+        resp = await repository.get_resource("numpy", "numpy-2.0.whl")
+        assert isinstance(resp, HttpResource)
+        assert resp.url == "my_url/numpy-2.0.whl"
 
 
 @pytest.mark.asyncio
@@ -254,8 +262,9 @@ async def test_get_resource_project_unavailable(repository: HttpRepository) -> N
 async def test_get_resource_metadata(repository: HttpRepository, project_detail: ProjectDetail) -> None:
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpRepository, "get_project_page", m):
-        resouce = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
-        assert resouce.value == "my_url/numpy-1.0.whl.metadata"
+        resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
+        assert isinstance(resp, HttpResource)
+        assert resp.url == "my_url/numpy-1.0.whl.metadata"
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
-            resouce = await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
+            await repository.get_resource("numpy", "numpy-2.0.whl.metadata")

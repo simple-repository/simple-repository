@@ -79,14 +79,14 @@ def repository(tmp_db: sqlite3.Connection) -> metadata_repository.MetadataInject
                 ),
             ],
             resources={
-                "numpy-1.0-any.whl": model.Resource(
-                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                "numpy-1.0-any.whl": model.HttpResource(
+                    url="numpy_url",
                 ),
-                "numpy-1.0.tar.gz": model.Resource(
-                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                "numpy-1.0.tar.gz": model.HttpResource(
+                    url="numpy_url",
                 ),
-                "numpy-2.0-any.whl": model.Resource(
-                    "file/path", model.ResourceType.LOCAL_RESOURCE,
+                "numpy-2.0-any.whl": model.LocalResource(
+                    path=pathlib.Path("file/path"),
                 ),
             },
         ),
@@ -106,8 +106,8 @@ async def test_get_resource__cached(repository: metadata_repository.MetadataInje
     repository._cache["name/resource.metadata"] = "cached_meta"
 
     response = await repository.get_resource("name", "resource.metadata")
-    assert response.value == "cached_meta"
-    assert response.type == model.ResourceType.METADATA
+    assert isinstance(response, model.TextResource)
+    assert response.text == "cached_meta"
 
 
 @pytest.mark.asyncio
@@ -118,8 +118,8 @@ async def test_get_resource__not_cached(repository: metadata_repository.Metadata
     ):
         response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
-    assert response.value == "downloaded_meta"
-    assert response.type == model.ResourceType.METADATA
+    assert isinstance(response, model.TextResource)
+    assert response.text == "downloaded_meta"
 
 
 @pytest.mark.asyncio
@@ -130,14 +130,17 @@ async def test_get_resource__local_resource(repository: metadata_repository.Meta
     ):
         response = await repository.get_resource("numpy", "numpy-2.0-any.whl.metadata")
 
-    assert response.value == "downloaded_meta"
-    assert response.type == model.ResourceType.METADATA
+    assert isinstance(response, model.TextResource)
+    assert response.text == "downloaded_meta"
 
 
 @pytest.mark.asyncio
 async def test_get_resource__not_valid_resource(tmp_db: sqlite3.Connection) -> None:
     source_repo = mock.Mock(spec=SimpleRepository)
-    source_repo.get_resource.side_effect = [errors.ResourceUnavailable('name'), model.Resource('/etc/passwd', model.ResourceType.METADATA)]
+    source_repo.get_resource.side_effect = [
+        errors.ResourceUnavailable('name'),
+        model.TextResource(text='/etc/passwd'),
+    ]
     repo = metadata_repository.MetadataInjectorRepository(
         source=typing.cast(SimpleRepository, source_repo),
         database=tmp_db,
@@ -156,8 +159,8 @@ async def test_get_resource__not_metadata(
     resource_name: str,
 ) -> None:
     response = await repository.get_resource("numpy", resource_name)
-    assert response.value == "numpy_url"
-    assert response.type == model.ResourceType.REMOTE_RESOURCE
+    assert isinstance(response, model.HttpResource)
+    assert response.url == "numpy_url"
 
 
 @pytest.mark.asyncio

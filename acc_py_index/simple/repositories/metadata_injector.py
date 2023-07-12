@@ -7,7 +7,7 @@ import zipfile
 import aiohttp
 
 from ... import errors, ttl_cache, utils
-from ..model import ProjectDetail, Resource, ResourceType
+from ..model import HttpResource, LocalResource, ProjectDetail, Resource, TextResource
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -108,20 +108,20 @@ class MetadataInjectorRepository(RepositoryContainer):
             resource = await super().get_resource(
                 project_name, resource_name.removesuffix(".metadata"),
             )
-            if resource.type == ResourceType.REMOTE_RESOURCE:
+            if isinstance(resource, HttpResource):
                 try:
                     metadata = await download_metadata(
                         package_name=resource_name.removesuffix(".metadata"),
-                        download_url=resource.value,
+                        download_url=resource.url,
                         session=self._session,
                     )
                 except ValueError as e:
                     # If we can't get hold of the metadata from the file then raise
                     # a resource unavailable.
                     raise errors.ResourceUnavailable(resource_name) from e
-            elif resource.type == ResourceType.LOCAL_RESOURCE:
+            elif isinstance(resource, LocalResource):
                 try:
-                    metadata = get_metadata_from_package(pathlib.Path(resource.value))
+                    metadata = get_metadata_from_package(resource.path)
                 except ValueError as e:
                     raise errors.ResourceUnavailable(resource_name) from e
             else:
@@ -133,7 +133,6 @@ class MetadataInjectorRepository(RepositoryContainer):
             # Cache the result for a faster response in the future.
             self._cache[project_name + "/" + resource_name] = metadata
 
-        return Resource(
-            value=metadata,
-            type=ResourceType.METADATA,
+        return TextResource(
+            text=metadata,
         )

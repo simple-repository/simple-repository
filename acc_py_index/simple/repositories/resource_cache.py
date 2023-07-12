@@ -8,7 +8,7 @@ import aiohttp
 
 from ... import utils
 from ...ttl_cache import TABLE_NAME_PATTERN
-from ..model import Resource, ResourceType
+from ..model import HttpResource, LocalResource, Resource
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -49,10 +49,7 @@ class ResourceCacheRepository(RepositoryContainer):
         if not resource_path.is_relative_to(self._cache_path):
             raise ValueError(f"{resource_path} is not contained in {self._cache_path}")
 
-        cached_resource = Resource(
-            value=str(resource_path),
-            type=ResourceType.LOCAL_RESOURCE,
-        )
+        cached_resource = LocalResource(path=resource_path)
         # If the package is currently cached, return it.
         # Currently no cache invalidation mechanism is provided
         # for packages that are assumed to be immutable.
@@ -64,11 +61,11 @@ class ResourceCacheRepository(RepositoryContainer):
 
         # If the upstream resource is a REMOTE_RESOURCE, download and
         # cache it. Then return a local resource pointing to that file.
-        if resource.type == ResourceType.REMOTE_RESOURCE:
+        if isinstance(resource, HttpResource):
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             dest_file = self._tmp_path / f"{timestamp}_{uuid.uuid4().hex}"
             await utils.download_file(
-                download_url=resource.value,
+                download_url=resource.url,
                 dest_file=dest_file,
                 session=self._session,
             )
