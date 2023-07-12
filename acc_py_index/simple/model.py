@@ -23,7 +23,7 @@ brackets, for example ``[additional context]``.
 
 """
 from dataclasses import dataclass
-from enum import Enum, auto
+import pathlib
 from typing import Optional, Union
 
 import packaging.utils
@@ -111,19 +111,21 @@ class ProjectList:
     projects: frozenset[ProjectListElement]
 
 
-class ResourceType(Enum):
-    REMOTE_RESOURCE = auto()
-    METADATA = auto()
-    LOCAL_RESOURCE = auto()
+class Resource:
+    # Resource downloadable through the index.
+    pass
 
 
 @dataclass(frozen=True)
-class Resource:
-    """Resource downloadable through the index.
+class LocalResource(Resource):
+    path: pathlib.Path
 
-    For local resources, no downstream validation is
-    performed to ensure that the resource is accessible, so
-    they can potentially leak content from the file system.
-    """
-    value: str
-    type: ResourceType
+
+@dataclass(frozen=True)
+class HttpResource(Resource):
+    url: str
+
+
+@dataclass(frozen=True)
+class TextResource(Resource):
+    text: str
