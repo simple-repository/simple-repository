@@ -5,6 +5,7 @@ import typing
 from typing import Union
 
 import packaging.utils
+import packaging.version
 
 from .model import File, ProjectDetail, ProjectList
 
@@ -31,11 +32,15 @@ class SerializerJsonV1(Serializer):
             },
             "name": page.name,
             "files": [
-                self.standardize_file(file)
+                self.standardize_file(
+                    file=file,
+                    version=packaging.version.Version(page.meta.api_version),
+                )
                 for file in page.files
             ],
-
         }
+        if page.versions is not None:
+            project_page_dict["versions"] = list(page.versions)
         return json.dumps(project_page_dict)
 
     def serialize_project_list(self, page: ProjectList) -> str:
@@ -47,7 +52,11 @@ class SerializerJsonV1(Serializer):
         }
         return json.dumps(list_dict)
 
-    def standardize_file(self, file: File) -> dict[str, typing.Any]:
+    def standardize_file(
+        self,
+        file: File,
+        version: packaging.version.Version,
+    ) -> dict[str, typing.Any]:
         file_dict: dict[str, typing.Any] = {
             "filename": file.filename,
             "url": file.url,
@@ -64,6 +73,10 @@ class SerializerJsonV1(Serializer):
             file_dict["gpg-sig"] = file.gpg_sig
         if file.yanked is not None:
             file_dict["yanked"] = file.yanked
+        if version >= packaging.version.Version("1.1"):
+            file_dict["size"] = file.size
+            if file.upload_time is not None:
+                file_dict["upload-time"] = file.upload_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         return file_dict
 
 
