@@ -73,11 +73,11 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
     repo = AllowListedRepository(
         source=FakeRepository(
             resources={
-                "gunicorn-0.7.whl": model.Resource(
-                    "gunicorn_url", model.ResourceType.REMOTE_RESOURCE,
+                "gunicorn-0.7.whl": model.HttpResource(
+                    url="gunicorn_url",
                 ),
-                "numpy-0.7.whl": model.Resource(
-                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
+                "numpy-0.7.whl": model.HttpResource(
+                    url="numpy_url",
                 ),
             },
         ),
@@ -97,7 +97,9 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
         await repo.get_resource("pandas", "pandas.whl")
 
     result = await repo.get_resource("numpy", "numpy-0.7.whl")
-    assert result.value == "numpy_url"
+
+    assert isinstance(result, model.HttpResource)
+    assert result.url == "numpy_url"
 
 
 @pytest.mark.parametrize(

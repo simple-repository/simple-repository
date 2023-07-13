@@ -4,9 +4,8 @@ from urllib.parse import urljoin
 import aiohttp
 import packaging.utils
 
-from .. import parser
+from .. import model, parser
 from ... import errors, utils
-from ..model import ProjectDetail, ProjectList, Resource, ResourceType
 from .core import SimpleRepository
 
 
@@ -36,7 +35,7 @@ class HttpRepository(SimpleRepository):
             content_type = response.headers.get("content-type", "")
         return body, content_type
 
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
+    async def get_project_page(self, project_name: str) -> model.ProjectDetail:
         if project_name != packaging.utils.canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
 
@@ -69,7 +68,7 @@ class HttpRepository(SimpleRepository):
         project_page = replace(project_page, files=files)
         return project_page
 
-    async def get_project_list(self) -> ProjectList:
+    async def get_project_list(self) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self.source_url)
         except aiohttp.ClientResponseError as e:
@@ -85,7 +84,7 @@ class HttpRepository(SimpleRepository):
 
         raise errors.UnsupportedSerialization(content_type)
 
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+    async def get_resource(self, project_name: str, resource_name: str) -> model.Resource:
         try:
             project_page = await self.get_project_page(project_name)
         except errors.PackageNotFoundError:
@@ -95,18 +94,16 @@ class HttpRepository(SimpleRepository):
         else:
             for file in project_page.files:
                 if resource_name == file.filename:
-                    return Resource(
-                        value=file.url,
-                        type=ResourceType.REMOTE_RESOURCE,
-                    )
+                    return model.HttpResource(url=file.url)
             raise errors.ResourceUnavailable(resource_name)
 
-    async def get_metadata(self, project_page: ProjectDetail, resource_name: str) -> Resource:
+    async def get_metadata(
+        self,
+        project_page: model.ProjectDetail,
+        resource_name: str,
+    ) -> model.Resource:
         distribution_name = resource_name.removesuffix(".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
-                return Resource(
-                    value=file.url + ".metadata",
-                    type=ResourceType.REMOTE_RESOURCE,
-                )
+                return model.HttpResource(url=file.url + ".metadata")
         raise errors.ResourceUnavailable(resource_name)

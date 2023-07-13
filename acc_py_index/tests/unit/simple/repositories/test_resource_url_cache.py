@@ -20,9 +20,7 @@ def url_cache(tmp_path: pathlib.PosixPath) -> ResourceURLCacheRepository:
                 ),
             ],
             resources={
-                "numpy-1.0-any.whl": model.Resource(
-                    "url/numpy/resource", model.ResourceType.REMOTE_RESOURCE,
-                ),
+                "numpy-1.0-any.whl": model.HttpResource("url/numpy/resource"),
             },
         ),
         db,
@@ -41,8 +39,10 @@ async def test_get_project_page(url_cache: ResourceURLCacheRepository) -> None:
 @pytest.mark.asyncio
 async def test_get_resource(url_cache: ResourceURLCacheRepository) -> None:
     response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl")
-    assert response.value == "url/numpy/resource"
+    assert isinstance(response, model.HttpResource)
+    assert response.url == "url/numpy/resource"
 
     url_cache._cache["numpy/numpy-1.0-any.whl"] = "cached_url"
     response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl")
-    assert response.value == "cached_url"
+    assert isinstance(response, model.HttpResource)
+    assert response.url == "cached_url"

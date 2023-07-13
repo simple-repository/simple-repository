@@ -41,9 +41,8 @@ async def test_get_resource(simple_dir: Path) -> None:
     )
     resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
 
-    assert resource == model.Resource(
-        value=str(simple_dir / "numpy" / "numpy-1.0-any.whl"),
-        type=model.ResourceType.LOCAL_RESOURCE,
+    assert resource == model.LocalResource(
+        path=simple_dir / "numpy" / "numpy-1.0-any.whl",
     )
 
 

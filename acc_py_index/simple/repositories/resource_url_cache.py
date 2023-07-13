@@ -1,7 +1,7 @@
 import sqlite3
 
 from ...ttl_cache import TTLDatabaseCache
-from ..model import ProjectDetail, Resource, ResourceType
+from ..model import HttpResource, ProjectDetail, Resource
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -31,5 +31,5 @@ class ResourceURLCacheRepository(RepositoryContainer):
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
         if url := self._cache.get(project_name + '/' + resource_name):
-            return Resource(value=url, type=ResourceType.REMOTE_RESOURCE)
+            return HttpResource(url=url)
         return await self.source.get_resource(project_name, resource_name)

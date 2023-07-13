@@ -41,11 +41,10 @@ async def test_get_resource() -> None:
     repository = RepositoryContainer(
         FakeRepository(
             resources={
-                "numpy.whl": model.Resource(
-                    "numpy_url", model.ResourceType.REMOTE_RESOURCE,
-                ),
+                "numpy.whl": model.HttpResource("numpy_url"),
             },
         ),
     )
     result = await repository.get_resource("numpy", "numpy.whl")
-    assert result.value == "numpy_url"
+    assert isinstance(result, model.HttpResource)
+    assert result.url == "numpy_url"

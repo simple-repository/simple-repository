@@ -153,25 +153,18 @@ async def test_get_resource() -> None:
         FakeRepository(),
         FakeRepository(
             resources={
-                "numpy.whl": model.Resource(
-                    "url", model.ResourceType.REMOTE_RESOURCE,
-                ),
+                "numpy.whl": model.HttpResource("url"),
             },
         ),
         FakeRepository(
             resources={
-                "numpy.whl": model.Resource(
-                    "wrog", model.ResourceType.REMOTE_RESOURCE,
-                ),
+                "numpy.whl": model.HttpResource("wrog"),
             },
         ),
     ])
 
     resp = await group_repository.get_resource("numpy", "numpy.whl")
-    assert resp == model.Resource(
-        value="url",
-        type=model.ResourceType.REMOTE_RESOURCE,
-    )
+    assert resp == model.HttpResource("url")
 
 
 @pytest.mark.asyncio
