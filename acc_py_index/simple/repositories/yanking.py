@@ -2,6 +2,7 @@ from dataclasses import replace
 import fnmatch
 import html
 import pathlib
+import typing
 
 import aiosqlite
 from packaging.utils import canonicalize_name
@@ -11,22 +12,50 @@ from ... import errors, utils
 from .core import RepositoryContainer, SimpleRepository
 
 
-async def get_yanked_releases(project_name: str, database: aiosqlite.Connection) -> dict[str, str]:
-    query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
+async def get_yanked_versions(project_name: str, database: aiosqlite.Connection) -> dict[str, str]:
+    query = "SELECT version, reason FROM yanked_versions WHERE project_name = :project_name"
     async with database.execute(query, {"project_name": project_name}) as cur:
-        result = await cur.fetchall()
+        result: list[tuple[str, str]] = await cur.fetchall()
     return {
-        file_name: record for file_name, record in result
+        version: reason for version, reason in result
     }
 
 
-def add_yanked_attribute(
+def add_yanked_attribute_per_version(
     project_page: model.ProjectDetail,
     yanked_versions: dict[str, str],
 ) -> model.ProjectDetail:
+    if not yanked_versions:
+        return project_page
+
     files = []
     for file in project_page.files:
-        reason = yanked_versions.get(file.filename)
+        try:
+            version = utils.extract_package_version(
+                filename=file.filename,
+                project_name=canonicalize_name(project_page.name),
+            )
+        except ValueError:
+            version = "unknown"
+        reason = yanked_versions.get(version)
+        if (not file.yanked) and (reason is not None):
+            if reason == '':
+                yanked: typing.Union[bool, str] = True
+            else:
+                yanked = html.escape(reason)
+            file = replace(file, yanked=yanked)
+        files.append(file)
+    project_page = replace(project_page, files=tuple(files))
+    return project_page
+
+
+def add_yanked_attribute_per_file(
+    project_page: model.ProjectDetail,
+    yanked_files: dict[str, str],
+) -> model.ProjectDetail:
+    files = []
+    for file in project_page.files:
+        reason = yanked_files.get(file.filename)
         if (not file.yanked) and (reason is not None):
             if reason == '':
                 yanked: bool | str = True
@@ -41,7 +70,7 @@ def add_yanked_attribute(
 class YankRepository(RepositoryContainer):
     """A class that adds support for PEP-592 yank to a SimpleRepository.
     The project name, file name, and the yanking reason are stored in the
-    yanked_releases table of the SQLite database passed to the constructor.
+    yanked_versions table of the SQLite database passed to the constructor.
     Distributions that are already yanked will not be affected by this component.
     """
     def __init__(
@@ -62,21 +91,21 @@ class YankRepository(RepositoryContainer):
         project_page = await super().get_project_page(project_name, request_context)
 
         await self._init_db()
-        if yanked_versions := await get_yanked_releases(project_name, self.yank_database):
-            return add_yanked_attribute(
-                project_page=project_page,
-                yanked_versions=yanked_versions,
-            )
-        return project_page
+        yanked_versions = await get_yanked_versions(project_name, self.yank_database)
+        return add_yanked_attribute_per_version(
+            project_page=project_page,
+            yanked_versions=yanked_versions,
+        )
 
     async def _init_db(self) -> None:
         if not self._initialise_db:
             return
 
         await self.yank_database.execute(
-            "CREATE TABLE IF NOT EXISTS yanked_releases"
-            "(project_name TEXT, file_name TEXT, reason TEXT"
-            ", CONSTRAINT pk PRIMARY KEY (project_name, file_name))",
+            "CREATE TABLE IF NOT EXISTS yanked_versions"
+            "(project_name TEXT, version TEXT, reason TEXT,"
+            " date TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            ", CONSTRAINT pk PRIMARY KEY (project_name, version))",
         )
         self._initialise_db = False
 
@@ -111,9 +140,9 @@ class ConfigurableYankRepository(RepositoryContainer):
 
         if value := self._yank_config.get(project_name):
             pattern, reason = value
-            project_page = add_yanked_attribute(
+            project_page = add_yanked_attribute_per_file(
                 project_page=project_page,
-                yanked_versions={
+                yanked_files={
                     file.filename: reason for file in project_page.files
                     if fnmatch.fnmatch(file.filename, pattern)
                 },
