@@ -10,15 +10,20 @@ from .fake_repository import FakeRepository
 
 
 @pytest.mark.asyncio
-async def test_get_project_page() -> None:
+@pytest.mark.parametrize(
+    "version", [
+        "1.0", "1.1",
+    ],
+)
+async def test_get_project_page(version: str) -> None:
     group_repository = PrioritySelectedProjectsRepository([
         FakeRepository(),
         FakeRepository(
             project_pages=[
                 model.ProjectDetail(
-                    model.Meta('1.0'),
+                    model.Meta(version),
                     "numpy",
-                    files=(model.File("1", "1", {}), model.File("2", "2", {})),
+                    files=(model.File("1", "1", {}, size=1), model.File("2", "2", {}, size=1)),
                 ),
             ],
         ),
@@ -36,10 +41,10 @@ async def test_get_project_page() -> None:
     resp = await group_repository.get_project_page(project_name="numpy")
 
     assert resp == model.ProjectDetail(
-        model.Meta('1.0'),
+        model.Meta(version),
         "numpy",
         files=(
-            model.File("1", "1", {}), model.File("2", "2", {}),
+            model.File("1", "1", {}, size=1), model.File("2", "2", {}, size=1),
         ),
     )
 

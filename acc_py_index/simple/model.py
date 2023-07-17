@@ -22,11 +22,15 @@ Where additional context is added to a quote, it will be inline within square
 brackets, for example ``[additional context]``.
 
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 import pathlib
 from typing import Optional, Union
 
 import packaging.utils
+import packaging.version
+
+from .. import utils
 
 
 @dataclass(frozen=True)
@@ -74,6 +78,15 @@ class File:
     # Note that the string "false" is a valid yank reason in both JSON and HTML.
     yanked: Optional[Union[bool, str]] = None
 
+    # PEP-700: This field is mandatory. It MUST contain an integer which is the file size in bytes.
+    size: Optional[int] = None
+
+    # PEP-700: This field is optional. If present, it MUST contain a valid ISO 8601 date/time
+    #          string, in the format yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the
+    #          file was uploaded to the index. As indicated by the Z suffix, the upload time
+    #          MUST use the UTC timezone.
+    upload_time: Optional[datetime] = None
+
     def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
@@ -93,6 +106,32 @@ class ProjectDetail:
     meta: Meta
     name: str
     files: tuple[File, ...]
+    # PEP-700: An additional key, versions MUST be present at the top level, in addition to the
+    #          keys name, files and meta defined in PEP 691. This key MUST contain a list of version
+    #          strings specifying all of the project versions uploaded for this project.
+    #
+    # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
+    versions: Optional[set[str]] = field(init=False)
+
+    def __post_init__(self) -> None:
+        api_version = packaging.version.Version(self.meta.api_version)
+        if api_version >= packaging.version.Version("1.1"):
+            for file in self.files:
+                if file.size is None:
+                    raise ValueError(
+                        "SimpleAPI>=1.1 requires the size field to be set for all the files.",
+                    )
+            versions = {
+                str(utils.safe_version(file.filename, self._normalized_name))
+                for file in self.files
+            }
+        else:
+            versions = None
+        object.__setattr__(self, "versions", versions)
+
+    @property
+    def _normalized_name(self) -> str:
+        return packaging.utils.canonicalize_name(self.name)
 
 
 @dataclass(frozen=True)

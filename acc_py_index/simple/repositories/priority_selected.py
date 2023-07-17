@@ -2,6 +2,7 @@ import asyncio
 from collections.abc import Sequence
 
 from packaging.utils import canonicalize_name
+from packaging.version import Version
 
 from ... import errors
 from ..model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
@@ -66,9 +67,11 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             ],
         )
 
-        # TODO: Handle different API versions.
+        # Downgrade the API version to the lowest available, as it will not be
+        # possible to calculate the missing files to perform a version upgrade.
+        api_version = min(Version(project.meta.api_version) for project in project_lists)
         return ProjectList(
-            meta=Meta("1.0"),
+            meta=Meta(str(api_version)),
             projects=frozenset(
                 ProjectListElement(
                     name=canonicalize_name(p.name),

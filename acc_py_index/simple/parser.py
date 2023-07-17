@@ -1,3 +1,4 @@
+from datetime import datetime
 from html import unescape
 import json
 from typing import Optional, Union
@@ -52,12 +53,20 @@ def parse_html_project_list(page: str) -> ProjectList:
 
 def parse_json_project_page(body: str) -> ProjectDetail:
     page_dict = json.loads(body)
-    return ProjectDetail(
-        name=page_dict["name"],
-        meta=Meta(
-            api_version=page_dict["meta"]["api-version"],
-        ),
-        files=tuple(
+
+    files = []
+    for file in page_dict["files"]:
+        if date_string := file.get("upload-time"):
+            # PEP-700: upload-time MUST contain a valid ISO 8601 date/time string, in the format
+            # yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the file was uploaded to
+            # the index. The fractional seconds part of the timestamp is optional.
+            try:
+                upload_time = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                upload_time = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+        else:
+            upload_time = None
+        files.append(
             File(
                 filename=file["filename"],
                 # Temporary fix: Escape the URLs coming from the source
@@ -72,9 +81,17 @@ def parse_json_project_page(body: str) -> ProjectDetail:
                 dist_info_metadata=file.get("core-metadata"),
                 gpg_sig=file.get("gpg-sig"),
                 yanked=file.get("yanked"),
-            )
-            for file in page_dict["files"]
+                size=file.get("size"),
+                upload_time=upload_time,
+            ),
+        )
+
+    return ProjectDetail(
+        name=page_dict["name"],
+        meta=Meta(
+            api_version=page_dict["meta"]["api-version"],
         ),
+        files=tuple(files),
     )
 
 

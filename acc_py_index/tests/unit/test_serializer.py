@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from typing import Optional, Union
 
@@ -233,6 +234,50 @@ def test_serialize_project_page_json() -> None:
             ]
         }
     ''')
+
+
+@pytest.mark.parametrize(
+    "version, serialization", [
+        (
+            "1.0",
+            '''[{
+                "filename": "test1-1.0.whl",
+                "url": "test1.whl",
+                "hashes": {}
+            }]''',
+        ),
+        (
+            "1.1",
+            '''[{
+                "filename": "test1-1.0.whl",
+                "url": "test1.whl",
+                "hashes": {},
+                "size": 1,
+                "upload-time": "2000-01-04T00:00:00Z"
+            }]''',
+        ),
+    ],
+)
+def test_serialize_project_page_json__v1_1_attrs(
+    version: str,
+    serialization: str,
+) -> None:
+    page = ProjectDetail(
+        Meta(version),
+        "project",
+        files=(
+            File(
+                filename="test1-1.0.whl",
+                url="test1.whl",
+                hashes={},
+                size=1,
+                upload_time=datetime(2000, 1, 4, 0, 0, 0),
+            ),
+        ),
+    )
+    serializer = SerializerJsonV1()
+    res = serializer.serialize_project_page(page)
+    assert json.loads(res)["files"] == json.loads(serialization)
 
 
 def test_serialize_project_list_json() -> None:

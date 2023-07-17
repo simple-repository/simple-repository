@@ -1,3 +1,5 @@
+from datetime import datetime
+import os
 from pathlib import Path
 
 import pytest
@@ -113,7 +115,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
 
     project_details = await repo.get_project_page("numpy")
     assert project_details == model.ProjectDetail(
-        meta=model.Meta("1.0"),
+        meta=model.Meta("1.1"),
         name="numpy",
         files=(
             model.File(
@@ -123,6 +125,10 @@ async def test_get_project_page(simple_dir: Path) -> None:
                 hashes={
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 },
+                upload_time=datetime.utcfromtimestamp(
+                        os.path.getctime(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+                ),
+                size=os.stat(simple_dir / "numpy" / "numpy-1.0-any.whl").st_size,
             ),
             model.File(
                 filename='numpy-1.1.tar.gz',
@@ -130,6 +136,10 @@ async def test_get_project_page(simple_dir: Path) -> None:
                 hashes={
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
+                upload_time=datetime.utcfromtimestamp(
+                        os.path.getctime(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
+                ),
+                size=os.stat(simple_dir / "numpy" / "numpy-1.1.tar.gz").st_size,
             ),
         ),
     )

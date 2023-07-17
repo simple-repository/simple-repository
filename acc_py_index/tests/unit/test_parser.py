@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Union
 
 import pytest
@@ -300,4 +301,53 @@ def test_parse_html_project_list() -> None:
             model.ProjectListElement("gym"),
             model.ProjectListElement("acc_py_index"),
         ]),
+    )
+
+
+def test_parse_json_project_page__v_1_1() -> None:
+    page = '''
+    {
+        "meta": {
+            "api-version": "1.1"
+        },
+        "name": "holygrail",
+        "files": [
+            {
+                "filename": "holygrail-1.0-py3-none-any.whl",
+                "url": "http://url.whl",
+                "hashes": {},
+                "size": 1,
+                "upload-time": "2000-01-01T00:00:00.000000Z"
+            },
+            {
+                "filename": "holygrail-1.1-py3-none-any.whl",
+                "url": "http://url.whl",
+                "hashes": {},
+                "size": 1,
+                "upload-time": "2000-01-01T00:00:00Z"
+            }
+        ]
+    }'''
+
+    result = parser.parse_json_project_page(page)
+
+    assert result == model.ProjectDetail(
+        model.Meta("1.1"),
+        "holygrail",
+        (
+            model.File(
+                filename="holygrail-1.0-py3-none-any.whl",
+                url="http://url.whl",
+                hashes={},
+                size=1,
+                upload_time=datetime(2000, 1, 1, 0, 0, 0),
+            ),
+            model.File(
+                filename="holygrail-1.1-py3-none-any.whl",
+                url="http://url.whl",
+                hashes={},
+                size=1,
+                upload_time=datetime(2000, 1, 1, 0, 0, 0),
+            ),
+        ),
     )

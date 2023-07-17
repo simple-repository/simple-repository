@@ -15,11 +15,11 @@ async def test_get_project_page() -> None:
             FakeRepository(
                 project_pages=[
                     ProjectDetail(
-                        Meta('1.0'),
+                        Meta('1.1'),
                         "numpy",
                         files=(
-                            File("numpy-1.1.whl", "url1", {}),
-                            File("numpy-1.2.whl", "url1", {}),
+                            File("numpy-1.1.whl", "url1", {}, size=1),
+                            File("numpy-1.2.whl", "url1", {}, size=1),
                         ),
                     ),
                 ],
@@ -45,8 +45,8 @@ async def test_get_project_page() -> None:
         Meta('1.0'),
         "numpy",
         files=(
-            File("numpy-1.1.whl", "url1", {}),
-            File("numpy-1.2.whl", "url1", {}),
+            File("numpy-1.1.whl", "url1", {}, size=1),
+            File("numpy-1.2.whl", "url1", {}, size=1),
             File("numpy-1.3.whl", "url2", {}),
         ),
     )

@@ -1,15 +1,12 @@
 import asyncio
-from dataclasses import replace
 import typing
 
 from packaging.utils import canonicalize_name
+from packaging.version import Version
 
+from .. import model
 from ... import errors
-from ..model import ProjectDetail
 from .priority_selected import PrioritySelectedProjectsRepository
-
-if typing.TYPE_CHECKING:
-    from .. import model
 
 
 class MergedRepository(PrioritySelectedProjectsRepository):
@@ -23,7 +20,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
             hence its existence, but if you are unsure of those reasons, consider
             using the :class:`PrioritySelectedProjectsRepository` instead.
     """
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
+    async def get_project_page(self, project_name: str) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources and blending them together.
 
@@ -34,12 +31,10 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         if project_name != canonicalize_name(project_name):
             raise errors.NotNormalizedProjectName()
 
-        result: typing.Optional[ProjectDetail] = None
-
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
-        project_pages: list[typing.Union[Exception, ProjectDetail]] = await asyncio.gather(
+        results: list[typing.Union[Exception, model.ProjectDetail]] = await asyncio.gather(
             *(
                 source.get_project_page(project_name)
                 for source in self.sources
@@ -47,21 +42,32 @@ class MergedRepository(PrioritySelectedProjectsRepository):
             return_exceptions=True,
         )
 
-        for project_page in project_pages:
-            if isinstance(project_page, Exception):
-                if not isinstance(project_page, errors.PackageNotFoundError):
-                    raise project_page
+        project_pages: list[model.ProjectDetail] = []
+        for result in results:
+            if isinstance(result, Exception):
+                if not isinstance(result, errors.PackageNotFoundError):
+                    raise result
             else:
-                for file in project_page.files:
+                for file in result.files:
                     # Only add the file if the filename hasn't been seen before.
                     files.setdefault(file.filename, file)
-                if result is None:
-                    result = project_page
+                project_pages.append(result)
 
-        if result is None:
+        if not project_pages:
             raise errors.PackageNotFoundError(
                 package_name=project_name,
             )
 
-        result = replace(result, files=tuple(files.values()))
-        return result
+        # Downgrade the API version to the lowest available, as it will not be
+        # possible to calculate the missing files to perform a version upgrade.
+        api_version = str(
+            min((
+                Version(result.meta.api_version) for result in project_pages
+            )),
+        )
+
+        return model.ProjectDetail(
+            meta=model.Meta(api_version),
+            name=project_pages[0].name,
+            files=tuple(files.values()),
+        )
