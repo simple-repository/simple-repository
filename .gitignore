@@ -1,0 +1,3 @@
+*.egg-info
+.idea
+simple_repository/_version.py
