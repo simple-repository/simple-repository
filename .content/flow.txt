@@ -1,0 +1,5 @@
+flowchart TD
+    LocalRepository --> PrioritySelectedRepository
+    HTTPRepository --> PrioritySelectedRepository
+    PrioritySelectedRepository --> MetadataInjectorRepository
+    MetadataInjectorRepository --> AllowListedRepository

@@ -1,3 +1,10 @@
+# Copyright (C) 2023, CERN
+# This software is distributed under the terms of the MIT
+# licence, copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
 [build-system]
 requires = ["setuptools>=61", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
@@ -19,9 +26,6 @@ authors = [
     {name = "Francesco Iannaccone"},
     {name = "Wouter Koorn"},
 ]
-maintainers = [
-    {name = "Acc-Py team", email = "acc-python-support@cern.ch"},
-]
 dependencies = [
   "httpx",
   "aiosqlite",
@@ -31,7 +35,7 @@ dependencies = [
 readme = "README.md"
 
 [project.urls]
-Homepage = "https://gitlab.cern.ch/acc-co/devops/python/package-index/simple-repository"
+Homepage = "https://github.com/simple-repository/simple-repository"
 
 [project.optional-dependencies]
 test = [

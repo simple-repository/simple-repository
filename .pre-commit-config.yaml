@@ -1,3 +1,10 @@
+# Copyright (C) 2023, CERN
+# This software is distributed under the terms of the MIT
+# licence, copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.4.0"
@@ -6,18 +13,14 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         exclude: .gitlab-ci.yml
-      - id: check-yaml
-        name: Check Yaml (Gitlab CI)
-        files: .gitlab-ci.yml
-        # Allow custom non-yaml tags, e.g. !reference
-        args: [--unsafe]
       - id: check-toml
 
   - repo: https://github.com/asottile/add-trailing-comma
     rev: "v2.4.0"
     hooks:
       - id: add-trailing-comma
-        args: [ "--py36-plus" ]
+        args:
+          - "--py36-plus"
 
   - repo: https://github.com/PyCQA/isort
     rev: "5.12.0"
@@ -31,13 +34,3 @@ repos:
         args:
           - "--max-line-length=100"
           - "--per-file-ignores=simple_repository/tests/*.py:E501"
-
-  - repo: ssh://git@gitlab.cern.ch:7999/acc-co/devops/python/incubator/acc-pre-commit-hooks/mypy-hook.git
-    rev: 'v0.3.1'
-    hooks:
-      - id: mypy
-        exclude : |
-            (?x)^(
-                simple_repository/tests/.*|
-                prepare-repo-dump.py|
-            )$
