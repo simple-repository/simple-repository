@@ -1,4 +1,3 @@
-from enum import Enum
 from html import escape
 import json
 import typing
@@ -7,13 +6,8 @@ from typing import Union
 import packaging.utils
 import packaging.version
 
+from .content_negotiation import Format
 from .model import File, ProjectDetail, ProjectList
-
-
-class Format(Enum):
-    JSON_V1: str = "application/vnd.pypi.simple.v1+json"
-    HTML_V1: str = "application/vnd.pypi.simple.v1+html"
-    HTML_LEGACY: str = "text/html"
 
 
 class Serializer(typing.Protocol):

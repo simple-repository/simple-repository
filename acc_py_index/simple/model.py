@@ -30,7 +30,7 @@ from typing import Optional, Union
 import packaging.utils
 import packaging.version
 
-from .. import utils
+from ..utils import safe_version
 
 
 @dataclass(frozen=True)
@@ -122,7 +122,7 @@ class ProjectDetail:
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
             versions = {
-                str(utils.safe_version(file.filename, self._normalized_name))
+                str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             }
         else:
