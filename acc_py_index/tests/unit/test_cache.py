@@ -66,3 +66,19 @@ def test_invalid_name() -> None:
         match="Table names must only contain letters, digits, and underscores.",
     ):
         TTLDatabaseCache(mock.Mock(), 5, "passwords--")
+
+
+def test_get__database_error(cache: TTLDatabaseCache) -> None:
+    database_mock = mock.Mock(spec=sqlite3.Connection)
+    database_mock.execute.side_effect = sqlite3.DatabaseError()
+    cache._database = database_mock
+
+    assert cache.get("anything") is None
+
+
+def test_update__database_error(cache: TTLDatabaseCache) -> None:
+    database_mock = mock.Mock(spec=sqlite3.Connection)
+    database_mock.execute.side_effect = sqlite3.DatabaseError()
+    cache._database = database_mock
+
+    cache.update({"anything": "anywhere"})
