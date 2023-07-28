@@ -2,9 +2,9 @@ from dataclasses import replace
 import fnmatch
 import html
 import pathlib
-import sqlite3
 import typing
 
+import aiosqlite
 from packaging.utils import canonicalize_name
 
 from ... import errors, utils
@@ -12,10 +12,10 @@ from ..model import ProjectDetail
 from .core import RepositoryContainer, SimpleRepository
 
 
-def get_yanked_releases(project_name: str, database: sqlite3.Connection) -> dict[str, str]:
+async def get_yanked_releases(project_name: str, database: aiosqlite.Connection) -> dict[str, str]:
     query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
-    curr = database.cursor()
-    result = curr.execute(query, {"project_name": project_name}).fetchall()
+    async with database.execute(query, {"project_name": project_name}) as cur:
+        result = await cur.fetchall()
     return {
         file_name: record for file_name, record in result
     }
@@ -48,15 +48,11 @@ class YankRepository(RepositoryContainer):
     def __init__(
         self,
         source: SimpleRepository,
-        database: sqlite3.Connection,
+        database: aiosqlite.Connection,
     ) -> None:
-        curr = database.cursor()
-        curr.execute(
-            "CREATE TABLE IF NOT EXISTS yanked_releases"
-            "(project_name TEXT, file_name TEXT, reason TEXT"
-            ", CONSTRAINT pk PRIMARY KEY (project_name, file_name))",
-        )
         self.yank_database = database
+        # TODO: Use a synchronization mechanism instead.
+        self._initialise_db = True
         super().__init__(source)
 
     async def get_project_page(
@@ -65,12 +61,24 @@ class YankRepository(RepositoryContainer):
     ) -> ProjectDetail:
         project_page = await super().get_project_page(project_name)
 
-        if yanked_versions := get_yanked_releases(project_name, self.yank_database):
+        await self._init_db()
+        if yanked_versions := await get_yanked_releases(project_name, self.yank_database):
             return add_yanked_attribute(
                 project_page=project_page,
                 yanked_versions=yanked_versions,
             )
         return project_page
+
+    async def _init_db(self) -> None:
+        if not self._initialise_db:
+            return
+
+        await self.yank_database.execute(
+            "CREATE TABLE IF NOT EXISTS yanked_releases"
+            "(project_name TEXT, file_name TEXT, reason TEXT"
+            ", CONSTRAINT pk PRIMARY KEY (project_name, file_name))",
+        )
+        self._initialise_db = False
 
 
 class ConfigurableYankRepository(RepositoryContainer):
