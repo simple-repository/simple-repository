@@ -1,4 +1,4 @@
-import sqlite3
+import aiosqlite
 
 from ...ttl_cache import TTLDatabaseCache
 from ..model import HttpResource, ProjectDetail, Resource
@@ -14,7 +14,7 @@ class ResourceURLCacheRepository(RepositoryContainer):
     def __init__(
         self,
         source: SimpleRepository,
-        database: sqlite3.Connection,
+        database: aiosqlite.Connection,
         ttl_min: int = 1,
         table_name: str = "url_cache",
     ) -> None:
@@ -24,12 +24,12 @@ class ResourceURLCacheRepository(RepositoryContainer):
     async def get_project_page(self, project_name: str) -> ProjectDetail:
         project_page = await super().get_project_page(project_name)
 
-        self._cache.update(
+        await self._cache.update(
             {f"{project_name}/{file.filename}": file.url for file in project_page.files},
         )
         return project_page
 
     async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        if url := self._cache.get(project_name + '/' + resource_name):
+        if url := await self._cache.get(project_name + '/' + resource_name):
             return HttpResource(url=url)
         return await self.source.get_resource(project_name, resource_name)

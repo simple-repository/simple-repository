@@ -1,29 +1,27 @@
 import pathlib
-import sqlite3
 import typing
 from unittest import mock
 
 import aiohttp
+import aiosqlite
 import pytest
+import pytest_asyncio
 
 from acc_py_index.simple import model
 from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
 
 
-@pytest.fixture
-def repository(
+@pytest_asyncio.fixture  # type: ignore
+# Untyped decorator
+async def repository(
     tmp_path: pathlib.Path,
-) -> typing.Generator[CachedHttpRepository, None, None]:
-    try:
-        db_connection = sqlite3.connect(tmp_path / "tmp.db")
-        repo = CachedHttpRepository(
+) -> typing.AsyncGenerator[CachedHttpRepository, None]:
+    async with aiosqlite.connect(tmp_path / "tmp.db") as db:
+        yield CachedHttpRepository(
             url="https://example.com/simple/",
             session=mock.MagicMock(),
-            database=db_connection,
+            database=db,
         )
-        yield repo
-    finally:
-        db_connection.close()
 
 
 @pytest.fixture
@@ -50,7 +48,7 @@ async def test_fetch_simple_page__cache_miss(
     assert content_type == "new-type"
     response_mock.raise_for_status.assert_called_once()
 
-    cached = repository._cache["url"]
+    cached = await repository._cache.get("url")
     assert cached == "new-etag,new-type,new-body"
 
 
@@ -59,7 +57,7 @@ async def test_fetch_simple_page__cache_hit_not_modified(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
 ) -> None:
-    repository._cache["url"] = "stored-etag,stored-type,stored-body"
+    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
     response_mock.status = 304
     repository.session.get.return_value.__aenter__.return_value = response_mock
     body, content_type = await repository._fetch_simple_page("url")
@@ -72,24 +70,24 @@ async def test_fetch_simple_page__cache_hit_modified(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
 ) -> None:
-    repository._cache["url"] = "stored-etag,stored-type,stored-body"
+    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
     repository.session.get.return_value.__aenter__.return_value = response_mock
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "new-body"
     assert content_type == "new-type"
-    assert repository._cache["url"] == "new-etag,new-type,new-body"
+    assert await repository._cache.get("url") == "new-etag,new-type,new-body"
 
 
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_source_unreachable(
     repository: CachedHttpRepository,
 ) -> None:
-    repository._cache["url"] = "stored-etag,stored-type,stored-body"
+    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
     repository.session.get.return_value.__aenter__.side_effect = aiohttp.ClientConnectionError()
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "stored-body"
     assert content_type == "stored-type"
-    assert repository._cache["url"] == "stored-etag,stored-type,stored-body"
+    assert await repository._cache.get("url") == "stored-etag,stored-type,stored-body"
 
 
 @pytest.mark.asyncio
@@ -106,10 +104,12 @@ async def test_get_project_page__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
 ) -> None:
-    repository._cache["https://example.com/simple/project/"] = "stored-etag,text/html," + """
+    await repository._cache.set(
+        "https://example.com/simple/project/", "stored-etag,text/html," + """
         <a href="test1.whl#hash=test_hash">test1.whl</a>
         <a href="http://test2.whl">test2.whl</a>
-    """
+    """,
+    )
     response_mock.status = 304
     repository.session.get.return_value.__aenter__.return_value = response_mock
     response = await repository.get_project_page("project")
@@ -139,10 +139,12 @@ async def test_get_project_list__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
 ) -> None:
-    repository._cache["https://example.com/simple/"] = "stored-etag,text/html," + """
+    await repository._cache.set(
+        "https://example.com/simple/", "stored-etag,text/html," + """
         <a href="/p1/">p1</a>
         <a href="/p2/">p2</a>
-    """
+    """,
+    )
     response_mock.status = 304
     repository.session.get.return_value.__aenter__.return_value = response_mock
     resp = await repository.get_project_list()

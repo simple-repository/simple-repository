@@ -1,7 +1,7 @@
 import logging
-import sqlite3
 
 import aiohttp
+import aiosqlite
 
 from ...ttl_cache import TTLDatabaseCache
 from .http import HttpRepository
@@ -26,7 +26,7 @@ class CachedHttpRepository(HttpRepository):
         self,
         url: str,
         session: aiohttp.ClientSession,
-        database: sqlite3.Connection,
+        database: aiosqlite.Connection,
         table_name: str = "simple_repository_cache",
         # Cached pages (even if still valid) will
         # be deleted after 7 days if not accessed
@@ -47,7 +47,7 @@ class CachedHttpRepository(HttpRepository):
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if res := self._cache.get(page_url):
+        if res := await self._cache.get(page_url):
             etag, cached_content_type, cached_page = res.split(",", 2)
             headers.update({"If-None-Match": etag})
 
@@ -69,7 +69,7 @@ class CachedHttpRepository(HttpRepository):
                     content_type = response.headers.get("Content-Type", "")
                     if new_etag := response.headers.get("ETag", ""):
                         # If the ETag is set, cache the response for future use.
-                        self._cache[page_url] = ",".join([new_etag, content_type, body])
+                        await self._cache.set(page_url, ",".join([new_etag, content_type, body]))
                     return body, content_type
         except (aiohttp.ServerTimeoutError, aiohttp.ClientConnectionError) as e:
             # If the connection to the source fails, and there is a cached page for
