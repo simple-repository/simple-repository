@@ -1,10 +1,11 @@
 import pathlib
-import sqlite3
 import typing
 from unittest import mock
 import zipfile
 
+import aiosqlite
 import pytest
+import pytest_asyncio
 
 from acc_py_index import errors
 import acc_py_index.simple.model as model
@@ -61,13 +62,17 @@ def test_get_metadata_from_package__missing_metadata() -> None:
     assert isinstance(exc_info.value.__cause__, KeyError)
 
 
-@pytest.fixture
-def tmp_db(tmp_path: pathlib.Path) -> sqlite3.Connection:
-    return sqlite3.connect(tmp_path / "test.db")
+@pytest_asyncio.fixture  # type: ignore
+# Untyped decorator
+async def tmp_db(tmp_path: pathlib.Path) -> aiosqlite.Connection:
+    async with aiosqlite.connect(tmp_path / "test.db") as db:
+        yield db
 
 
 @pytest.fixture
-def repository(tmp_db: sqlite3.Connection) -> metadata_repository.MetadataInjectorRepository:
+def repository(
+    tmp_db: aiosqlite.Connection,
+) -> metadata_repository.MetadataInjectorRepository:
     return metadata_repository.MetadataInjectorRepository(
         source=FakeRepository(
             project_pages=[
@@ -103,7 +108,7 @@ async def test_get_project_page(repository: metadata_repository.MetadataInjector
 
 @pytest.mark.asyncio
 async def test_get_resource__cached(repository: metadata_repository.MetadataInjectorRepository) -> None:
-    repository._cache["name/resource.metadata"] = "cached_meta"
+    await repository._cache.set("name/resource.metadata", "cached_meta")
 
     response = await repository.get_resource("name", "resource.metadata")
     assert isinstance(response, model.TextResource)
@@ -135,7 +140,7 @@ async def test_get_resource__local_resource(repository: metadata_repository.Meta
 
 
 @pytest.mark.asyncio
-async def test_get_resource__not_valid_resource(tmp_db: sqlite3.Connection) -> None:
+async def test_get_resource__not_valid_resource(tmp_db: aiosqlite.Connection) -> None:
     source_repo = mock.Mock(spec=SimpleRepository)
     source_repo.get_resource.side_effect = [
         errors.ResourceUnavailable('name'),

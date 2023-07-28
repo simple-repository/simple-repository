@@ -1,7 +1,7 @@
-import sqlite3
 from typing import Optional, Union
 from unittest import mock
 
+import aiosqlite
 import pytest
 
 from acc_py_index.simple.model import File, Meta, ProjectDetail
@@ -67,12 +67,12 @@ async def test_get_project_page(
                 ),
             ],
         ),
-        mock.Mock(),
+        mock.AsyncMock(),
     )
 
     with mock.patch(
         "acc_py_index.simple.repositories.yanking.get_yanked_releases",
-        return_value=yanked_versions,
+        mock.AsyncMock(return_value=yanked_versions),
     ):
         result = await repository.get_project_page("project")
 
@@ -80,12 +80,13 @@ async def test_get_project_page(
     assert result.files[1].yanked is None
 
 
-def test_get_yanked_releases() -> None:
-    mock_cursor = mock.Mock(spec=sqlite3.Cursor)
-    mock_cursor.execute.return_value.fetchall.return_value = [("file1", "reason1"), ("file2", "reason2")]
-    mock_database = mock.Mock(spec=sqlite3.Connection)
-    mock_database.cursor.return_value = mock_cursor
+@pytest.mark.asyncio
+async def test_get_yanked_releases() -> None:
+    mock_database = mock.AsyncMock(spec=aiosqlite.Connection)
+    mock_database.execute.return_value.__aenter__.return_value.fetchall = mock.AsyncMock(
+        return_value=[("file1", "reason1"), ("file2", "reason2")],
+    )
 
-    versions = yank_repository.get_yanked_releases("project_name", mock_database)
+    versions = await yank_repository.get_yanked_releases("project_name", mock_database)
 
     assert versions == {"file1": "reason1", "file2": "reason2"}

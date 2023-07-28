@@ -1,10 +1,10 @@
 from dataclasses import replace
 import pathlib
-import sqlite3
 import tempfile
 import zipfile
 
 import aiohttp
+import aiosqlite
 
 from ... import errors, ttl_cache, utils
 from ..model import HttpResource, LocalResource, ProjectDetail, Resource, TextResource
@@ -69,7 +69,7 @@ class MetadataInjectorRepository(RepositoryContainer):
     def __init__(
         self,
         source: SimpleRepository,
-        database: sqlite3.Connection,
+        database: aiosqlite.Connection,
         session: aiohttp.ClientSession,
         ttl_days: int = 7,
         table_name: str = "metadata_cache",
@@ -101,7 +101,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         # requested. Let's try to fetch the underlying resource and compute the metadata.
 
         # First, let's attempt to get the metadata out of the cache.
-        metadata = self._cache.get(project_name + "/" + resource_name)
+        metadata = await self._cache.get(project_name + "/" + resource_name)
         if not metadata:
             # Get hold of the actual artefact from which we want to extract
             # the metadata.
@@ -131,7 +131,7 @@ class MetadataInjectorRepository(RepositoryContainer):
                 )
 
             # Cache the result for a faster response in the future.
-            self._cache[project_name + "/" + resource_name] = metadata
+            await self._cache.set(project_name + "/" + resource_name, metadata)
 
         return TextResource(
             text=metadata,
