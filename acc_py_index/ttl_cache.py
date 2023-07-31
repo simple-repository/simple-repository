@@ -1,6 +1,7 @@
 import datetime
 import logging
 import re
+import sqlite3
 from typing import Optional
 
 import aiosqlite
@@ -43,7 +44,7 @@ class TTLDatabaseCache:
                 {"key": key, "now": now},
             ) as cur:
                 res: Optional[tuple[str]] = await cur.fetchone()
-        except aiosqlite.DatabaseError:
+        except (aiosqlite.DatabaseError, sqlite3.InterfaceError):
             # If the query fails because the database
             # is locked, assume a cache miss.
             res = None
@@ -74,7 +75,7 @@ class TTLDatabaseCache:
                 query_params,
             )
             await self._database.commit()
-        except aiosqlite.DatabaseError:
+        except (aiosqlite.DatabaseError, sqlite3.InterfaceError):
             # If the query fails because the database
             # is locked, don't cache the new values.
             pass
@@ -92,9 +93,9 @@ class TTLDatabaseCache:
                 "(key TEXT, value TEXT, valid_until TIMESTAMP"
                 ", CONSTRAINT pk PRIMARY KEY (key))",
             )
-        except aiosqlite.DatabaseError:
+        except (aiosqlite.DatabaseError, sqlite3.InterfaceError):
             # If the query fails because the database
-            # is locked, pospone the init.
+            # is locked, postpone the init.
             return
 
         self._initialise_db = False
