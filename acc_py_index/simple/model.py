@@ -150,9 +150,9 @@ class ProjectList:
     projects: frozenset[ProjectListElement]
 
 
+@dataclass(frozen=True)
 class Resource:
-    # Resource downloadable through the index.
-    pass
+    context: dict[str, str] = field(default_factory=lambda: {}, init=False)
 
 
 @dataclass(frozen=True)
