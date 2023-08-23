@@ -234,12 +234,27 @@ def project_detail() -> ProjectDetail:
 
 
 @pytest.mark.asyncio
-async def test_get_resource(repository: HttpRepository, project_detail: ProjectDetail) -> None:
+@pytest.mark.parametrize(
+    "source_etag", [None, "source_etag"],
+)
+async def test_get_resource(
+    repository: HttpRepository,
+    project_detail: ProjectDetail,
+    source_etag: str,
+) -> None:
+    response_mock = mock.Mock()
+    response_mock.headers = {"ETag": source_etag} if source_etag else {}
+    mocked_session = mock.MagicMock()
+    mocked_session.head.return_value = MockedRequestContextManager(response_mock)
+
+    repository.session = mocked_session
+
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpRepository, "get_project_page", m):
         resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-2.0.whl"
+        assert resp.context.get("ETag") == source_etag
 
 
 @pytest.mark.asyncio
@@ -259,12 +274,33 @@ async def test_get_resource_project_unavailable(repository: HttpRepository) -> N
 
 
 @pytest.mark.asyncio
-async def test_get_resource_metadata(repository: HttpRepository, project_detail: ProjectDetail) -> None:
+@pytest.mark.parametrize(
+    "source_etag", [None, "source_etag"],
+)
+async def test_get_resource_metadata(repository: HttpRepository, project_detail: ProjectDetail, source_etag: str) -> None:
+    response_mock = mock.Mock()
+    response_mock.headers = {"ETag": source_etag} if source_etag else {}
+    mocked_session = mock.MagicMock()
+    mocked_session.head.return_value = MockedRequestContextManager(response_mock)
+
+    repository.session = mocked_session
+
     m = mock.AsyncMock(return_value=project_detail)
     with mock.patch.object(HttpRepository, "get_project_page", m):
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-1.0.whl.metadata"
+        assert resp.context.get("ETag") == source_etag
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
             await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
+
+
+@pytest.mark.asyncio
+async def test_get_resource_metadata__unavailable(repository: HttpRepository, project_detail: ProjectDetail) -> None:
+    m = mock.AsyncMock(return_value=project_detail)
+    with (
+        mock.patch.object(HttpRepository, "get_project_page", m),
+        pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"),
+    ):
+        await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
