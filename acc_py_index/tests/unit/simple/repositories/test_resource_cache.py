@@ -13,10 +13,13 @@ from .fake_repository import FakeRepository
 
 @pytest.fixture
 def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
+    http_resource = model.HttpResource("numpy_url/numpy-1.0-any.whl")
+    http_resource.context["ETag"] = "etag"
     source = FakeRepository(
         resources={
-            "numpy-1.0-any.whl": model.HttpResource("numpy_url/numpy-1.0-any.whl"),
+            "numpy-1.0-any.whl": http_resource,
             "numpy-1.0.tar.gz": model.LocalResource(pathlib.Path("numpy_path")),
+            "numpy-1.1-any.whl": model.HttpResource("numpy_url/numpy-1.0-any.whl"),
         },
     )
     return ResourceCacheRepository(
@@ -28,16 +31,20 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
 
 @pytest.mark.asyncio
 async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> None:
-    cached_file = (repository._cache_path / "my_resource")
+    (repository._cache_path / "numpy").mkdir()
+    cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
     cached_file.touch()
+    cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    cached_info_file.write_text("etag")
 
     resource = await repository.get_resource(
-        project_name="not_used",
-        resource_name="my_resource",
+        project_name="numpy",
+        resource_name="numpy-1.0-any.whl",
     )
 
     assert isinstance(resource, model.LocalResource)
     assert resource.path == cached_file
+    assert resource.context["ETag"] == "etag"
 
 
 @pytest.mark.asyncio
@@ -49,12 +56,14 @@ async def test_get_resource__cache_miss_remote(repository: ResourceCacheReposito
         ),
     ):
         response = await repository.get_resource(
-            project_name="not_used",
+            project_name="numpy",
             resource_name="numpy-1.0-any.whl",
         )
 
     assert isinstance(response, model.LocalResource)
-    assert response.path == repository._cache_path / "numpy-1.0-any.whl"
+    assert response.path == repository._cache_path / "numpy" / "numpy-1.0-any.whl"
+    assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
+    assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
 
 
 @pytest.mark.asyncio
@@ -75,7 +84,7 @@ async def test_get_resource__path_traversal(repository: ResourceCacheRepository)
         match="is not contained in",
     ):
         await repository.get_resource(
-            project_name="not_used",
+            project_name="not-used",
             resource_name="../../../etc/passwords",
         )
 
@@ -96,9 +105,9 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     assert str(repo._cache_path) == str(real_repo)
 
 
-def test_update_last_access_for(repository: ResourceCacheRepository) -> None:
-    cached_file = (repository._cache_path / "my_resource")
-    cached_file.touch()
+def test_update_last_access(repository: ResourceCacheRepository) -> None:
+    cached_info = repository._cache_path / "my_resource.ext.info"
+    cached_info.touch()
 
     with mock.patch(
         "datetime.datetime",
@@ -108,9 +117,9 @@ def test_update_last_access_for(repository: ResourceCacheRepository) -> None:
             spec=datetime,
         ),
     ):
-        repository._update_last_access_for(cached_file)
+        repository._update_last_access(cached_info)
 
-    assert os.path.getatime(cached_file) == datetime.fromisoformat("2006-07-09").timestamp()
+    assert os.path.getatime(cached_info) == datetime.fromisoformat("2006-07-09").timestamp()
 
     with mock.patch(
         "datetime.datetime",
@@ -120,28 +129,31 @@ def test_update_last_access_for(repository: ResourceCacheRepository) -> None:
             spec=datetime,
         ),
     ):
-        repository._update_last_access_for(cached_file)
+        repository._update_last_access(cached_info)
 
-    assert os.path.getatime(cached_file) == datetime.fromisoformat("2047-07-09").timestamp()
+    assert os.path.getatime(cached_info) == datetime.fromisoformat("2047-07-09").timestamp()
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_hit_called(repository: ResourceCacheRepository) -> None:
-    cached_file = (repository._cache_path / "my_resource")
+async def test_update_last_access__cache_hit_called(repository: ResourceCacheRepository) -> None:
+    (repository._cache_path / "numpy").mkdir()
+    cached_file = (repository._cache_path / "numpy" / "numpy-1.0-any.whl")
     cached_file.touch()
+    cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    cached_info_file.write_text("etag")
 
-    update_last_access_for_mock = mock.Mock()
+    update_last_access_mock = mock.Mock()
     with mock.patch.object(
         target=ResourceCacheRepository,
-        attribute="_update_last_access_for",
-        new=update_last_access_for_mock,
+        attribute="_update_last_access",
+        new=update_last_access_mock,
     ):
         await repository.get_resource(
-            project_name="project",
-            resource_name="my_resource",
+            project_name="numpy",
+            resource_name="numpy-1.0-any.whl",
         )
 
-    update_last_access_for_mock.assert_called_once()
+    update_last_access_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -149,7 +161,7 @@ async def test_update_last_access_for__cache_miss_local_not_called(repository: R
     update_last_access_for_mock = mock.Mock()
     with mock.patch.object(
         target=ResourceCacheRepository,
-        attribute="_update_last_access_for",
+        attribute="_update_last_access",
         new=update_last_access_for_mock,
     ):
         await repository.get_resource(
@@ -169,7 +181,7 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: Reso
         ),
     ), mock.patch.object(
         target=ResourceCacheRepository,
-        attribute="_update_last_access_for",
+        attribute="_update_last_access",
         new=update_last_access_for_mock,
     ):
         await repository.get_resource(
@@ -177,3 +189,13 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: Reso
             resource_name="numpy-1.0-any.whl",
         )
     update_last_access_for_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_resource__no_upstream_etag(repository: ResourceCacheRepository) -> None:
+    resource = await repository.get_resource(
+        project_name="numpy",
+        resource_name="numpy-1.1-any.whl",
+    )
+
+    assert isinstance(resource, model.HttpResource)
