@@ -1,4 +1,5 @@
 from dataclasses import replace
+import typing
 from urllib.parse import urljoin
 
 import aiohttp
@@ -89,19 +90,30 @@ class HttpRepository(SimpleRepository):
             project_page = await self.get_project_page(project_name)
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
+
+        resource: typing.Optional[model.HttpResource] = None
         if resource_name.endswith(".metadata"):
-            return await self.get_metadata(project_page, resource_name)
+            resource = await self.get_metadata(project_page, resource_name)
         else:
             for file in project_page.files:
                 if resource_name == file.filename:
-                    return model.HttpResource(url=file.url)
+                    resource = model.HttpResource(url=file.url)
+                    break
+
+        if not resource:
             raise errors.ResourceUnavailable(resource_name)
+
+        async with self.session.head(resource.url) as resp:
+            if etag := resp.headers.get("ETag"):
+                resource.context["etag"] = etag
+
+        return resource
 
     async def get_metadata(
         self,
         project_page: model.ProjectDetail,
         resource_name: str,
-    ) -> model.Resource:
+    ) -> model.HttpResource:
         distribution_name = resource_name.removesuffix(".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
