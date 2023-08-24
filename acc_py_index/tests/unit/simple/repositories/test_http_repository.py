@@ -254,7 +254,7 @@ async def test_get_resource(
         resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-2.0.whl"
-        assert resp.context.get("ETag") == source_etag
+        assert resp.context.get("etag") == source_etag
 
 
 @pytest.mark.asyncio
@@ -290,7 +290,7 @@ async def test_get_resource_metadata(repository: HttpRepository, project_detail:
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-1.0.whl.metadata"
-        assert resp.context.get("ETag") == source_etag
+        assert resp.context.get("etag") == source_etag
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
             await repository.get_resource("numpy", "numpy-2.0.whl.metadata")

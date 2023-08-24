@@ -105,7 +105,7 @@ class HttpRepository(SimpleRepository):
 
         async with self.session.head(resource.url) as resp:
             if etag := resp.headers.get("ETag"):
-                resource.context["ETag"] = etag
+                resource.context["etag"] = etag
 
         return resource
 

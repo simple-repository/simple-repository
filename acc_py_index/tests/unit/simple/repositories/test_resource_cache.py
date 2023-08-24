@@ -14,7 +14,7 @@ from .fake_repository import FakeRepository
 @pytest.fixture
 def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     http_resource = model.HttpResource("numpy_url/numpy-1.0-any.whl")
-    http_resource.context["ETag"] = "etag"
+    http_resource.context["etag"] = "etag"
     source = FakeRepository(
         resources={
             "numpy-1.0-any.whl": http_resource,
@@ -44,7 +44,7 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
 
     assert isinstance(resource, model.LocalResource)
     assert resource.path == cached_file
-    assert resource.context["ETag"] == "etag"
+    assert resource.context["etag"] == "etag"
 
 
 @pytest.mark.asyncio

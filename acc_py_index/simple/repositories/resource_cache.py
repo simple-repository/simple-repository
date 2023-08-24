@@ -54,7 +54,7 @@ class ResourceCacheRepository(RepositoryContainer):
 
         cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
         resource = await super().get_resource(project_name, resource_name)
-        upstream_etag = resource.context.get("ETag")
+        upstream_etag = resource.context.get("etag")
         if not isinstance(resource, model.HttpResource) or not upstream_etag:
             # Only cache HttpResources if the source repo sets an etag.
             return resource

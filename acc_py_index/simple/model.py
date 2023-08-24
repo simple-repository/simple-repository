@@ -25,7 +25,7 @@ brackets, for example ``[additional context]``.
 from dataclasses import dataclass, field
 from datetime import datetime
 import pathlib
-from typing import Optional, Union
+from typing import Optional, TypedDict, Union
 
 import packaging.utils
 import packaging.version
@@ -150,9 +150,13 @@ class ProjectList:
     projects: frozenset[ProjectListElement]
 
 
+class Context(TypedDict, total=False):
+    etag: str
+
+
 @dataclass(frozen=True)
 class Resource:
-    context: dict[str, str] = field(default_factory=lambda: {}, init=False)
+    context: Context = field(default_factory=lambda: Context(), init=False)
 
 
 @dataclass(frozen=True)
