@@ -1,3 +1,4 @@
+import typing
 from unittest import mock
 
 import aiohttp
@@ -86,9 +87,8 @@ def repository() -> HttpRepository:
 )
 @pytest.mark.asyncio
 async def test_get_project_page(text: str, header: str, repository: HttpRepository) -> None:
-    response_mock = mock.Mock()
+    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.status = 200
-
     response_mock.headers = {"content-type": header}
     response_mock.text = mock.AsyncMock(return_value=text)
 
@@ -117,9 +117,8 @@ async def test_get_project_page(text: str, header: str, repository: HttpReposito
 
 @pytest.mark.asyncio
 async def test_get_project_page_unsupported_serialization(repository: HttpRepository) -> None:
-    response_mock = mock.Mock()
+    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.status = 200
-
     response_mock.headers = {"content-type": "multipart/form-data"}
     response_mock.text = mock.AsyncMock(return_value="abc")
 
@@ -132,8 +131,8 @@ async def test_get_project_page_unsupported_serialization(repository: HttpReposi
 @pytest.mark.asyncio
 async def test_get_project_page_failed(repository: HttpRepository) -> None:
     repository.session.get.side_effect = aiohttp.ClientResponseError(
-        request_info=mock.Mock(),
-        history=mock.Mock(),
+        request_info=mock.Mock(spec=aiohttp.RequestInfo),
+        history=(),
         status=404,
     )
 
@@ -171,13 +170,12 @@ async def test_get_project_page_failed(repository: HttpRepository) -> None:
 )
 @pytest.mark.asyncio
 async def test_get_project_list(text: str, header: str, repository: HttpRepository) -> None:
-    response_mock = mock.Mock()
+    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.status = 200
-
     response_mock.headers = {"content-type": header}
     response_mock.text = mock.AsyncMock(return_value=text)
 
-    mocked_session = mock.MagicMock()
+    mocked_session = mock.MagicMock(sepc=aiohttp.ClientSession)
     mocked_session.get.return_value = MockedRequestContextManager(response_mock)
 
     repository.session = mocked_session
@@ -197,8 +195,8 @@ async def test_get_project_list(text: str, header: str, repository: HttpReposito
 @pytest.mark.asyncio
 async def test_get_project_list_failed(repository: HttpRepository) -> None:
     repository.session.get.side_effect = aiohttp.ClientResponseError(
-        request_info=mock.Mock(),
-        history=mock.Mock(),
+        request_info=mock.Mock(spec=aiohttp.RequestInfo),
+        history=(),
         status=404,
     )
 
@@ -240,17 +238,16 @@ def project_detail() -> ProjectDetail:
 async def test_get_resource(
     repository: HttpRepository,
     project_detail: ProjectDetail,
-    source_etag: str,
+    source_etag: typing.Optional[str],
 ) -> None:
-    response_mock = mock.Mock()
+    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.headers = {"ETag": source_etag} if source_etag else {}
-    mocked_session = mock.MagicMock()
+    mocked_session = mock.MagicMock(spec=aiohttp.ClientSession)
     mocked_session.head.return_value = MockedRequestContextManager(response_mock)
 
     repository.session = mocked_session
 
-    m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-2.0.whl"
@@ -259,16 +256,14 @@ async def test_get_resource(
 
 @pytest.mark.asyncio
 async def test_get_resource_unavailable(repository: HttpRepository, project_detail: ProjectDetail) -> None:
-    m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
 async def test_get_resource_project_unavailable(repository: HttpRepository) -> None:
-    m = mock.AsyncMock(side_effect=errors.PackageNotFoundError("numpy"))
-    with mock.patch.object(HttpRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
@@ -277,16 +272,19 @@ async def test_get_resource_project_unavailable(repository: HttpRepository) -> N
 @pytest.mark.parametrize(
     "source_etag", [None, "source_etag"],
 )
-async def test_get_resource_metadata(repository: HttpRepository, project_detail: ProjectDetail, source_etag: str) -> None:
-    response_mock = mock.Mock()
+async def test_get_resource_metadata(
+    repository: HttpRepository,
+    project_detail: ProjectDetail,
+    source_etag: typing.Optional[str],
+) -> None:
+    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.headers = {"ETag": source_etag} if source_etag else {}
-    mocked_session = mock.MagicMock()
+    mocked_session = mock.MagicMock(spec=aiohttp.ClientSession)
     mocked_session.head.return_value = MockedRequestContextManager(response_mock)
 
     repository.session = mocked_session
 
-    m = mock.AsyncMock(return_value=project_detail)
-    with mock.patch.object(HttpRepository, "get_project_page", m):
+    with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, HttpResource)
         assert resp.url == "my_url/numpy-1.0.whl.metadata"
@@ -298,9 +296,8 @@ async def test_get_resource_metadata(repository: HttpRepository, project_detail:
 
 @pytest.mark.asyncio
 async def test_get_resource_metadata__unavailable(repository: HttpRepository, project_detail: ProjectDetail) -> None:
-    m = mock.AsyncMock(return_value=project_detail)
     with (
-        mock.patch.object(HttpRepository, "get_project_page", m),
+        mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail),
         pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"),
     ):
         await repository.get_resource("numpy", "numpy-2.0.whl.metadata")

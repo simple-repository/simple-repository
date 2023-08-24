@@ -33,22 +33,28 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
 async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> None:
     (repository._cache_path / "numpy").mkdir()
     cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
-    cached_file.touch()
+    cached_file.write_text("cached content")
     cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    # The content of the the info file matches the upstream cache
     cached_info_file.write_text("etag")
 
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0-any.whl",
     )
-
+    # The cache returns a LocalResource pointing to
+    # the cached file with the same etag as upstream
     assert isinstance(resource, model.LocalResource)
     assert resource.path == cached_file
     assert resource.context["etag"] == "etag"
+    assert cached_file.read_text() == "cached content"
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss_remote(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> None:
+    assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
+    assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
+
     with mock.patch(
         "acc_py_index.utils.download_file",
         mock.AsyncMock(
@@ -60,21 +66,27 @@ async def test_get_resource__cache_miss_remote(repository: ResourceCacheReposito
             resource_name="numpy-1.0-any.whl",
         )
 
+    # after the cache miss, the upstream file is downloaded and the info file is created.
+    # The cache returns a LocalResource pointing to the downloaded file.
     assert isinstance(response, model.LocalResource)
     assert response.path == repository._cache_path / "numpy" / "numpy-1.0-any.whl"
     assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
     assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
+    assert response.context.get("etag") == "etag"
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss_local(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss_local_resource(repository: ResourceCacheRepository) -> None:
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0.tar.gz",
     )
 
+    # the cache doesn't store LocalResources. No cache file or info file is created.
     assert isinstance(resource, model.LocalResource)
     assert resource.path == pathlib.Path("numpy_path")
+    assert not (repository._cache_path / "numpy" / "numpy-1.0.tar.gz.info").is_file()
+    assert not (repository._cache_path / "numpy" / "numpy-1.0.tar.gz").is_file()
 
 
 @pytest.mark.asyncio
@@ -192,10 +204,17 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: Reso
 
 
 @pytest.mark.asyncio
-async def test_get_resource__no_upstream_etag(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
+    repository: ResourceCacheRepository,
+) -> None:
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.1-any.whl",
     )
 
+    # Upstream doesn't set an etag so the HttpResource is not cached,
+    # otherwise a LocalResource would have been returned
+    # No cache file or info file gets created and an http resource is returned.
     assert isinstance(resource, model.HttpResource)
+    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl").is_file()
+    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl.info").is_file()
