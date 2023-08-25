@@ -44,6 +44,16 @@ freeze_wheel:
       - ${project_root}/.wheel-to-deploy/*.whl
 
 
+test_wheel_deployment:
+  stage: test
+  needs:
+    - freeze_wheel
+  # NOTE: use a "_ci" image with the same tag as your Dockerfile
+  image: registry.cern.ch/acc/acc-py_cc7_ci:2021.12
+  script:
+    - acc-py -vv app deploy ${project_root}/.wheel-to-deploy/*.whl
+
+
 # A full installation of acc-py-index, tested with pytest.
 wheel_test:
   # TODO: Test the frozen wheel (by installing it with acc-py-deploy), instead of the
