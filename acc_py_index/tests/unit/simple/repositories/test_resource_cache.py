@@ -136,14 +136,14 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     with mock.patch(
         "datetime.datetime",
         mock.Mock(
-            now=mock.Mock(return_value=datetime.fromisoformat("2047-07-09")),
+            now=mock.Mock(return_value=datetime.fromisoformat("2025-07-09")),
             fromisoformat=datetime.fromisoformat,
             spec=datetime,
         ),
     ):
         repository._update_last_access(cached_info)
 
-    assert os.path.getatime(cached_info) == datetime.fromisoformat("2047-07-09").timestamp()
+    assert os.path.getatime(cached_info) == datetime.fromisoformat("2025-07-09").timestamp()
 
 
 @pytest.mark.asyncio
