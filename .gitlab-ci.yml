@@ -61,8 +61,12 @@ build_and_publish_container_image:
   # https://gitlab.cern.ch/gitlabci-examples/build_docker_image
   extends: .acc_py_on_tag
   stage: publish
+  variables:
+    # Temporary solution to ensure comparability with K8S runners.
+    # https://cern.service-now.com/service-portal?id=ticket&table=incident&n=INC3570437
+    FF_KUBERNETES_HONOR_ENTRYPOINT: 0
   image:
-    name: gitlab-registry.cern.ch/ci-tools/docker-image-builder
+    name: gcr.io/kaniko-project/executor:debug
     entrypoint: ['']
   before_script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
