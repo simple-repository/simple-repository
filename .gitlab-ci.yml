@@ -29,8 +29,7 @@ freeze_wheel:
   stage: build
   needs:
     - build_wheel
-  # NOTE: use a "_ci" image with the same tag as your Dockerfile
-  image: registry.cern.ch/acc/acc-py_cc7_ci:2021.12
+  extends: .acc_py_run_on_acc_py
   script:
     # Figure out the wheel to install, compatible with this python version.
     - python -m pip wheel ${project_name}
@@ -42,6 +41,15 @@ freeze_wheel:
   artifacts:
     paths:
       - ${project_root}/.wheel-to-deploy/*.whl
+
+
+test_wheel_deployment:
+  stage: test
+  needs:
+    - freeze_wheel
+  extends: .acc_py_run_on_acc_py
+  script:
+    - acc-py -vv app deploy ${project_root}/.wheel-to-deploy/*.whl
 
 
 # A full installation of acc-py-index, tested with pytest.
