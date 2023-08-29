@@ -48,7 +48,7 @@ setup(
     maintainer_email="acc-python-support@cern.ch",
     url="https://gitlab.cern.ch/acc-co/devops/python/package-index/acc-py-index",
     packages=find_packages(),
-    python_requires="~=3.9",
+    python_requires="~=3.11",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",

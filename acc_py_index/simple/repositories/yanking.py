@@ -2,7 +2,6 @@ from dataclasses import replace
 import fnmatch
 import html
 import pathlib
-import typing
 
 import aiosqlite
 from packaging.utils import canonicalize_name
@@ -30,7 +29,7 @@ def add_yanked_attribute(
         reason = yanked_versions.get(file.filename)
         if (not file.yanked) and (reason is not None):
             if reason == '':
-                yanked: typing.Union[bool, str] = True
+                yanked: bool | str = True
             else:
                 yanked = html.escape(reason)
             file = replace(file, yanked=yanked)
