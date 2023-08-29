@@ -34,7 +34,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
-        results: list[typing.Union[Exception, model.ProjectDetail]] = await asyncio.gather(
+        results: list[Exception | model.ProjectDetail] = await asyncio.gather(
             *(
                 source.get_project_page(project_name)
                 for source in self.sources

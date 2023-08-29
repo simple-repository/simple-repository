@@ -1,5 +1,4 @@
 from dataclasses import replace
-import typing
 from urllib.parse import urljoin
 
 import aiohttp
@@ -91,7 +90,7 @@ class HttpRepository(SimpleRepository):
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
 
-        resource: typing.Optional[model.HttpResource] = None
+        resource: model.HttpResource | None = None
         if resource_name.endswith(".metadata"):
             resource = await self.get_metadata(project_page, resource_name)
         else:

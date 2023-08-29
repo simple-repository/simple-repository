@@ -1,4 +1,3 @@
-import typing
 from unittest import mock
 
 import aiohttp
@@ -238,7 +237,7 @@ def project_detail() -> ProjectDetail:
 async def test_get_resource(
     repository: HttpRepository,
     project_detail: ProjectDetail,
-    source_etag: typing.Optional[str],
+    source_etag: str | None,
 ) -> None:
     response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.headers = {"ETag": source_etag} if source_etag else {}
@@ -275,7 +274,7 @@ async def test_get_resource_project_unavailable(repository: HttpRepository) -> N
 async def test_get_resource_metadata(
     repository: HttpRepository,
     project_detail: ProjectDetail,
-    source_etag: typing.Optional[str],
+    source_etag: str | None,
 ) -> None:
     response_mock = mock.Mock(spec=aiohttp.ClientResponse)
     response_mock.headers = {"ETag": source_etag} if source_etag else {}
