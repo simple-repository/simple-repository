@@ -1,10 +1,9 @@
 import pathlib
 
 import packaging.utils
-from packaging.utils import canonicalize_name
 
+from .. import model
 from ... import errors, utils
-from ..model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .core import SimpleRepository
 
 
@@ -22,34 +21,39 @@ class AllowListedRepository(SimpleRepository):
         self._special_cases: dict[str, str] = self._load_config_json(special_case_file)
         self.special_case_file = special_case_file
 
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
+    async def get_project_page(
+        self,
+        project_name: str,
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
         """Returns the project page from the source if the project_name
         is whitelisted.
-
-        Raises PackageNotFoundError otherwise.
-        Raises NotNormalizedProjectName if project_name is not normalized.
         """
-
-        if project_name != packaging.utils.canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
         if project_name not in self._special_cases:
             raise errors.PackageNotFoundError(project_name)
         else:
-            return await self.source.get_project_page(project_name)
+            return await self.source.get_project_page(project_name, request_context)
 
-    async def get_project_list(self) -> ProjectList:
-        return ProjectList(
-            meta=Meta("1.0"),
+    async def get_project_list(
+        self,
+        request_context: model.RequestContext,
+    ) -> model.ProjectList:
+        return model.ProjectList(
+            meta=model.Meta("1.0"),
             projects=frozenset(
-                ProjectListElement(name) for name in
+                model.ProjectListElement(name) for name in
                 self._special_cases.keys()
             ),
         )
 
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        request_context: model.RequestContext,
+    ) -> model.Resource:
         if project_name in self._special_cases:
-            return await self.source.get_resource(project_name, resource_name)
+            return await self.source.get_resource(project_name, resource_name, request_context)
         raise errors.ResourceUnavailable(resource_name)
 
     def _load_config_json(self, json_file: pathlib.Path) -> dict[str, str]:
@@ -66,6 +70,6 @@ class AllowListedRepository(SimpleRepository):
                     'must contain a dictionary mapping a project name to a tuple'
                     ' containing a glob pattern and a yank reason.',
                 )
-            config_dict[canonicalize_name(key)] = value
+            config_dict[packaging.utils.canonicalize_name(key)] = value
 
         return config_dict
