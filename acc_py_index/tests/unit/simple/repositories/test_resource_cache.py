@@ -29,8 +29,16 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     )
 
 
+@pytest.fixture
+def context(repository: ResourceCacheRepository) -> model.RequestContext:
+    return model.RequestContext(repository)
+
+
 @pytest.mark.asyncio
-async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_hit(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     (repository._cache_path / "numpy").mkdir()
     cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
     cached_file.write_text("cached content")
@@ -41,6 +49,7 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0-any.whl",
+        request_context=context,
     )
     # The cache returns a LocalResource pointing to
     # the cached file with the same etag as upstream
@@ -51,7 +60,10 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
 
@@ -64,6 +76,7 @@ async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> 
         response = await repository.get_resource(
             project_name="numpy",
             resource_name="numpy-1.0-any.whl",
+            request_context=context,
         )
 
     # after the cache miss, the upstream file is downloaded and the info file is created.
@@ -76,10 +89,14 @@ async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> 
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss_local_resource(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss_local_resource(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0.tar.gz",
+        request_context=context,
     )
 
     # the cache doesn't store LocalResources. No cache file or info file is created.
@@ -90,7 +107,10 @@ async def test_get_resource__cache_miss_local_resource(repository: ResourceCache
 
 
 @pytest.mark.asyncio
-async def test_get_resource__path_traversal(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__path_traversal(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     with pytest.raises(
         ValueError,
         match="is not contained in",
@@ -98,6 +118,7 @@ async def test_get_resource__path_traversal(repository: ResourceCacheRepository)
         await repository.get_resource(
             project_name="not-used",
             resource_name="../../../etc/passwords",
+            request_context=context,
         )
 
 
@@ -147,7 +168,10 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_last_access__cache_hit_called(repository: ResourceCacheRepository) -> None:
+async def test_update_last_access__cache_hit_called(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     (repository._cache_path / "numpy").mkdir()
     cached_file = (repository._cache_path / "numpy" / "numpy-1.0-any.whl")
     cached_file.touch()
@@ -163,13 +187,17 @@ async def test_update_last_access__cache_hit_called(repository: ResourceCacheRep
         await repository.get_resource(
             project_name="numpy",
             resource_name="numpy-1.0-any.whl",
+            request_context=context,
         )
 
     update_last_access_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_miss_local_not_called(repository: ResourceCacheRepository) -> None:
+async def test_update_last_access_for__cache_miss_local_not_called(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     update_last_access_for_mock = mock.Mock()
     with mock.patch.object(
         target=ResourceCacheRepository,
@@ -179,12 +207,16 @@ async def test_update_last_access_for__cache_miss_local_not_called(repository: R
         await repository.get_resource(
             project_name="numpy",
             resource_name="numpy-1.0.tar.gz",
+            request_context=context,
         )
     update_last_access_for_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_update_last_access_for__cache_miss_remote_called(repository: ResourceCacheRepository) -> None:
+async def test_update_last_access_for__cache_miss_remote_called(
+    repository: ResourceCacheRepository,
+    context: model.RequestContext,
+) -> None:
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
         "acc_py_index.utils.download_file",
@@ -199,6 +231,7 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: Reso
         await repository.get_resource(
             project_name="project",
             resource_name="numpy-1.0-any.whl",
+            request_context=context,
         )
     update_last_access_for_mock.assert_called_once()
 
@@ -206,10 +239,12 @@ async def test_update_last_access_for__cache_miss_remote_called(repository: Reso
 @pytest.mark.asyncio
 async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
     repository: ResourceCacheRepository,
+    context: model.RequestContext,
 ) -> None:
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.1-any.whl",
+        request_context=context,
     )
 
     # Upstream doesn't set an etag so the HttpResource is not cached,
