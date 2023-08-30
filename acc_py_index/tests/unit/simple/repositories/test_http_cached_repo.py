@@ -19,7 +19,7 @@ async def repository(
     async with aiosqlite.connect(tmp_path / "tmp.db") as db:
         yield CachedHttpRepository(
             url="https://example.com/simple/",
-            session=mock.MagicMock(),
+            session=mock.Mock(),
             database=db,
         )
 
@@ -41,12 +41,13 @@ async def test_fetch_simple_page__cache_miss(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
 ) -> None:
-    repository.session.get.return_value.__aenter__.return_value = response_mock
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.return_value = response_mock
+    repository.session.get.return_value = request_context_mock
 
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "new-body"
     assert content_type == "new-type"
-    response_mock.raise_for_status.assert_called_once()
 
     cached = await repository._cache.get("url")
     assert cached == "new-etag,new-type,new-body"
@@ -59,7 +60,9 @@ async def test_fetch_simple_page__cache_hit_not_modified(
 ) -> None:
     await repository._cache.set("url", "stored-etag,stored-type,stored-body")
     response_mock.status = 304
-    repository.session.get.return_value.__aenter__.return_value = response_mock
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.return_value = response_mock
+    repository.session.get.return_value = request_context_mock
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "stored-body"
     assert content_type == "stored-type"
@@ -71,7 +74,9 @@ async def test_fetch_simple_page__cache_hit_modified(
     response_mock: mock.AsyncMock,
 ) -> None:
     await repository._cache.set("url", "stored-etag,stored-type,stored-body")
-    repository.session.get.return_value.__aenter__.return_value = response_mock
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.return_value = response_mock
+    repository.session.get.return_value = request_context_mock
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "new-body"
     assert content_type == "new-type"
@@ -83,7 +88,9 @@ async def test_fetch_simple_page__cache_hit_source_unreachable(
     repository: CachedHttpRepository,
 ) -> None:
     await repository._cache.set("url", "stored-etag,stored-type,stored-body")
-    repository.session.get.return_value.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    repository.session.get.return_value = request_context_mock
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "stored-body"
     assert content_type == "stored-type"
@@ -94,7 +101,9 @@ async def test_fetch_simple_page__cache_hit_source_unreachable(
 async def test_fetch_simple_page__cache_miss_source_unreachable(
     repository: CachedHttpRepository,
 ) -> None:
-    repository.session.get.return_value.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    repository.session.get.return_value = request_context_mock
     with pytest.raises(aiohttp.ClientConnectionError):
         await repository._fetch_simple_page("url")
 
@@ -111,7 +120,9 @@ async def test_get_project_page__cached(
     """,
     )
     response_mock.status = 304
-    repository.session.get.return_value.__aenter__.return_value = response_mock
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    repository.session.get.return_value = request_context_mock
     response = await repository.get_project_page("project")
 
     assert response == model.ProjectDetail(
@@ -146,7 +157,9 @@ async def test_get_project_list__cached(
     """,
     )
     response_mock.status = 304
-    repository.session.get.return_value.__aenter__.return_value = response_mock
+    request_context_mock = mock.AsyncMock()
+    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
+    repository.session.get.return_value = request_context_mock
     resp = await repository.get_project_list()
     assert resp == model.ProjectList(
         meta=model.Meta(

@@ -58,8 +58,8 @@ class CachedHttpRepository(HttpRepository):
                 timeout=aiohttp.ClientTimeout(
                     connect=self._connection_timeout_seconds,
                 ),
+                raise_for_stauts=True,
             ) as response:
-                response.raise_for_status()
 
                 if response.status == 304 and res:
                     # The cached content is still valid.
