@@ -6,8 +6,8 @@ import pathlib
 import aiosqlite
 from packaging.utils import canonicalize_name
 
+from .. import model
 from ... import errors, utils
-from ..model import ProjectDetail
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -21,9 +21,9 @@ async def get_yanked_releases(project_name: str, database: aiosqlite.Connection)
 
 
 def add_yanked_attribute(
-    project_page: ProjectDetail,
+    project_page: model.ProjectDetail,
     yanked_versions: dict[str, str],
-) -> ProjectDetail:
+) -> model.ProjectDetail:
     files = []
     for file in project_page.files:
         reason = yanked_versions.get(file.filename)
@@ -57,8 +57,9 @@ class YankRepository(RepositoryContainer):
     async def get_project_page(
         self,
         project_name: str,
-    ) -> ProjectDetail:
-        project_page = await super().get_project_page(project_name)
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
+        project_page = await super().get_project_page(project_name, request_context)
 
         await self._init_db()
         if yanked_versions := await get_yanked_releases(project_name, self.yank_database):
@@ -104,8 +105,9 @@ class ConfigurableYankRepository(RepositoryContainer):
     async def get_project_page(
         self,
         project_name: str,
-    ) -> ProjectDetail:
-        project_page = await super().get_project_page(project_name)
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
+        project_page = await super().get_project_page(project_name, request_context)
 
         if value := self._yank_config.get(project_name):
             pattern, reason = value

@@ -25,10 +25,16 @@ def source() -> FakeRepository:
     )
 
 
+@pytest.fixture
+def context(source: FakeRepository) -> model.RequestContext:
+    return model.RequestContext(source)
+
+
 @pytest.mark.asyncio
 async def test_get_project_page(
     tmp_path: pathlib.PosixPath,
     source: FakeRepository,
+    context: model.RequestContext,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
@@ -39,7 +45,7 @@ async def test_get_project_page(
         source, file,
     )
 
-    res = await repo.get_project_page("numpy")
+    res = await repo.get_project_page("numpy", context)
     assert res.files[0].yanked == "bad"
     assert res.files[1].yanked is None
 
