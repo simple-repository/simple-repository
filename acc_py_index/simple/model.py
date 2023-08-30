@@ -25,12 +25,15 @@ brackets, for example ``[additional context]``.
 from dataclasses import dataclass, field
 from datetime import datetime
 import pathlib
-from typing import Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Optional, TypedDict, Union
 
 import packaging.utils
 import packaging.version
 
 from ..utils import safe_version
+
+if TYPE_CHECKING:
+    from ..simple.repositories.core import SimpleRepository
 
 
 @dataclass(frozen=True)
@@ -157,6 +160,12 @@ class Context(TypedDict, total=False):
 @dataclass(frozen=True)
 class Resource:
     context: Context = field(default_factory=lambda: Context(), init=False)
+
+
+@dataclass(frozen=True)
+class RequestContext:
+    repository: "SimpleRepository"
+    context: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
