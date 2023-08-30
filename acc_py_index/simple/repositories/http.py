@@ -2,7 +2,6 @@ from dataclasses import replace
 from urllib.parse import urljoin
 
 import aiohttp
-import packaging.utils
 
 from .. import model, parser
 from ... import errors, utils
@@ -35,10 +34,11 @@ class HttpRepository(SimpleRepository):
             content_type = response.headers.get("content-type", "")
         return body, content_type
 
-    async def get_project_page(self, project_name: str) -> model.ProjectDetail:
-        if project_name != packaging.utils.canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
+    async def get_project_page(
+        self,
+        project_name: str,
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
         page_url = urljoin(self.source_url, f"{project_name}/")
         try:
             body, content_type = await self._fetch_simple_page(page_url)
@@ -68,7 +68,7 @@ class HttpRepository(SimpleRepository):
         project_page = replace(project_page, files=files)
         return project_page
 
-    async def get_project_list(self) -> model.ProjectList:
+    async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self.source_url)
         except aiohttp.ClientResponseError as e:
@@ -84,9 +84,14 @@ class HttpRepository(SimpleRepository):
 
         raise errors.UnsupportedSerialization(content_type)
 
-    async def get_resource(self, project_name: str, resource_name: str) -> model.Resource:
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        request_context: model.RequestContext,
+    ) -> model.Resource:
         try:
-            project_page = await self.get_project_page(project_name)
+            project_page = await self.get_project_page(project_name, request_context)
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
 

@@ -24,6 +24,12 @@ async def repository(
         )
 
 
+@pytest_asyncio.fixture  # type: ignore
+# Untyped decorator
+async def context(repository: CachedHttpRepository) -> model.RequestContext:
+    return model.RequestContext(repository)
+
+
 @pytest.fixture
 def response_mock() -> mock.AsyncMock:
     return mock.AsyncMock(
@@ -112,6 +118,7 @@ async def test_fetch_simple_page__cache_miss_source_unreachable(
 async def test_get_project_page__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
+    context: model.RequestContext,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/project/", "stored-etag,text/html," + """
@@ -123,7 +130,7 @@ async def test_get_project_page__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    response = await repository.get_project_page("project")
+    response = await repository.get_project_page("project", context)
 
     assert response == model.ProjectDetail(
         name="project",
@@ -149,6 +156,7 @@ async def test_get_project_page__cached(
 async def test_get_project_list__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
+    context: model.RequestContext,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/", "stored-etag,text/html," + """
@@ -160,7 +168,7 @@ async def test_get_project_list__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    resp = await repository.get_project_list()
+    resp = await repository.get_project_list(context)
     assert resp == model.ProjectList(
         meta=model.Meta(
             api_version="1.0",
