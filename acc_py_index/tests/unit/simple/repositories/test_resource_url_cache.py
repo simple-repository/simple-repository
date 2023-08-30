@@ -32,9 +32,18 @@ async def url_cache(
         )
 
 
+@pytest_asyncio.fixture  # type: ignore
+# Untyped decorator
+async def context(url_cache: ResourceURLCacheRepository) -> model.RequestContext:
+    return model.RequestContext(url_cache)
+
+
 @pytest.mark.asyncio
-async def test_get_project_page(url_cache: ResourceURLCacheRepository) -> None:
-    response = await url_cache.get_project_page("numpy")
+async def test_get_project_page(
+    url_cache: ResourceURLCacheRepository,
+    context: model.RequestContext,
+) -> None:
+    response = await url_cache.get_project_page("numpy", context)
     assert response == model.ProjectDetail(
         model.Meta("1.0"), "numpy", (model.File("numpy-1.0-any.whl", "url/numpy", {}),),
     )
@@ -42,12 +51,15 @@ async def test_get_project_page(url_cache: ResourceURLCacheRepository) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource(url_cache: ResourceURLCacheRepository) -> None:
-    response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl")
+async def test_get_resource(
+    url_cache: ResourceURLCacheRepository,
+    context: model.RequestContext,
+) -> None:
+    response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl", context)
     assert isinstance(response, model.HttpResource)
     assert response.url == "url/numpy/resource"
 
     await url_cache._cache.set("numpy/numpy-1.0-any.whl", "cached_url")
-    response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl")
+    response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl", context)
     assert isinstance(response, model.HttpResource)
     assert response.url == "cached_url"
