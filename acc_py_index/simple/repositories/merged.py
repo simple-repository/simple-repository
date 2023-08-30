@@ -1,7 +1,6 @@
 import asyncio
 import typing
 
-from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 from .. import model
@@ -20,23 +19,20 @@ class MergedRepository(PrioritySelectedProjectsRepository):
             hence its existence, but if you are unsure of those reasons, consider
             using the :class:`PrioritySelectedProjectsRepository` instead.
     """
-    async def get_project_page(self, project_name: str) -> model.ProjectDetail:
+    async def get_project_page(
+        self,
+        project_name: str,
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources and blending them together.
-
-        Raises:
-            NotNormalizedProjectName:
-                The project name is not normalized.
         """
-        if project_name != canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
         results: list[Exception | model.ProjectDetail] = await asyncio.gather(
             *(
-                source.get_project_page(project_name)
+                source.get_project_page(project_name, request_context)
                 for source in self.sources
             ),
             return_exceptions=True,

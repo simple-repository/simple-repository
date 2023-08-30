@@ -1,7 +1,7 @@
 import pytest
 
 from acc_py_index import errors
-from acc_py_index.simple.model import File, Meta, ProjectDetail
+from acc_py_index.simple import model
 from acc_py_index.simple.repositories.merged import MergedRepository
 
 from .fake_repository import FakeRepository
@@ -14,24 +14,24 @@ async def test_get_project_page() -> None:
             FakeRepository(),
             FakeRepository(
                 project_pages=[
-                    ProjectDetail(
-                        Meta('1.1'),
+                    model.ProjectDetail(
+                        model.Meta('1.1'),
                         "numpy",
                         files=(
-                            File("numpy-1.1.whl", "url1", {}, size=1),
-                            File("numpy-1.2.whl", "url1", {}, size=1),
+                            model.File("numpy-1.1.whl", "url1", {}, size=1),
+                            model.File("numpy-1.2.whl", "url1", {}, size=1),
                         ),
                     ),
                 ],
             ),
             FakeRepository(
                 project_pages=[
-                    ProjectDetail(
-                        Meta('1.0'),
+                    model.ProjectDetail(
+                        model.Meta('1.0'),
                         "numpy",
                         files=(
-                            File("numpy-1.1.whl", "url2", {}),
-                            File("numpy-1.3.whl", "url2", {}),
+                            model.File("numpy-1.1.whl", "url2", {}),
+                            model.File("numpy-1.3.whl", "url2", {}),
                         ),
                     ),
                 ],
@@ -39,15 +39,15 @@ async def test_get_project_page() -> None:
         ],
     )
 
-    resp = await repo.get_project_page(project_name="numpy")
+    resp = await repo.get_project_page("numpy", model.RequestContext(repo))
 
-    assert resp == ProjectDetail(
-        Meta('1.0'),
+    assert resp == model.ProjectDetail(
+        model.Meta('1.0'),
         "numpy",
         files=(
-            File("numpy-1.1.whl", "url1", {}, size=1),
-            File("numpy-1.2.whl", "url1", {}, size=1),
-            File("numpy-1.3.whl", "url2", {}),
+            model.File("numpy-1.1.whl", "url1", {}, size=1),
+            model.File("numpy-1.2.whl", "url1", {}, size=1),
+            model.File("numpy-1.3.whl", "url2", {}),
         ),
     )
 
@@ -62,13 +62,4 @@ async def test_get_project_page_failed() -> None:
         errors.PackageNotFoundError,
         match="Package 'numpy' was not found in the configured source",
     ):
-        await repo.get_project_page("numpy")
-
-
-@pytest.mark.asyncio
-async def test_not_normalized_package() -> None:
-    repo = MergedRepository([
-        FakeRepository() for _ in range(3)
-    ])
-    with pytest.raises(errors.NotNormalizedProjectName):
-        await repo.get_project_page("non_normalized")
+        await repo.get_project_page("numpy", model.RequestContext(repo))

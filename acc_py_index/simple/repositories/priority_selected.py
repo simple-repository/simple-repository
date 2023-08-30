@@ -4,8 +4,8 @@ from collections.abc import Sequence
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
+from .. import model
 from ... import errors
-from ..model import Meta, ProjectDetail, ProjectList, ProjectListElement, Resource
 from .core import SimpleRepository
 
 
@@ -27,17 +27,17 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             )
         self.sources = sources
 
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
+    async def get_project_page(
+        self,
+        project_name: str,
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources in a first seen policy.
-        Raises NotNormalizedProjectName is the project page is not normalized.
         """
-        if project_name != canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
         for source in self.sources:
             try:
-                project_page = await source.get_project_page(project_name)
+                project_page = await source.get_project_page(project_name, request_context)
             except errors.PackageNotFoundError:
                 continue
             return project_page
@@ -46,11 +46,11 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             package_name=project_name,
         )
 
-    async def get_project_list(self) -> ProjectList:
+    async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
-        project_lists: list[ProjectList] = await asyncio.gather(
+        project_lists: list[model.ProjectList] = await asyncio.gather(
             *(
-                source.get_project_list()
+                source.get_project_list(request_context)
                 for source in self.sources
             ),
             return_exceptions=True,
@@ -70,19 +70,24 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
         # Downgrade the API version to the lowest available, as it will not be
         # possible to calculate the missing files to perform a version upgrade.
         api_version = min(Version(project.meta.api_version) for project in project_lists)
-        return ProjectList(
-            meta=Meta(str(api_version)),
+        return model.ProjectList(
+            meta=model.Meta(str(api_version)),
             projects=frozenset(
-                ProjectListElement(
+                model.ProjectListElement(
                     name=canonicalize_name(p.name),
                 ) for p in projects
             ),
         )
 
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        request_context: model.RequestContext,
+    ) -> model.Resource:
         for source in self.sources:
             try:
-                resource = await source.get_resource(project_name, resource_name)
+                resource = await source.get_resource(project_name, resource_name, request_context)
             except errors.ResourceUnavailable:
                 pass
             else:
