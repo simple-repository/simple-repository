@@ -6,8 +6,8 @@ import zipfile
 import aiohttp
 import aiosqlite
 
+from .. import model
 from ... import errors, ttl_cache, utils
-from ..model import HttpResource, LocalResource, ProjectDetail, Resource, TextResource
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -50,7 +50,9 @@ async def download_metadata(
         return get_metadata_from_package(pkg_path)
 
 
-def add_metadata_attribute(project_page: ProjectDetail) -> ProjectDetail:
+def add_metadata_attribute(
+    project_page: model.ProjectDetail,
+) -> model.ProjectDetail:
     """Add the data-core-metadata to all the packages distributed as wheels"""
     files = []
     for file in project_page.files:
@@ -82,15 +84,24 @@ class MetadataInjectorRepository(RepositoryContainer):
         )
         super().__init__(source)
 
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
+    async def get_project_page(
+        self,
+        project_name: str,
+        request_context: model.RequestContext,
+    ) -> model.ProjectDetail:
         return add_metadata_attribute(
-            await super().get_project_page(project_name),
+            await super().get_project_page(project_name, request_context),
         )
 
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        request_context: model.RequestContext,
+    ) -> model.Resource:
         try:
             # Attempt to get the resource from upstream.
-            return await super().get_resource(project_name, resource_name)
+            return await super().get_resource(project_name, resource_name, request_context)
         except errors.ResourceUnavailable:
             if not resource_name.endswith(".metadata"):
                 # If we tried to get a resource that wasn't a .metadata one, and it failed,
@@ -105,10 +116,10 @@ class MetadataInjectorRepository(RepositoryContainer):
         if not metadata:
             # Get hold of the actual artefact from which we want to extract
             # the metadata.
-            resource = await super().get_resource(
-                project_name, resource_name.removesuffix(".metadata"),
+            resource = await request_context.repository.get_resource(
+                project_name, resource_name.removesuffix(".metadata"), request_context,
             )
-            if isinstance(resource, HttpResource):
+            if isinstance(resource, model.HttpResource):
                 try:
                     metadata = await download_metadata(
                         package_name=resource_name.removesuffix(".metadata"),
@@ -119,7 +130,7 @@ class MetadataInjectorRepository(RepositoryContainer):
                     # If we can't get hold of the metadata from the file then raise
                     # a resource unavailable.
                     raise errors.ResourceUnavailable(resource_name) from e
-            elif isinstance(resource, LocalResource):
+            elif isinstance(resource, model.LocalResource):
                 try:
                     metadata = get_metadata_from_package(resource.path)
                 except ValueError as e:
@@ -133,6 +144,6 @@ class MetadataInjectorRepository(RepositoryContainer):
             # Cache the result for a faster response in the future.
             await self._cache.set(project_name + "/" + resource_name, metadata)
 
-        return TextResource(
+        return model.TextResource(
             text=metadata,
         )
