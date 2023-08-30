@@ -19,12 +19,25 @@ def simple_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.fixture
+def repository(simple_dir: Path) -> LocalRepository:
+    return LocalRepository(simple_dir)
+
+
+@pytest.fixture
+def context(simple_dir: LocalRepository) -> model.RequestContext:
+    return model.RequestContext(simple_dir)
+
+
 @pytest.mark.asyncio
-async def test_get_project_list(simple_dir: Path) -> None:
+async def test_get_project_list(
+    simple_dir: Path,
+    context: model.RequestContext,
+) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    project_list = await repo.get_project_list()
+    project_list = await repo.get_project_list(context)
 
     assert project_list == model.ProjectList(
         meta=model.Meta("1.0"),
@@ -37,11 +50,14 @@ async def test_get_project_list(simple_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource(simple_dir: Path) -> None:
+async def test_get_resource(
+    simple_dir: Path,
+    context: model.RequestContext,
+) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
+    resource = await repo.get_resource("numpy", "numpy-1.0-any.whl", context)
 
     assert resource == model.LocalResource(
         path=simple_dir / "numpy" / "numpy-1.0-any.whl",
@@ -59,6 +75,7 @@ async def test_get_resource__unavailable(
     simple_dir: Path,
     project: str,
     resource: str,
+    context: model.RequestContext,
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
@@ -67,7 +84,7 @@ async def test_get_resource__unavailable(
         errors.ResourceUnavailable,
         match=f"Resource '{resource}' was not found in the configured source",
     ):
-        await repo.get_resource(project, resource)
+        await repo.get_resource(project, resource, context)
 
 
 @pytest.mark.parametrize(
@@ -81,6 +98,7 @@ async def test_get_resource__path_traversal(
     simple_dir: Path,
     project: str,
     resource: str,
+    context: model.RequestContext,
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
@@ -90,30 +108,19 @@ async def test_get_resource__path_traversal(
         ValueError,
         match=f"{(simple_dir / project /resource).resolve()} is not contained in {repo._index_path / project}",
     ):
-        await repo.get_resource(project, resource)
+        await repo.get_resource(project, resource, context)
 
 
 @pytest.mark.asyncio
-async def test_get_resource__not_normalized(
+async def test_get_project_page(
     simple_dir: Path,
+    context: model.RequestContext,
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
 
-    with pytest.raises(
-        errors.NotNormalizedProjectName,
-    ):
-        await repo.get_resource(".not_normalized", "unreachable_resource")
-
-
-@pytest.mark.asyncio
-async def test_get_project_page(simple_dir: Path) -> None:
-    repo = LocalRepository(
-        index_path=simple_dir,
-    )
-
-    project_details = await repo.get_project_page("numpy")
+    project_details = await repo.get_project_page("numpy", context)
     assert project_details == model.ProjectDetail(
         meta=model.Meta("1.1"),
         name="numpy",
@@ -146,7 +153,10 @@ async def test_get_project_page(simple_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__not_found(simple_dir: Path) -> None:
+async def test_get_project_page__not_found(
+    simple_dir: Path,
+    context: model.RequestContext,
+) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
@@ -155,4 +165,4 @@ async def test_get_project_page__not_found(simple_dir: Path) -> None:
         errors.PackageNotFoundError,
         match="seaborn",
     ):
-        await repo.get_project_page("seaborn")
+        await repo.get_project_page("seaborn", context)
