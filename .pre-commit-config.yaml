@@ -27,12 +27,13 @@ repos:
           - "--per-file-ignores=acc_py_index/tests/*.py:E501"
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.1.1'
+    rev: 'v1.5.1'
     hooks:
       - id: mypy
         additional_dependencies:
           [
             pytest,
-            "fastapi>=0.93.0,<0.100.0",
+            "fastapi>=0.100.0",
             uvicorn,
+            pydantic-settings,
           ]
