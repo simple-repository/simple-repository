@@ -6,14 +6,13 @@ import pytest
 from acc_py_index import errors
 from acc_py_index.simple import model
 from acc_py_index.simple.repositories.http import HttpRepository
-from acc_py_index.tests.aiohttp_mock import MockedRequestContextManager
+from acc_py_index.tests.aiohttp_mock import MockClientSession
 
 
-@pytest.fixture
-def repository() -> HttpRepository:
+def create_repository(session: aiohttp.ClientSession) -> HttpRepository:
     repo = HttpRepository(
         url="https://example.com/simple/",
-        session=mock.MagicMock(),
+        session=session,
     )
     return repo
 
@@ -78,17 +77,13 @@ def repository() -> HttpRepository:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page(
-    text: str,
-    header: str,
-    repository: HttpRepository,
-) -> None:
-    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
-    response_mock.status = 200
-    response_mock.headers = {"content-type": header}
-    response_mock.text = mock.AsyncMock(return_value=text)
-
-    repository.session.get.return_value = MockedRequestContextManager(response_mock)
+async def test_get_project_page(text: str, header: str) -> None:
+    repository = create_repository(
+        session=MockClientSession(
+            content=text,
+            headers={"content-type": header},
+        ),
+    )
 
     context = model.RequestContext(repository)
     resp = await repository.get_project_page("project", context)
@@ -113,27 +108,22 @@ async def test_get_project_page(
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_unsupported_serialization(
-    repository: HttpRepository,
-) -> None:
-    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
-    response_mock.status = 200
-    response_mock.headers = {"content-type": "multipart/form-data"}
-    response_mock.text = mock.AsyncMock(return_value="abc")
-
-    repository.session.get.return_value = MockedRequestContextManager(response_mock)
+async def test_get_project_page_unsupported_serialization() -> None:
+    repository = create_repository(
+        session=MockClientSession(
+            content="abc",
+            headers={"content-type": "multipart/form-data"},
+        ),
+    )
     context = model.RequestContext(repository)
-
     with pytest.raises(errors.UnsupportedSerialization):
         await repository.get_project_page("project", context)
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_failed(repository: HttpRepository) -> None:
-    repository.session.get.side_effect = aiohttp.ClientResponseError(
-        request_info=mock.Mock(spec=aiohttp.RequestInfo),
-        history=(),
-        status=404,
+async def test_get_project_page_failed() -> None:
+    repository = create_repository(
+        session=MockClientSession(raise_status_code=404),
     )
 
     context = model.RequestContext(repository)
@@ -170,20 +160,13 @@ async def test_get_project_page_failed(repository: HttpRepository) -> None:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_list(
-    text: str,
-    header: str,
-    repository: HttpRepository,
-) -> None:
-    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
-    response_mock.status = 200
-    response_mock.headers = {"content-type": header}
-    response_mock.text = mock.AsyncMock(return_value=text)
-
-    mocked_session = mock.MagicMock(sepc=aiohttp.ClientSession)
-    mocked_session.get.return_value = MockedRequestContextManager(response_mock)
-
-    repository.session = mocked_session
+async def test_get_project_list(text: str, header: str) -> None:
+    repository = create_repository(
+        session=MockClientSession(
+            content=text,
+            headers={"content-type": header},
+        ),
+    )
 
     context = model.RequestContext(repository)
     resp = await repository.get_project_list(context)
@@ -199,12 +182,8 @@ async def test_get_project_list(
 
 
 @pytest.mark.asyncio
-async def test_get_project_list_failed(repository: HttpRepository) -> None:
-    repository.session.get.side_effect = aiohttp.ClientResponseError(
-        request_info=mock.Mock(spec=aiohttp.RequestInfo),
-        history=(),
-        status=404,
-    )
+async def test_get_project_list_failed() -> None:
+    repository = create_repository(session=MockClientSession(raise_status_code=404))
 
     context = model.RequestContext(repository)
     with pytest.raises(errors.SourceRepositoryUnavailable):
@@ -237,18 +216,15 @@ def project_detail() -> model.ProjectDetail:
     "source_etag", [None, "source_etag"],
 )
 async def test_get_resource(
-    repository: HttpRepository,
     project_detail: model.ProjectDetail,
     source_etag: str | None,
 ) -> None:
-    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
-    response_mock.headers = {"ETag": source_etag} if source_etag else {}
-    mocked_session = mock.MagicMock(spec=aiohttp.ClientSession)
-    mocked_session.head.return_value = MockedRequestContextManager(response_mock)
-
-    repository.session = mocked_session
+    repository = create_repository(
+        session=MockClientSession(
+            headers={"ETag": source_etag} if source_etag else {},
+        ),
+    )
     context = model.RequestContext(repository)
-
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-2.0.whl", context)
         assert isinstance(resp, model.HttpResource)
@@ -257,20 +233,16 @@ async def test_get_resource(
 
 
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(
-    repository: HttpRepository,
-    project_detail: model.ProjectDetail,
-) -> None:
-    context = model.RequestContext(repository)
+async def test_get_resource_unavailable(project_detail: model.ProjectDetail) -> None:
+    repository = create_repository(MockClientSession())
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
-            await repository.get_resource("numpy", "numpy-3.0.whl", context)
+            await repository.get_resource("numpy", "numpy-3.0.whl", model.RequestContext(repository))
 
 
 @pytest.mark.asyncio
-async def test_get_resource_project_unavailable(
-    repository: HttpRepository,
-) -> None:
+async def test_get_resource_project_unavailable() -> None:
+    repository = create_repository(MockClientSession())
     context = model.RequestContext(repository)
     with mock.patch.object(HttpRepository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
@@ -282,18 +254,15 @@ async def test_get_resource_project_unavailable(
     "source_etag", [None, "source_etag"],
 )
 async def test_get_resource_metadata(
-    repository: HttpRepository,
     project_detail: model.ProjectDetail,
     source_etag: str | None,
 ) -> None:
-    response_mock = mock.Mock(spec=aiohttp.ClientResponse)
-    response_mock.headers = {"ETag": source_etag} if source_etag else {}
-    mocked_session = mock.MagicMock(spec=aiohttp.ClientSession)
-    mocked_session.head.return_value = MockedRequestContextManager(response_mock)
-
-    repository.session = mocked_session
+    repository = create_repository(
+        session=MockClientSession(
+            headers={"ETag": source_etag} if source_etag else {},
+        ),
+    )
     context = model.RequestContext(repository)
-
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata", context)
         assert isinstance(resp, model.HttpResource)
@@ -305,10 +274,8 @@ async def test_get_resource_metadata(
 
 
 @pytest.mark.asyncio
-async def test_get_resource_metadata__unavailable(
-    repository: HttpRepository,
-    project_detail: model.ProjectDetail,
-) -> None:
+async def test_get_resource_metadata__unavailable(project_detail: model.ProjectDetail) -> None:
+    repository = create_repository(MockClientSession())
     context = model.RequestContext(repository)
     with (
         mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail),
