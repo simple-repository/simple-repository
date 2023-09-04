@@ -24,19 +24,13 @@ def repository(simple_dir: Path) -> LocalRepository:
     return LocalRepository(simple_dir)
 
 
-@pytest.fixture
-def context(simple_dir: LocalRepository) -> model.RequestContext:
-    return model.RequestContext(simple_dir)
-
-
 @pytest.mark.asyncio
-async def test_get_project_list(
-    simple_dir: Path,
-    context: model.RequestContext,
-) -> None:
+async def test_get_project_list(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
+
     project_list = await repo.get_project_list(context)
 
     assert project_list == model.ProjectList(
@@ -50,13 +44,11 @@ async def test_get_project_list(
 
 
 @pytest.mark.asyncio
-async def test_get_resource(
-    simple_dir: Path,
-    context: model.RequestContext,
-) -> None:
+async def test_get_resource(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
     resource = await repo.get_resource("numpy", "numpy-1.0-any.whl", context)
 
     assert resource == model.LocalResource(
@@ -75,11 +67,12 @@ async def test_get_resource__unavailable(
     simple_dir: Path,
     project: str,
     resource: str,
-    context: model.RequestContext,
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
+
     with pytest.raises(
         errors.ResourceUnavailable,
         match=f"Resource '{resource}' was not found in the configured source",
@@ -98,11 +91,11 @@ async def test_get_resource__path_traversal(
     simple_dir: Path,
     project: str,
     resource: str,
-    context: model.RequestContext,
 ) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
 
     with pytest.raises(
         ValueError,
@@ -112,13 +105,11 @@ async def test_get_resource__path_traversal(
 
 
 @pytest.mark.asyncio
-async def test_get_project_page(
-    simple_dir: Path,
-    context: model.RequestContext,
-) -> None:
+async def test_get_project_page(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
 
     project_details = await repo.get_project_page("numpy", context)
     assert project_details == model.ProjectDetail(
@@ -153,13 +144,11 @@ async def test_get_project_page(
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__not_found(
-    simple_dir: Path,
-    context: model.RequestContext,
-) -> None:
+async def test_get_project_page__not_found(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+    context = model.RequestContext(repo)
 
     with pytest.raises(
         errors.PackageNotFoundError,

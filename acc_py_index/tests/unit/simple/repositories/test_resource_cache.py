@@ -29,16 +29,8 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     )
 
 
-@pytest.fixture
-def context(repository: ResourceCacheRepository) -> model.RequestContext:
-    return model.RequestContext(repository)
-
-
 @pytest.mark.asyncio
-async def test_get_resource__cache_hit(
-    repository: ResourceCacheRepository,
-    context: model.RequestContext,
-) -> None:
+async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> None:
     (repository._cache_path / "numpy").mkdir()
     cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
     cached_file.write_text("cached content")
@@ -46,6 +38,7 @@ async def test_get_resource__cache_hit(
     # The content of the the info file matches the upstream cache
     cached_info_file.write_text("etag")
 
+    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0-any.whl",
@@ -60,12 +53,10 @@ async def test_get_resource__cache_hit(
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss(
-    repository: ResourceCacheRepository,
-    context: model.RequestContext,
-) -> None:
+async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> None:
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
+    context = model.RequestContext(repository)
 
     with mock.patch(
         "acc_py_index.utils.download_file",
@@ -91,8 +82,8 @@ async def test_get_resource__cache_miss(
 @pytest.mark.asyncio
 async def test_get_resource__cache_miss_local_resource(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.0.tar.gz",
@@ -109,8 +100,8 @@ async def test_get_resource__cache_miss_local_resource(
 @pytest.mark.asyncio
 async def test_get_resource__path_traversal(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     with pytest.raises(
         ValueError,
         match="is not contained in",
@@ -170,7 +161,6 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
 @pytest.mark.asyncio
 async def test_update_last_access__cache_hit_called(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
     (repository._cache_path / "numpy").mkdir()
     cached_file = (repository._cache_path / "numpy" / "numpy-1.0-any.whl")
@@ -179,6 +169,8 @@ async def test_update_last_access__cache_hit_called(
     cached_info_file.write_text("etag")
 
     update_last_access_mock = mock.Mock()
+
+    context = model.RequestContext(repository)
     with mock.patch.object(
         target=ResourceCacheRepository,
         attribute="_update_last_access",
@@ -196,9 +188,9 @@ async def test_update_last_access__cache_hit_called(
 @pytest.mark.asyncio
 async def test_update_last_access_for__cache_miss_local_not_called(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
     update_last_access_for_mock = mock.Mock()
+    context = model.RequestContext(repository)
     with mock.patch.object(
         target=ResourceCacheRepository,
         attribute="_update_last_access",
@@ -215,8 +207,8 @@ async def test_update_last_access_for__cache_miss_local_not_called(
 @pytest.mark.asyncio
 async def test_update_last_access_for__cache_miss_remote_called(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
         "acc_py_index.utils.download_file",
@@ -239,8 +231,8 @@ async def test_update_last_access_for__cache_miss_remote_called(
 @pytest.mark.asyncio
 async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
     repository: ResourceCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="numpy",
         resource_name="numpy-1.1-any.whl",

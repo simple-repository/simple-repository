@@ -11,8 +11,7 @@ from acc_py_index.simple.repositories.resource_url_cache import ResourceURLCache
 from .fake_repository import FakeRepository
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
+@pytest_asyncio.fixture
 async def url_cache(
     tmp_path: pathlib.PosixPath,
 ) -> typing.AsyncGenerator[ResourceURLCacheRepository, None]:
@@ -32,17 +31,11 @@ async def url_cache(
         )
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
-async def context(url_cache: ResourceURLCacheRepository) -> model.RequestContext:
-    return model.RequestContext(url_cache)
-
-
 @pytest.mark.asyncio
 async def test_get_project_page(
     url_cache: ResourceURLCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(url_cache)
     response = await url_cache.get_project_page("numpy", context)
     assert response == model.ProjectDetail(
         model.Meta("1.0"), "numpy", (model.File("numpy-1.0-any.whl", "url/numpy", {}),),
@@ -53,8 +46,9 @@ async def test_get_project_page(
 @pytest.mark.asyncio
 async def test_get_resource(
     url_cache: ResourceURLCacheRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(url_cache)
+
     response = await url_cache.get_resource("numpy", "numpy-1.0-any.whl", context)
     assert isinstance(response, model.HttpResource)
     assert response.url == "url/numpy/resource"

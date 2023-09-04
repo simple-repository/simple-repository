@@ -11,8 +11,7 @@ from acc_py_index.simple import model
 from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
+@pytest_asyncio.fixture
 async def repository(
     tmp_path: pathlib.Path,
 ) -> typing.AsyncGenerator[CachedHttpRepository, None]:
@@ -22,12 +21,6 @@ async def repository(
             session=mock.Mock(),
             database=db,
         )
-
-
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
-async def context(repository: CachedHttpRepository) -> model.RequestContext:
-    return model.RequestContext(repository)
 
 
 @pytest.fixture
@@ -118,7 +111,6 @@ async def test_fetch_simple_page__cache_miss_source_unreachable(
 async def test_get_project_page__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
-    context: model.RequestContext,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/project/", "stored-etag,text/html," + """
@@ -130,6 +122,8 @@ async def test_get_project_page__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
+    context = model.RequestContext(repository)
+
     response = await repository.get_project_page("project", context)
 
     assert response == model.ProjectDetail(
@@ -156,7 +150,6 @@ async def test_get_project_page__cached(
 async def test_get_project_list__cached(
     repository: CachedHttpRepository,
     response_mock: mock.AsyncMock,
-    context: model.RequestContext,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/", "stored-etag,text/html," + """
@@ -168,6 +161,8 @@ async def test_get_project_list__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
+    context = model.RequestContext(repository)
+
     resp = await repository.get_project_list(context)
     assert resp == model.ProjectList(
         meta=model.Meta(

@@ -9,8 +9,7 @@ import pytest_asyncio
 from acc_py_index.ttl_cache import TTLDatabaseCache
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
+@pytest_asyncio.fixture
 async def cache(
     tmp_path: pathlib.PosixPath,
 ) -> typing.AsyncGenerator[TTLDatabaseCache, None]:

@@ -62,8 +62,7 @@ def test_get_metadata_from_package__missing_metadata() -> None:
     assert isinstance(exc_info.value.__cause__, KeyError)
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
+@pytest_asyncio.fixture
 async def tmp_db(tmp_path: pathlib.Path) -> aiosqlite.Connection:
     async with aiosqlite.connect(tmp_path / "test.db") as db:
         yield db
@@ -100,16 +99,11 @@ def repository(
     )
 
 
-@pytest.fixture
-def context(repository: metadata_repository.MetadataInjectorRepository) -> model.RequestContext:
-    return model.RequestContext(repository)
-
-
 @pytest.mark.asyncio
 async def test_get_project_page(
     repository: metadata_repository.MetadataInjectorRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     result = await repository.get_project_page("numpy", context)
     assert result.files[0].dist_info_metadata is True
 
@@ -117,8 +111,8 @@ async def test_get_project_page(
 @pytest.mark.asyncio
 async def test_get_resource__cached(
     repository: metadata_repository.MetadataInjectorRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     await repository._cache.set("name/resource.metadata", "cached_meta")
 
     response = await repository.get_resource("name", "resource.metadata", context)
@@ -129,8 +123,8 @@ async def test_get_resource__cached(
 @pytest.mark.asyncio
 async def test_get_resource__not_cached(
     repository: metadata_repository.MetadataInjectorRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     with mock.patch(
         "acc_py_index.simple.repositories.metadata_injector.download_metadata",
         mock.AsyncMock(return_value="downloaded_meta"),
@@ -144,8 +138,8 @@ async def test_get_resource__not_cached(
 @pytest.mark.asyncio
 async def test_get_resource__local_resource(
     repository: metadata_repository.MetadataInjectorRepository,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     with mock.patch(
         "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
         return_value="downloaded_meta",
@@ -182,8 +176,8 @@ async def test_get_resource__not_valid_resource(
 async def test_get_resource__not_metadata(
     repository: metadata_repository.MetadataInjectorRepository,
     resource_name: str,
-    context: model.RequestContext,
 ) -> None:
+    context = model.RequestContext(repository)
     response = await repository.get_resource("numpy", resource_name, context)
     assert isinstance(response, model.HttpResource)
     assert response.url == "numpy_url"
