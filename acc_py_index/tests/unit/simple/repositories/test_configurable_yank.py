@@ -38,8 +38,9 @@ async def test_get_project_page(
     repo = ConfigurableYankRepository(
         source, file,
     )
+    context = model.RequestContext(repo)
 
-    res = await repo.get_project_page("numpy")
+    res = await repo.get_project_page("numpy", context)
     assert res.files[0].yanked == "bad"
     assert res.files[1].yanked is None
 

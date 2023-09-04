@@ -11,8 +11,7 @@ from acc_py_index.simple import model
 from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
 
 
-@pytest_asyncio.fixture  # type: ignore
-# Untyped decorator
+@pytest_asyncio.fixture
 async def repository(
     tmp_path: pathlib.Path,
 ) -> typing.AsyncGenerator[CachedHttpRepository, None]:
@@ -123,7 +122,9 @@ async def test_get_project_page__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    response = await repository.get_project_page("project")
+    context = model.RequestContext(repository)
+
+    response = await repository.get_project_page("project", context)
 
     assert response == model.ProjectDetail(
         name="project",
@@ -160,7 +161,9 @@ async def test_get_project_list__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    resp = await repository.get_project_list()
+    context = model.RequestContext(repository)
+
+    resp = await repository.get_project_list(context)
     assert resp == model.ProjectList(
         meta=model.Meta(
             api_version="1.0",

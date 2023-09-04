@@ -36,4 +36,5 @@ repos:
             "fastapi>=0.100.0",
             uvicorn,
             pydantic-settings,
+            pytest-asyncio,
           ]

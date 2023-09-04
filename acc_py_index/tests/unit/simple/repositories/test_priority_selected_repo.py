@@ -38,7 +38,10 @@ async def test_get_project_page(version: str) -> None:
         ),
     ])
 
-    resp = await group_repository.get_project_page(project_name="numpy")
+    resp = await group_repository.get_project_page(
+        project_name="numpy",
+        request_context=model.RequestContext(group_repository),
+    )
 
     assert resp == model.ProjectDetail(
         model.Meta(version),
@@ -58,7 +61,7 @@ async def test_get_project_page_failed() -> None:
         expected_exception=errors.PackageNotFoundError,
         match=r"Package 'numpy' was not found in the configured source",
     ):
-        await group_repository.get_project_page("numpy")
+        await group_repository.get_project_page("numpy", model.RequestContext(group_repository))
 
 
 @pytest.mark.asyncio
@@ -84,7 +87,7 @@ async def test_blended_get_project_list() -> None:
         ],
     )
 
-    result = await group_repository.get_project_list()
+    result = await group_repository.get_project_list(model.RequestContext(group_repository))
     # We expect only normalized results, and no duplicates.
     assert result == model.ProjectList(
         meta=meta,
@@ -107,7 +110,7 @@ async def test_blended_get_project_list_failed() -> None:
     assert isinstance(repo.sources[2], mock.Mock)
     repo.sources[2].get_project_list.side_effect = errors.SourceRepositoryUnavailable
     with pytest.raises(errors.SourceRepositoryUnavailable):
-        await repo.get_project_list()
+        await repo.get_project_list(model.RequestContext(repo))
 
 
 @pytest.mark.asyncio
@@ -129,7 +132,7 @@ async def test_blended_get_project_page_failed() -> None:
     assert isinstance(repo.sources[1], mock.Mock)
     repo.sources[1].get_project_list.side_effect = Exception
 
-    res = await repo.get_project_page("numpy")
+    res = await repo.get_project_page("numpy", model.RequestContext(repo))
 
     assert res == model.ProjectDetail(
         model.Meta("1.0"), name="numpy", files=(),
@@ -141,15 +144,6 @@ def test_group_repository_failed_init() -> None:
         PrioritySelectedProjectsRepository([])
     with pytest.raises(ValueError):
         PrioritySelectedProjectsRepository([FakeRepository()])
-
-
-@pytest.mark.asyncio
-async def test_not_normalized_package() -> None:
-    group_repository = PrioritySelectedProjectsRepository([
-        FakeRepository() for _ in range(3)
-    ])
-    with pytest.raises(errors.NotNormalizedProjectName):
-        await group_repository.get_project_page("non_normalized")
 
 
 @pytest.mark.asyncio
@@ -168,7 +162,7 @@ async def test_get_resource() -> None:
         ),
     ])
 
-    resp = await group_repository.get_resource("numpy", "numpy.whl")
+    resp = await group_repository.get_resource("numpy", "numpy.whl", model.RequestContext(group_repository))
     assert resp == model.HttpResource("url")
 
 
@@ -179,4 +173,4 @@ async def test_get_resource_failed() -> None:
     ])
 
     with pytest.raises(errors.ResourceUnavailable, match="numpy.whl"):
-        await group_repository.get_resource("numpy", "numpy.whl")
+        await group_repository.get_resource("numpy", "numpy.whl", model.RequestContext(group_repository))

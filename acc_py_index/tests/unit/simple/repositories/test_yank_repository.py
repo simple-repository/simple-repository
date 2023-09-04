@@ -4,31 +4,31 @@ from unittest import mock
 import aiosqlite
 import pytest
 
-from acc_py_index.simple.model import File, Meta, ProjectDetail
+from acc_py_index.simple import model
 import acc_py_index.simple.repositories.yanking as yank_repository
 
 from .fake_repository import FakeRepository
 
 
 @pytest.mark.parametrize(
-        "yank_reason, yank_attribute", [
-            ("reason", "reason"), ("", True),
-        ],
+    "yank_reason, yank_attribute", [
+        ("reason", "reason"), ("", True),
+    ],
 )
 def test_add_yanked_attribute(
     yank_reason: str,
     yank_attribute: Union[str, bool],
 ) -> None:
-    project_page = ProjectDetail(
+    project_page = model.ProjectDetail(
         name="project",
-        meta=Meta("1.0"),
+        meta=model.Meta("1.0"),
         files=(
-            File(
+            model.File(
               filename="project-1.0.0-any.whl",
               url="url",
               hashes={},
             ),
-            File(
+            model.File(
               filename="project-1.0.0.tar.gz",
               url="url",
               hashes={},
@@ -46,11 +46,11 @@ def test_add_yanked_attribute(
 
 
 @pytest.mark.parametrize(
-        "yanked_versions, yanked_value", [
-            ({}, None),
-            ({"project1.0.whl": "reason"}, "reason"),
-            ({"project1.0.whl": ""}, True),
-        ],
+    "yanked_versions, yanked_value", [
+        ({}, None),
+        ({"project1.0.whl": "reason"}, "reason"),
+        ({"project1.0.whl": ""}, True),
+    ],
 )
 @pytest.mark.asyncio
 async def test_get_project_page(
@@ -60,9 +60,9 @@ async def test_get_project_page(
     repository = yank_repository.YankRepository(
         FakeRepository(
             project_pages=[
-                ProjectDetail(
-                    Meta("1.0"), name="project", files=(
-                        File("project1.0.whl", "url", {}), File("project1.1.whl", "url", {}),
+                model.ProjectDetail(
+                    model.Meta("1.0"), name="project", files=(
+                        model.File("project1.0.whl", "url", {}), model.File("project1.1.whl", "url", {}),
                     ),
                 ),
             ],
@@ -74,7 +74,7 @@ async def test_get_project_page(
         "acc_py_index.simple.repositories.yanking.get_yanked_releases",
         mock.AsyncMock(return_value=yanked_versions),
     ):
-        result = await repository.get_project_page("project")
+        result = await repository.get_project_page("project", model.RequestContext(repository))
 
     assert result.files[0].yanked == yanked_value
     assert result.files[1].yanked is None
