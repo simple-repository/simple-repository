@@ -24,7 +24,8 @@ REQUIREMENTS: dict[str, list[str]] = {
         "pydantic-settings",
     ],
     "test": [
-        "httpx",  # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
+        # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
+        "httpx>=0.25",
         "pytest",
         "pytest_asyncio",
         "starlette>=0.26.1",
