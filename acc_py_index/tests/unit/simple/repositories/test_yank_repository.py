@@ -1,3 +1,4 @@
+import pathlib
 from typing import Optional, Union
 from unittest import mock
 
@@ -115,12 +116,31 @@ async def test_get_project_page(
 
 
 @pytest.mark.asyncio
-async def test_get_yanked_releases() -> None:
-    mock_database = mock.AsyncMock(spec=aiosqlite.Connection)
-    mock_database.execute.return_value.__aenter__.return_value.fetchall = mock.AsyncMock(
-        return_value=[("file1", "reason1"), ("file2", "reason2")],
-    )
+async def test_get_yanked_versions(tmp_path: pathlib.Path) -> None:
+    database_path = tmp_path / "temp.db"
+    async with aiosqlite.connect(database_path) as database:
+        await yank_repository.YankRepository(
+            source=FakeRepository(),
+            database=database,
+        )._init_db()
+        await database.execute(
+            "CREATE TABLE IF NOT EXISTS yanked_versions"
+            "(project_name TEXT, version TEXT, reason TEXT"
+            ", CONSTRAINT pk PRIMARY KEY (project_name, version))",
+        )
+        await database.execute(
+            "INSERT INTO yanked_versions (project_name, version, reason)"
+            " VALUES(:project_name, :version, :reason)",
+            {"project_name": "project", "version": "1.0", "reason": "reason1"},
+        )
+        await database.execute(
+            "INSERT INTO yanked_versions (project_name, version, reason)"
+            " VALUES(:project_name, :version, :reason)",
+            {"project_name": "project", "version": "2.0", "reason": "reason2"},
+        )
 
-    versions = await yank_repository.get_yanked_versions("project_name", mock_database)
+        await database.commit()
 
-    assert versions == {"file1": "reason1", "file2": "reason2"}
+        versions = await yank_repository.get_yanked_versions("project", database)
+
+    assert versions == {"1.0": "reason1", "2.0": "reason2"}
