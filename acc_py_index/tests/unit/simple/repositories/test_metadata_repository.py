@@ -11,6 +11,7 @@ from acc_py_index import errors
 import acc_py_index.simple.model as model
 from acc_py_index.simple.repositories.core import SimpleRepository
 import acc_py_index.simple.repositories.metadata_injector as metadata_repository
+from acc_py_index.tests.aiohttp_mock import MockClientSession
 
 from .fake_repository import FakeRepository
 
@@ -185,18 +186,13 @@ async def test_get_resource__not_metadata(
 
 @pytest.mark.asyncio
 async def test_download_metadata() -> None:
-    mock_session = mock.Mock()
-    get_metadata_from_package_mock = mock.Mock()
-    download_file_mock = mock.AsyncMock()
-
-    with mock.patch(
-        "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
-        get_metadata_from_package_mock,
-    ), mock.patch(
-        "acc_py_index.utils.download_file",
-        download_file_mock,
+    with (
+        mock.patch(
+            "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
+        ) as get_metadata_from_package_mock,
+        mock.patch("acc_py_index.utils.download_file") as download_file_mock,
     ):
-        await metadata_repository.download_metadata("name", "url", mock_session)
+        await metadata_repository.download_metadata("name", "url", MockClientSession())
 
     get_metadata_from_package_mock.assert_called_once()
     download_file_mock.assert_awaited_once()
