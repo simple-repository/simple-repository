@@ -9,6 +9,15 @@ from acc_py_index.simple import model
 from acc_py_index.simple.repositories.local import LocalRepository
 
 
+def test_path_resolution(tmp_path: Path) -> None:
+    path = tmp_path / "my-path" / "simple"
+    path.mkdir(parents=True)
+    symlink = Path(tmp_path / "symlink")
+    symlink.symlink_to(path)
+    repo = LocalRepository(symlink)
+    assert repo._index_path == tmp_path / "my-path" / "simple"
+
+
 @pytest.fixture
 def simple_dir(tmp_path: Path) -> Path:
     for project in ("numpy", "tensorflow", "pandas", ".not_normalized"):
