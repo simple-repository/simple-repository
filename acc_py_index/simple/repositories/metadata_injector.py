@@ -56,7 +56,7 @@ def add_metadata_attribute(
     """Add the data-core-metadata to all the packages distributed as wheels"""
     files = []
     for file in project_page.files:
-        if file.url and file.filename.endswith(".whl") and file.dist_info_metadata is None:
+        if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
             file = replace(file, dist_info_metadata=True)
         files.append(file)
     project_page = replace(project_page, files=tuple(files))

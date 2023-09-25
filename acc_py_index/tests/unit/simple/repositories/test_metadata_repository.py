@@ -21,7 +21,8 @@ def test_add_metadata_attribute() -> None:
        model.Meta("1.0"),
        "numpy",
        (
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}),
+            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
+            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
             model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
             model.File(
                 "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
@@ -31,8 +32,9 @@ def test_add_metadata_attribute() -> None:
     result = metadata_repository.add_metadata_attribute(project_page)
 
     assert result.files[0].dist_info_metadata is True
-    assert result.files[1].dist_info_metadata is None
-    assert result.files[2].dist_info_metadata == {"sha": "..."}
+    assert result.files[1].dist_info_metadata is True
+    assert result.files[2].dist_info_metadata is None
+    assert result.files[3].dist_info_metadata == {"sha": "..."}
 
 
 def test_get_metadata_from_package() -> None:
