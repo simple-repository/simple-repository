@@ -25,7 +25,7 @@ class LocalRepository(SimpleRepository):
     ) -> None:
         if not index_path.is_dir():
             raise ValueError("index_path must be a directory")
-        self._index_path = index_path.absolute()
+        self._index_path = index_path.resolve()
 
     async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
         return model.ProjectList(
@@ -54,7 +54,7 @@ class LocalRepository(SimpleRepository):
             files.append(
                 model.File(
                     filename=file.name,
-                    url=f"file://{file.absolute()}",
+                    url=f"file://{file.resolve()}",
                     hashes={},
                     upload_time=datetime.utcfromtimestamp(
                         file_stat.st_ctime,
