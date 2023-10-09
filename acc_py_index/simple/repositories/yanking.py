@@ -15,7 +15,7 @@ from .core import RepositoryContainer, SimpleRepository
 async def get_yanked_versions(project_name: str, database: aiosqlite.Connection) -> dict[str, str]:
     query = "SELECT version, reason FROM yanked_versions WHERE project_name = :project_name"
     async with database.execute(query, {"project_name": project_name}) as cur:
-        result: list[tuple[str, str]] = await cur.fetchall()
+        result = await cur.fetchall()
     return {
         version: reason for version, reason in result
     }
