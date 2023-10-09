@@ -10,59 +10,10 @@ import pytest_asyncio
 from acc_py_index import errors
 import acc_py_index.simple.model as model
 from acc_py_index.simple.repositories.core import SimpleRepository
-import acc_py_index.simple.repositories.metadata_injector as metadata_repository
+from acc_py_index.simple.repositories.metadata_injector import MetadataInjectorRepository
 from acc_py_index.tests.aiohttp_mock import MockClientSession
 
 from .fake_repository import FakeRepository
-
-
-def test_add_metadata_attribute() -> None:
-    project_page = model.ProjectDetail(
-       model.Meta("1.0"),
-       "numpy",
-       (
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
-            model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
-            model.File(
-                "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
-            ),
-       ),
-    )
-    result = metadata_repository.add_metadata_attribute(project_page)
-
-    assert result.files[0].dist_info_metadata is True
-    assert result.files[1].dist_info_metadata is True
-    assert result.files[2].dist_info_metadata is None
-    assert result.files[3].dist_info_metadata == {"sha": "..."}
-
-
-def test_get_metadata_from_package() -> None:
-    m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
-    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
-
-    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
-        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl')
-        read_method.assert_called_once_with('trvial_name-0.0.1.dist-info/METADATA')
-
-    with pytest.raises(ValueError, match="Package provided is not a wheel"):
-        metadata_repository.get_metadata_from_package(pathlib.Path('trivial_dir') / 'package.mp4')
-
-
-def test_get_metadata_from_package__missing_metadata() -> None:
-    m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
-    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
-    read_method.side_effect = KeyError()
-
-    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
-        with pytest.raises(
-            errors.InvalidPackageError,
-            match="Provided wheel doesn't contain a metadata file.",
-        ) as exc_info:
-            metadata_repository.get_metadata_from_package(
-                package_path=pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl',
-            )
-    assert isinstance(exc_info.value.__cause__, KeyError)
 
 
 @pytest_asyncio.fixture
@@ -74,8 +25,8 @@ async def tmp_db(tmp_path: pathlib.Path) -> aiosqlite.Connection:
 @pytest.fixture
 def repository(
     tmp_db: aiosqlite.Connection,
-) -> metadata_repository.MetadataInjectorRepository:
-    return metadata_repository.MetadataInjectorRepository(
+) -> MetadataInjectorRepository:
+    return MetadataInjectorRepository(
         source=FakeRepository(
             project_pages=[
                 model.ProjectDetail(
@@ -102,9 +53,58 @@ def repository(
     )
 
 
+def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
+    project_page = model.ProjectDetail(
+       model.Meta("1.0"),
+       "numpy",
+       (
+            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
+            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
+            model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
+            model.File(
+                "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
+            ),
+       ),
+    )
+    result = repository._add_metadata_attribute(project_page)
+
+    assert result.files[0].dist_info_metadata is True
+    assert result.files[1].dist_info_metadata is True
+    assert result.files[2].dist_info_metadata is None
+    assert result.files[3].dist_info_metadata == {"sha": "..."}
+
+
+def test_get_metadata_from_package(repository: MetadataInjectorRepository) -> None:
+    m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
+    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
+
+    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
+        repository._get_metadata_from_package(pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl')
+        read_method.assert_called_once_with('trvial_name-0.0.1.dist-info/METADATA')
+
+    with pytest.raises(ValueError, match="Package provided is not a wheel"):
+        repository._get_metadata_from_package(pathlib.Path('trivial_dir') / 'package.mp4')
+
+
+def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository) -> None:
+    m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
+    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
+    read_method.side_effect = KeyError()
+
+    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
+        with pytest.raises(
+            errors.InvalidPackageError,
+            match="Provided wheel doesn't contain a metadata file.",
+        ) as exc_info:
+            repository._get_metadata_from_package(
+                package_path=pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl',
+            )
+    assert isinstance(exc_info.value.__cause__, KeyError)
+
+
 @pytest.mark.asyncio
 async def test_get_project_page(
-    repository: metadata_repository.MetadataInjectorRepository,
+    repository: MetadataInjectorRepository,
 ) -> None:
     context = model.RequestContext(repository)
     result = await repository.get_project_page("numpy", context)
@@ -113,7 +113,7 @@ async def test_get_project_page(
 
 @pytest.mark.asyncio
 async def test_get_resource__cached(
-    repository: metadata_repository.MetadataInjectorRepository,
+    repository: MetadataInjectorRepository,
 ) -> None:
     context = model.RequestContext(repository)
     await repository._cache.set("name/resource.metadata", "cached_meta")
@@ -125,12 +125,13 @@ async def test_get_resource__cached(
 
 @pytest.mark.asyncio
 async def test_get_resource__not_cached(
-    repository: metadata_repository.MetadataInjectorRepository,
+    repository: MetadataInjectorRepository,
 ) -> None:
     context = model.RequestContext(repository)
-    with mock.patch(
-        "acc_py_index.simple.repositories.metadata_injector.download_metadata",
-        mock.AsyncMock(return_value="downloaded_meta"),
+    with mock.patch.object(
+        repository,
+        "_download_metadata",
+        return_value="downloaded_meta",
     ):
         response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata", context)
 
@@ -140,11 +141,12 @@ async def test_get_resource__not_cached(
 
 @pytest.mark.asyncio
 async def test_get_resource__local_resource(
-    repository: metadata_repository.MetadataInjectorRepository,
+    repository: MetadataInjectorRepository,
 ) -> None:
     context = model.RequestContext(repository)
-    with mock.patch(
-        "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
+    with mock.patch.object(
+        repository,
+        "_get_metadata_from_package",
         return_value="downloaded_meta",
     ):
         response = await repository.get_resource("numpy", "numpy-2.0-any.whl.metadata", context)
@@ -162,7 +164,7 @@ async def test_get_resource__not_valid_resource(
         errors.ResourceUnavailable('name'),
         model.TextResource(text='/etc/passwd'),
     ]
-    repo = metadata_repository.MetadataInjectorRepository(
+    repo = MetadataInjectorRepository(
         source=typing.cast(SimpleRepository, source_repo),
         database=tmp_db,
         session=mock.AsyncMock(),
@@ -177,7 +179,7 @@ async def test_get_resource__not_valid_resource(
 )
 @pytest.mark.asyncio
 async def test_get_resource__not_metadata(
-    repository: metadata_repository.MetadataInjectorRepository,
+    repository: MetadataInjectorRepository,
     resource_name: str,
 ) -> None:
     context = model.RequestContext(repository)
@@ -187,14 +189,15 @@ async def test_get_resource__not_metadata(
 
 
 @pytest.mark.asyncio
-async def test_download_metadata() -> None:
+async def test_download_metadata(repository: MetadataInjectorRepository) -> None:
     with (
-        mock.patch(
-            "acc_py_index.simple.repositories.metadata_injector.get_metadata_from_package",
+        mock.patch.object(
+            repository,
+            "_get_metadata_from_package",
         ) as get_metadata_from_package_mock,
         mock.patch("acc_py_index.utils.download_file") as download_file_mock,
     ):
-        await metadata_repository.download_metadata("name", "url", MockClientSession())
+        await repository._download_metadata("name", "url", MockClientSession())
 
     get_metadata_from_package_mock.assert_called_once()
     download_file_mock.assert_awaited_once()
