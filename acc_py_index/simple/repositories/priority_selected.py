@@ -30,14 +30,18 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources in a first seen policy.
         """
         for source in self.sources:
             try:
-                project_page = await source.get_project_page(project_name, request_context)
+                project_page = await source.get_project_page(
+                    project_name,
+                    request_context=request_context,
+                )
             except errors.PackageNotFoundError:
                 continue
             return project_page
@@ -46,11 +50,15 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             package_name=project_name,
         )
 
-    async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
+    async def get_project_list(
+        self,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
         project_lists: list[model.ProjectList] = await asyncio.gather(
             *(
-                source.get_project_list(request_context)
+                source.get_project_list(request_context=request_context)
                 for source in self.sources
             ),
             return_exceptions=True,
@@ -83,11 +91,16 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         for source in self.sources:
             try:
-                resource = await source.get_resource(project_name, resource_name, request_context)
+                resource = await source.get_resource(
+                    project_name,
+                    resource_name,
+                    request_context=request_context,
+                )
             except errors.ResourceUnavailable:
                 pass
             else:

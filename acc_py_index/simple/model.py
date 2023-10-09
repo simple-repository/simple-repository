@@ -165,7 +165,17 @@ class Resource:
 @dataclass(frozen=True)
 class RequestContext:
     repository: "SimpleRepository"
+    # TODO: Worry that context is mutable.
     context: dict[str, str] = field(default_factory=dict)
+
+    # Provider a default context which can be used in all signatures using RequestContext.
+    # By default, if not specified, the default request context will be the one containing the
+    # repository of the originating call (i.e. the repository upon which you call a method is the
+    # one that is injected into the context, and passed down to each subsequent (nested) request.
+    # We know that None isn't a RequestContext instance... as a result of this, every user
+    # of RequestContext should handle this. RepositorySource automatically transforms this
+    # to a sensible incoming request (see RepositorySource._build_request_context).
+    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)

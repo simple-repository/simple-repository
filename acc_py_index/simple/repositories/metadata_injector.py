@@ -35,21 +35,27 @@ class MetadataInjectorRepository(RepositoryContainer):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         return self._add_metadata_attribute(
-            await super().get_project_page(project_name, request_context),
+            await super().get_project_page(project_name, request_context=request_context),
         )
 
     async def get_resource(
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         try:
             # Attempt to get the resource from upstream.
-            return await super().get_resource(project_name, resource_name, request_context)
+            return await super().get_resource(
+                project_name,
+                resource_name,
+                request_context=request_context,
+            )
         except errors.ResourceUnavailable:
             if not resource_name.endswith(".metadata"):
                 # If we tried to get a resource that wasn't a .metadata one, and it failed,
@@ -65,7 +71,8 @@ class MetadataInjectorRepository(RepositoryContainer):
             # Get hold of the actual artefact from which we want to extract
             # the metadata.
             resource = await request_context.repository.get_resource(
-                project_name, resource_name.removesuffix(".metadata"), request_context,
+                project_name, resource_name.removesuffix(".metadata"),
+                request_context=request_context,
             )
             if isinstance(resource, model.HttpResource):
                 try:

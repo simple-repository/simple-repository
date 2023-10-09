@@ -24,14 +24,14 @@ async def test_special_get_project_page(tmp_path: pathlib.PosixPath) -> None:
         special_case_file=special_case_file,
     )
 
-    resp = await repo.get_project_page("numpy", model.RequestContext(repo))
+    resp = await repo.get_project_page("numpy")
     assert resp == model.ProjectDetail(model.Meta("1.0"), "numpy", files=())
 
     with pytest.raises(errors.PackageNotFoundError, match="package"):
-        await repo.get_project_page("package", model.RequestContext(repo))
+        await repo.get_project_page("package")
 
     with pytest.raises(errors.PackageNotFoundError, match="tensorflow"):
-        await repo.get_project_page("tensorflow", model.RequestContext(repo))
+        await repo.get_project_page("tensorflow")
 
 
 @pytest.mark.asyncio
@@ -44,7 +44,7 @@ async def test_get_project_list(tmp_path: pathlib.PosixPath) -> None:
         special_case_file=special_case_file,
     )
 
-    res = await repo.get_project_list(model.RequestContext(repo))
+    res = await repo.get_project_list()
 
     assert res == model.ProjectList(
         meta=model.Meta("1.0"),
@@ -75,15 +75,15 @@ async def test_get_resources(tmp_path: pathlib.PosixPath) -> None:
         errors.ResourceUnavailable,
         match="gunicorn-0.7.whl",
     ):
-        await repo.get_resource("gunicorn", "gunicorn-0.7.whl", model.RequestContext(repo))
+        await repo.get_resource("gunicorn", "gunicorn-0.7.whl")
 
     with pytest.raises(
         errors.ResourceUnavailable,
         match="pandas.whl",
     ):
-        await repo.get_resource("pandas", "pandas.whl", model.RequestContext(repo))
+        await repo.get_resource("pandas", "pandas.whl")
 
-    result = await repo.get_resource("numpy", "numpy-0.7.whl", model.RequestContext(repo))
+    result = await repo.get_resource("numpy", "numpy-0.7.whl")
 
     assert isinstance(result, model.HttpResource)
     assert result.url == "numpy_url"

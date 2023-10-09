@@ -86,9 +86,13 @@ class YankRepository(RepositoryContainer):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        project_page = await super().get_project_page(project_name, request_context)
+        project_page = await super().get_project_page(
+            project_name,
+            request_context=request_context,
+        )
 
         await self._init_db()
         yanked_versions = await get_yanked_versions(project_name, self.yank_database)
@@ -134,9 +138,13 @@ class ConfigurableYankRepository(RepositoryContainer):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        project_page = await super().get_project_page(project_name, request_context)
+        project_page = await super().get_project_page(
+            project_name,
+            request_context=request_context,
+        )
 
         if value := self._yank_config.get(project_name):
             pattern, reason = value

@@ -108,7 +108,7 @@ async def test_get_project_page(
         "acc_py_index.simple.repositories.yanking.get_yanked_versions",
         return_value=yanked_versions,
     ):
-        result = await repository.get_project_page("project", model.RequestContext(repository))
+        result = await repository.get_project_page("project")
 
     assert result.files[0].yanked == yanked_value
     assert result.files[1].yanked == yanked_value

@@ -38,9 +38,7 @@ async def test_get_project_list(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
-
-    project_list = await repo.get_project_list(context)
+    project_list = await repo.get_project_list()
 
     assert project_list == model.ProjectList(
         meta=model.Meta("1.0"),
@@ -57,8 +55,7 @@ async def test_get_resource(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
-    resource = await repo.get_resource("numpy", "numpy-1.0-any.whl", context)
+    resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
 
     assert resource == model.LocalResource(
         path=simple_dir / "numpy" / "numpy-1.0-any.whl",
@@ -80,13 +77,12 @@ async def test_get_resource__unavailable(
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
 
     with pytest.raises(
         errors.ResourceUnavailable,
         match=f"Resource '{resource}' was not found in the configured source",
     ):
-        await repo.get_resource(project, resource, context)
+        await repo.get_resource(project, resource)
 
 
 @pytest.mark.parametrize(
@@ -104,13 +100,11 @@ async def test_get_resource__path_traversal(
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
-
     with pytest.raises(
         ValueError,
         match=f"{(simple_dir / project /resource).resolve()} is not contained in {repo._index_path / project}",
     ):
-        await repo.get_resource(project, resource, context)
+        await repo.get_resource(project, resource)
 
 
 @pytest.mark.asyncio
@@ -118,9 +112,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
-
-    project_details = await repo.get_project_page("numpy", context)
+    project_details = await repo.get_project_page("numpy")
     assert project_details == model.ProjectDetail(
         meta=model.Meta("1.1"),
         name="numpy",
@@ -157,10 +149,8 @@ async def test_get_project_page__not_found(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
-    context = model.RequestContext(repo)
-
     with pytest.raises(
         errors.PackageNotFoundError,
         match="seaborn",
     ):
-        await repo.get_project_page("seaborn", context)
+        await repo.get_project_page("seaborn")

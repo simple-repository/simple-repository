@@ -85,8 +85,7 @@ async def test_get_project_page(text: str, header: str) -> None:
         ),
     )
 
-    context = model.RequestContext(repository)
-    resp = await repository.get_project_page("project", context)
+    resp = await repository.get_project_page("project")
     assert resp == model.ProjectDetail(
         name="project",
         meta=model.Meta(
@@ -115,9 +114,8 @@ async def test_get_project_page_unsupported_serialization() -> None:
             headers={"content-type": "multipart/form-data"},
         ),
     )
-    context = model.RequestContext(repository)
     with pytest.raises(errors.UnsupportedSerialization):
-        await repository.get_project_page("project", context)
+        await repository.get_project_page("project")
 
 
 @pytest.mark.asyncio
@@ -126,9 +124,8 @@ async def test_get_project_page_failed() -> None:
         session=MockClientSession(raise_status_code=404),
     )
 
-    context = model.RequestContext(repository)
     with pytest.raises(errors.PackageNotFoundError):
-        await repository.get_project_page("project", context)
+        await repository.get_project_page("project")
 
 
 @pytest.mark.parametrize(
@@ -168,8 +165,7 @@ async def test_get_project_list(text: str, header: str) -> None:
         ),
     )
 
-    context = model.RequestContext(repository)
-    resp = await repository.get_project_list(context)
+    resp = await repository.get_project_list()
     assert resp == model.ProjectList(
         meta=model.Meta(
             api_version="1.0",
@@ -185,9 +181,8 @@ async def test_get_project_list(text: str, header: str) -> None:
 async def test_get_project_list_failed() -> None:
     repository = create_repository(session=MockClientSession(raise_status_code=404))
 
-    context = model.RequestContext(repository)
     with pytest.raises(errors.SourceRepositoryUnavailable):
-        await repository.get_project_list(context)
+        await repository.get_project_list()
 
 
 @pytest.fixture
@@ -224,9 +219,8 @@ async def test_get_resource(
             headers={"ETag": source_etag} if source_etag else {},
         ),
     )
-    context = model.RequestContext(repository)
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
-        resp = await repository.get_resource("numpy", "numpy-2.0.whl", context)
+        resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, model.HttpResource)
         assert resp.url == "my_url/numpy-2.0.whl"
         assert resp.context.get("etag") == source_etag
@@ -237,16 +231,15 @@ async def test_get_resource_unavailable(project_detail: model.ProjectDetail) -> 
     repository = create_repository(MockClientSession())
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
-            await repository.get_resource("numpy", "numpy-3.0.whl", model.RequestContext(repository))
+            await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
 async def test_get_resource_project_unavailable() -> None:
     repository = create_repository(MockClientSession())
-    context = model.RequestContext(repository)
     with mock.patch.object(HttpRepository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
-            await repository.get_resource("numpy", "numpy-3.0.whl", context)
+            await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
@@ -262,23 +255,21 @@ async def test_get_resource_metadata(
             headers={"ETag": source_etag} if source_etag else {},
         ),
     )
-    context = model.RequestContext(repository)
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
-        resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata", context)
+        resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, model.HttpResource)
         assert resp.url == "my_url/numpy-1.0.whl.metadata"
         assert resp.context.get("etag") == source_etag
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
-            await repository.get_resource("numpy", "numpy-2.0.whl.metadata", context)
+            await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
 
 
 @pytest.mark.asyncio
 async def test_get_resource_metadata__unavailable(project_detail: model.ProjectDetail) -> None:
     repository = create_repository(MockClientSession())
-    context = model.RequestContext(repository)
     with (
         mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail),
         pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"),
     ):
-        await repository.get_resource("numpy", "numpy-2.0.whl.metadata", context)
+        await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
