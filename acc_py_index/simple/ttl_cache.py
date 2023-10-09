@@ -43,14 +43,16 @@ class TTLDatabaseCache:
                 WHERE key = :key AND valid_until > :now''',
                 {"key": key, "now": now},
             ) as cur:
-                res: Optional[tuple[str]] = await cur.fetchone()
+                res = await cur.fetchone()
         except (aiosqlite.DatabaseError, sqlite3.InterfaceError):
             # If the query fails because the database
             # is locked, assume a cache miss.
             res = None
 
         if res is not None:
-            return res[0]
+            result = res[0]
+            assert isinstance(result, str)
+            return result
         return default
 
     async def update(self, data: dict[str, str]) -> None:
