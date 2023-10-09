@@ -3,8 +3,7 @@ from unittest import mock
 import aiohttp
 import pytest
 
-from acc_py_index import errors
-from acc_py_index.simple import model
+from acc_py_index.simple import errors, model
 from acc_py_index.simple.repositories.http import HttpRepository
 from acc_py_index.tests.aiohttp_mock import MockClientSession
 

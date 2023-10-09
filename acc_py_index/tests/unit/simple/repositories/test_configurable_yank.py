@@ -2,8 +2,7 @@ import pathlib
 
 import pytest
 
-from acc_py_index import errors
-from acc_py_index.simple import model
+from acc_py_index.simple import errors, model
 from acc_py_index.simple.repositories.yanking import ConfigurableYankRepository
 
 from .fake_repository import FakeRepository

@@ -2,8 +2,7 @@ import pathlib
 
 import pytest
 
-from acc_py_index import errors
-from acc_py_index.simple import model
+from acc_py_index.simple import errors, model
 from acc_py_index.simple.repositories.allow_listed import AllowListedRepository
 
 from .fake_repository import FakeRepository
