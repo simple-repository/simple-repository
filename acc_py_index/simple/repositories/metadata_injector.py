@@ -11,58 +11,6 @@ from ... import errors, ttl_cache, utils
 from .core import RepositoryContainer, SimpleRepository
 
 
-def get_metadata_from_wheel(package_path: pathlib.Path) -> str:
-    package_tokens = package_path.name.split('-')
-    if len(package_tokens) < 2:
-        raise ValueError(
-            f"Filename {package_path.name} is not normalized according to PEP-427",
-        )
-    name_ver = package_tokens[0] + '-' + package_tokens[1]
-
-    try:
-        with zipfile.ZipFile(package_path, 'r') as ziparchive:
-            try:
-                return ziparchive.read(name_ver + ".dist-info/METADATA").decode()
-            except KeyError as e:
-                raise errors.InvalidPackageError(
-                    "Provided wheel doesn't contain a metadata file.",
-                ) from e
-    except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
-        raise errors.InvalidPackageError(
-            "Unable to decompress the provided wheel.",
-        ) from e
-
-
-def get_metadata_from_package(package_path: pathlib.Path) -> str:
-    if package_path.name.endswith('.whl'):
-        return get_metadata_from_wheel(package_path)
-    raise ValueError("Package provided is not a wheel")
-
-
-async def download_metadata(
-    package_name: str,
-    download_url: str,
-    session: aiohttp.ClientSession,
-) -> str:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        pkg_path = pathlib.Path(tmpdir) / package_name
-        await utils.download_file(download_url, pkg_path, session)
-        return get_metadata_from_package(pkg_path)
-
-
-def add_metadata_attribute(
-    project_page: model.ProjectDetail,
-) -> model.ProjectDetail:
-    """Add the data-core-metadata to all the packages distributed as wheels"""
-    files = []
-    for file in project_page.files:
-        if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
-            file = replace(file, dist_info_metadata=True)
-        files.append(file)
-    project_page = replace(project_page, files=tuple(files))
-    return project_page
-
-
 class MetadataInjectorRepository(RepositoryContainer):
     """Adds PEP-658 support to a simple repository. If not already specified,
     sets the dist-info metadata for all wheels packages in a project page.
@@ -89,7 +37,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         project_name: str,
         request_context: model.RequestContext,
     ) -> model.ProjectDetail:
-        return add_metadata_attribute(
+        return self._add_metadata_attribute(
             await super().get_project_page(project_name, request_context),
         )
 
@@ -121,7 +69,7 @@ class MetadataInjectorRepository(RepositoryContainer):
             )
             if isinstance(resource, model.HttpResource):
                 try:
-                    metadata = await download_metadata(
+                    metadata = await self._download_metadata(
                         package_name=resource_name.removesuffix(".metadata"),
                         download_url=resource.url,
                         session=self._session,
@@ -132,7 +80,7 @@ class MetadataInjectorRepository(RepositoryContainer):
                     raise errors.ResourceUnavailable(resource_name) from e
             elif isinstance(resource, model.LocalResource):
                 try:
-                    metadata = get_metadata_from_package(resource.path)
+                    metadata = self._get_metadata_from_package(resource.path)
                 except ValueError as e:
                     raise errors.ResourceUnavailable(resource_name) from e
             else:
@@ -147,3 +95,53 @@ class MetadataInjectorRepository(RepositoryContainer):
         return model.TextResource(
             text=metadata,
         )
+
+    def _get_metadata_from_wheel(self, package_path: pathlib.Path) -> str:
+        package_tokens = package_path.name.split('-')
+        if len(package_tokens) < 2:
+            raise ValueError(
+                f"Filename {package_path.name} is not normalized according to PEP-427",
+            )
+        name_ver = package_tokens[0] + '-' + package_tokens[1]
+
+        try:
+            with zipfile.ZipFile(package_path, 'r') as ziparchive:
+                try:
+                    return ziparchive.read(name_ver + ".dist-info/METADATA").decode()
+                except KeyError as e:
+                    raise errors.InvalidPackageError(
+                        "Provided wheel doesn't contain a metadata file.",
+                    ) from e
+        except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
+            raise errors.InvalidPackageError(
+                "Unable to decompress the provided wheel.",
+            ) from e
+
+    def _get_metadata_from_package(self, package_path: pathlib.Path) -> str:
+        if package_path.name.endswith('.whl'):
+            return self._get_metadata_from_wheel(package_path)
+        raise ValueError("Package provided is not a wheel")
+
+    async def _download_metadata(
+        self,
+        package_name: str,
+        download_url: str,
+        session: aiohttp.ClientSession,
+    ) -> str:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pkg_path = pathlib.Path(tmpdir) / package_name
+            await utils.download_file(download_url, pkg_path, session)
+            return self._get_metadata_from_package(pkg_path)
+
+    def _add_metadata_attribute(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> model.ProjectDetail:
+        """Add the data-core-metadata to all the packages distributed as wheels"""
+        files = []
+        for file in project_page.files:
+            if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
+                file = replace(file, dist_info_metadata=True)
+            files.append(file)
+        project_page = replace(project_page, files=tuple(files))
+        return project_page
