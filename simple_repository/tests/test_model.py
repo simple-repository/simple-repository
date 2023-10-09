@@ -1,6 +1,6 @@
 import pytest
 
-import acc_py_index.simple.model as m
+from .. import model as m
 
 
 def test_ProjectListElement__normalized_name() -> None:

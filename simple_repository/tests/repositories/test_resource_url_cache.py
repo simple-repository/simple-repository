@@ -5,9 +5,8 @@ import aiosqlite
 import pytest
 import pytest_asyncio
 
-from acc_py_index.simple import model
-from acc_py_index.simple.repositories.resource_url_cache import ResourceURLCacheRepository
-
+from ... import model
+from ...repositories.resource_url_cache import ResourceURLCacheRepository
 from .fake_repository import FakeRepository
 
 

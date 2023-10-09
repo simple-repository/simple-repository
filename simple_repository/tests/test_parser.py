@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 import pytest
 
-from acc_py_index.simple import model, parser
+from .. import model, parser
 
 
 def test_parse_json_project_page() -> None:
@@ -271,7 +271,7 @@ def test_parse_json_project_list() -> None:
                 "name": "gym"
             },
             {
-                "name": "acc_py_index"
+                "name": "my_project"
             }
         ]
     }'''
@@ -282,7 +282,7 @@ def test_parse_json_project_list() -> None:
         model.Meta("1.0"),
         frozenset([
             model.ProjectListElement("gym"),
-            model.ProjectListElement("acc_py_index"),
+            model.ProjectListElement("my_project"),
         ]),
     )
 
@@ -290,7 +290,7 @@ def test_parse_json_project_list() -> None:
 def test_parse_html_project_list() -> None:
     page = '''
         <a href="url">gym</a>
-        <a href="url">acc_py_index</a>
+        <a href="url">my_project</a>
     '''
 
     result = parser.parse_html_project_list(page)
@@ -299,7 +299,7 @@ def test_parse_html_project_list() -> None:
         model.Meta("1.0"),
         frozenset([
             model.ProjectListElement("gym"),
-            model.ProjectListElement("acc_py_index"),
+            model.ProjectListElement("my_project"),
         ]),
     )
 

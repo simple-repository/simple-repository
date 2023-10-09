@@ -5,9 +5,8 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index.simple import model
-from acc_py_index.simple.repositories.resource_cache import ResourceCacheRepository
-
+from ... import model
+from ...repositories.resource_cache import ResourceCacheRepository
 from .fake_repository import FakeRepository
 
 
@@ -59,7 +58,7 @@ async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> 
     context = model.RequestContext(repository)
 
     with mock.patch(
-        "acc_py_index.simple.utils.download_file",
+        "simple_repository.utils.download_file",
         mock.AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),
@@ -211,7 +210,7 @@ async def test_update_last_access_for__cache_miss_remote_called(
     context = model.RequestContext(repository)
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
-        "acc_py_index.simple.utils.download_file",
+        "simple_repository.utils.download_file",
         mock.AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),

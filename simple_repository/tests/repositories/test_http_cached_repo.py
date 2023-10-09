@@ -7,8 +7,8 @@ import aiosqlite
 import pytest
 import pytest_asyncio
 
-from acc_py_index.simple import model
-from acc_py_index.simple.repositories.http_cached import CachedHttpRepository
+from ... import model
+from ...repositories.http_cached import CachedHttpRepository
 
 
 @pytest_asyncio.fixture

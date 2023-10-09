@@ -1,7 +1,7 @@
 from typing import Optional
 
-from acc_py_index.simple import errors, model
-from acc_py_index.simple.repositories.core import SimpleRepository
+from ... import errors, model
+from ...repositories.core import SimpleRepository
 
 
 class FakeRepository(SimpleRepository):

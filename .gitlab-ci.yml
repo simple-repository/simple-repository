@@ -10,7 +10,7 @@ include:
     file: v2/python.gitlab-ci.yml
 
 variables:
-  project_name: acc_py_index
+  project_name: simple_repository
   project_root: .
   PY_VERSION: '3.11'
   ACC_PY_BASE_IMAGE_TAG: '2023.06'
@@ -52,14 +52,14 @@ test_wheel_deployment:
     - acc-py -vv app deploy ${project_root}/.wheel-to-deploy/*.whl
 
 
-# A full installation of acc-py-index, tested with pytest.
+# A full installation of simple-repository, tested with pytest.
 wheel_test:
   # TODO: Test the frozen wheel (by installing it with acc-py-deploy), instead of the
   #       unlocked/unfrozen one.
   extends: .acc_py_wheel_test
 
 
-# A development installation of acc-py-index, tested with pytest.
+# A development installation of simple-repository, tested with pytest.
 test_dev:
   extends: .acc_py_dev_test
 
