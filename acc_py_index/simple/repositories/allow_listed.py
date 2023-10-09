@@ -24,7 +24,8 @@ class AllowListedRepository(SimpleRepository):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         """Returns the project page from the source if the project_name
         is whitelisted.
@@ -32,11 +33,15 @@ class AllowListedRepository(SimpleRepository):
         if project_name not in self._special_cases:
             raise errors.PackageNotFoundError(project_name)
         else:
-            return await self.source.get_project_page(project_name, request_context)
+            return await self.source.get_project_page(
+                project_name,
+                request_context=request_context,
+            )
 
     async def get_project_list(
         self,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectList:
         return model.ProjectList(
             meta=model.Meta("1.0"),
@@ -50,10 +55,15 @@ class AllowListedRepository(SimpleRepository):
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         if project_name in self._special_cases:
-            return await self.source.get_resource(project_name, resource_name, request_context)
+            return await self.source.get_resource(
+                project_name,
+                resource_name,
+                request_context=request_context,
+            )
         raise errors.ResourceUnavailable(resource_name)
 
     def _load_config_json(self, json_file: pathlib.Path) -> dict[str, str]:

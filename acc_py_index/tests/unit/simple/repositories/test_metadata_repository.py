@@ -106,8 +106,7 @@ def test_get_metadata_from_package__missing_metadata(repository: MetadataInjecto
 async def test_get_project_page(
     repository: MetadataInjectorRepository,
 ) -> None:
-    context = model.RequestContext(repository)
-    result = await repository.get_project_page("numpy", context)
+    result = await repository.get_project_page("numpy")
     assert result.files[0].dist_info_metadata is True
 
 
@@ -115,10 +114,9 @@ async def test_get_project_page(
 async def test_get_resource__cached(
     repository: MetadataInjectorRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     await repository._cache.set("name/resource.metadata", "cached_meta")
 
-    response = await repository.get_resource("name", "resource.metadata", context)
+    response = await repository.get_resource("name", "resource.metadata")
     assert isinstance(response, model.TextResource)
     assert response.text == "cached_meta"
 
@@ -127,13 +125,12 @@ async def test_get_resource__cached(
 async def test_get_resource__not_cached(
     repository: MetadataInjectorRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     with mock.patch.object(
         repository,
         "_download_metadata",
         return_value="downloaded_meta",
     ):
-        response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata", context)
+        response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
     assert isinstance(response, model.TextResource)
     assert response.text == "downloaded_meta"
@@ -143,13 +140,12 @@ async def test_get_resource__not_cached(
 async def test_get_resource__local_resource(
     repository: MetadataInjectorRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     with mock.patch.object(
         repository,
         "_get_metadata_from_package",
         return_value="downloaded_meta",
     ):
-        response = await repository.get_resource("numpy", "numpy-2.0-any.whl.metadata", context)
+        response = await repository.get_resource("numpy", "numpy-2.0-any.whl.metadata")
 
     assert isinstance(response, model.TextResource)
     assert response.text == "downloaded_meta"
@@ -169,9 +165,8 @@ async def test_get_resource__not_valid_resource(
         database=tmp_db,
         session=mock.AsyncMock(),
     )
-    context = model.RequestContext(source_repo)
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
-        await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata", context)
+        await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
 
 @pytest.mark.parametrize(
@@ -182,8 +177,7 @@ async def test_get_resource__not_metadata(
     repository: MetadataInjectorRepository,
     resource_name: str,
 ) -> None:
-    context = model.RequestContext(repository)
-    response = await repository.get_resource("numpy", resource_name, context)
+    response = await repository.get_resource("numpy", resource_name)
     assert isinstance(response, model.HttpResource)
     assert response.url == "numpy_url"
 

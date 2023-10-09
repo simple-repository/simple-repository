@@ -27,7 +27,11 @@ class LocalRepository(SimpleRepository):
             raise ValueError("index_path must be a directory")
         self._index_path = index_path.resolve()
 
-    async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
+    async def get_project_list(
+        self,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectList:
         return model.ProjectList(
             meta=model.Meta("1.0"),
             projects=frozenset(
@@ -40,7 +44,8 @@ class LocalRepository(SimpleRepository):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         project_dir = (self._index_path / project_name).resolve()
         if not project_dir.is_dir():
@@ -73,7 +78,8 @@ class LocalRepository(SimpleRepository):
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         repository_uri = (self._index_path / project_name).resolve()
         resource_uri = (repository_uri / resource_name).resolve()

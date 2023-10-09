@@ -39,7 +39,7 @@ async def test_get_project_page() -> None:
         ],
     )
 
-    resp = await repo.get_project_page("numpy", model.RequestContext(repo))
+    resp = await repo.get_project_page("numpy")
 
     assert resp == model.ProjectDetail(
         model.Meta('1.0'),
@@ -62,4 +62,4 @@ async def test_get_project_page_failed() -> None:
         errors.PackageNotFoundError,
         match="Package 'numpy' was not found in the configured source",
     ):
-        await repo.get_project_page("numpy", model.RequestContext(repo))
+        await repo.get_project_page("numpy")

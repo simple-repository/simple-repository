@@ -61,7 +61,7 @@ async def test_get_project_page_failed() -> None:
         expected_exception=errors.PackageNotFoundError,
         match=r"Package 'numpy' was not found in the configured source",
     ):
-        await group_repository.get_project_page("numpy", model.RequestContext(group_repository))
+        await group_repository.get_project_page("numpy")
 
 
 @pytest.mark.asyncio
@@ -87,7 +87,7 @@ async def test_blended_get_project_list() -> None:
         ],
     )
 
-    result = await group_repository.get_project_list(model.RequestContext(group_repository))
+    result = await group_repository.get_project_list()
     # We expect only normalized results, and no duplicates.
     assert result == model.ProjectList(
         meta=meta,
@@ -110,7 +110,7 @@ async def test_blended_get_project_list_failed() -> None:
     assert isinstance(repo.sources[2], mock.Mock)
     repo.sources[2].get_project_list.side_effect = errors.SourceRepositoryUnavailable
     with pytest.raises(errors.SourceRepositoryUnavailable):
-        await repo.get_project_list(model.RequestContext(repo))
+        await repo.get_project_list()
 
 
 @pytest.mark.asyncio
@@ -132,7 +132,7 @@ async def test_blended_get_project_page_failed() -> None:
     assert isinstance(repo.sources[1], mock.Mock)
     repo.sources[1].get_project_list.side_effect = Exception
 
-    res = await repo.get_project_page("numpy", model.RequestContext(repo))
+    res = await repo.get_project_page("numpy")
 
     assert res == model.ProjectDetail(
         model.Meta("1.0"), name="numpy", files=(),
@@ -162,7 +162,7 @@ async def test_get_resource() -> None:
         ),
     ])
 
-    resp = await group_repository.get_resource("numpy", "numpy.whl", model.RequestContext(group_repository))
+    resp = await group_repository.get_resource("numpy", "numpy.whl")
     assert resp == model.HttpResource("url")
 
 
@@ -173,4 +173,4 @@ async def test_get_resource_failed() -> None:
     ])
 
     with pytest.raises(errors.ResourceUnavailable, match="numpy.whl"):
-        await group_repository.get_resource("numpy", "numpy.whl", model.RequestContext(group_repository))
+        await group_repository.get_resource("numpy", "numpy.whl")

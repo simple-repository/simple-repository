@@ -37,7 +37,8 @@ class HttpRepository(SimpleRepository):
     async def get_project_page(
         self,
         project_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         page_url = urljoin(self.source_url, f"{project_name}/")
         try:
@@ -68,7 +69,11 @@ class HttpRepository(SimpleRepository):
         project_page = replace(project_page, files=files)
         return project_page
 
-    async def get_project_list(self, request_context: model.RequestContext) -> model.ProjectList:
+    async def get_project_list(
+        self,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self.source_url)
         except aiohttp.ClientResponseError as e:
@@ -88,10 +93,14 @@ class HttpRepository(SimpleRepository):
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         try:
-            project_page = await self.get_project_page(project_name, request_context)
+            project_page = await self.get_project_page(
+                project_name,
+                request_context=request_context,
+            )
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
 

@@ -122,9 +122,8 @@ async def test_get_project_page__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    context = model.RequestContext(repository)
 
-    response = await repository.get_project_page("project", context)
+    response = await repository.get_project_page("project")
 
     assert response == model.ProjectDetail(
         name="project",
@@ -161,9 +160,8 @@ async def test_get_project_list__cached(
     request_context_mock = mock.AsyncMock()
     request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
     repository.session.get.return_value = request_context_mock
-    context = model.RequestContext(repository)
 
-    resp = await repository.get_project_list(context)
+    resp = await repository.get_project_list()
     assert resp == model.ProjectList(
         meta=model.Meta(
             api_version="1.0",

@@ -17,10 +17,10 @@ async def test_get_project_page() -> None:
             ],
         ),
     )
-    result = await repository.get_project_page("numpy", model.RequestContext(repository))
+    result = await repository.get_project_page("numpy")
     assert result == model.ProjectDetail(model.Meta("1.0"), "numpy", files=())
     with pytest.raises(errors.PackageNotFoundError):
-        await repository.get_project_page("pandas", model.RequestContext(repository))
+        await repository.get_project_page("pandas")
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_get_project_list() -> None:
             ),
         ),
     )
-    result = await repository.get_project_list(model.RequestContext(repository))
+    result = await repository.get_project_list()
     assert result.projects == frozenset([model.ProjectListElement("numpy")])
 
 
@@ -46,6 +46,6 @@ async def test_get_resource() -> None:
             },
         ),
     )
-    result = await repository.get_resource("numpy", "numpy.whl", model.RequestContext(repository))
+    result = await repository.get_resource("numpy", "numpy.whl")
     assert isinstance(result, model.HttpResource)
     assert result.url == "numpy_url"

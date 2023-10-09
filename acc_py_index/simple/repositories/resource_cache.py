@@ -32,7 +32,8 @@ class ResourceCacheRepository(RepositoryContainer):
         self,
         project_name: str,
         resource_name: str,
-        request_context: model.RequestContext,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
         """
         Get a resource from the cache. If it is not present in the
@@ -54,7 +55,11 @@ class ResourceCacheRepository(RepositoryContainer):
         project_dir.mkdir(exist_ok=True)
 
         cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
-        resource = await super().get_resource(project_name, resource_name, request_context)
+        resource = await super().get_resource(
+            project_name,
+            resource_name,
+            request_context=request_context,
+        )
         upstream_etag = resource.context.get("etag")
         if not isinstance(resource, model.HttpResource) or not upstream_etag:
             # Only cache HttpResources if the source repo sets an etag.
