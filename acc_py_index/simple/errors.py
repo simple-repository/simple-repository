@@ -1,7 +1,3 @@
-# Note: We must not import anything from the project at runtime in order to
-# avoid circular dependencies.
-
-
 class PackageNotFoundError(LookupError):
     msg_format = (
         "Package '{package_name}' was not found in the configured source"
