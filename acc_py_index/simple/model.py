@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Optional, TypedDict, Union
 import packaging.utils
 import packaging.version
 
-from ..utils import safe_version
+from .packaging import safe_version
 
 if TYPE_CHECKING:
     from ..simple.repositories.core import SimpleRepository
