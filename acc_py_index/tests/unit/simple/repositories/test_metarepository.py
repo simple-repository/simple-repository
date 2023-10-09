@@ -18,54 +18,56 @@ class TestClass(metaclass=SimpleRepositoryMeta):
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_project_page__default() -> None:
+async def test_decorated_get_project_page__default_context() -> None:
     test_object = TestClass()
     context = await test_object.get_project_page()
     assert context != RequestContext.DEFAULT
-    assert context == RequestContext(repository=test_object)  # type: ignore[arg-type]
+    assert isinstance(context, RequestContext)
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_project_page() -> None:
+async def test_decorated_get_project_page__passed_context() -> None:
     test_object = TestClass()
     request_context = RequestContext(
         repository=FakeRepository(),
     )
     context = await test_object.get_project_page(request_context=request_context)
-    assert context == request_context
+    assert context is request_context
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_project_list__default() -> None:
+async def test_decorated_get_project_list__default_context() -> None:
     test_object = TestClass()
     context = await test_object.get_project_list()
     assert context != RequestContext.DEFAULT
-    assert context == RequestContext(repository=test_object)  # type: ignore[arg-type]
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_project_list() -> None:
+async def test_decorated_get_project_list__passed_context() -> None:
     test_object = TestClass()
     request_context = RequestContext(
         repository=FakeRepository(),
     )
     context = await test_object.get_project_list(request_context=request_context)
-    assert context == request_context
+    assert context is request_context
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_resource__default() -> None:
+async def test_decorated_get_resource__default_context() -> None:
     test_object = TestClass()
     context = await test_object.get_resource()
     assert context != RequestContext.DEFAULT
-    assert context == RequestContext(repository=test_object)  # type: ignore[arg-type]
+    assert isinstance(context, RequestContext)
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio
-async def test_decorated_get_resource() -> None:
+async def test_decorated_get_resource__passed_context() -> None:
     test_object = TestClass()
     request_context = RequestContext(
         repository=FakeRepository(),
     )
     context = await test_object.get_resource(request_context=request_context)
-    assert context == request_context
+    assert context is request_context
