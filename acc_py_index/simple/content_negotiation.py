@@ -1,6 +1,6 @@
 from enum import Enum
 
-from .. import errors
+from . import errors
 
 
 class Format(Enum):

@@ -4,8 +4,7 @@ from collections.abc import Sequence
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
-from .. import model
-from ... import errors
+from .. import errors, model
 from .core import SimpleRepository
 
 

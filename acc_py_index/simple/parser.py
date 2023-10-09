@@ -4,7 +4,7 @@ import json
 from typing import Optional, Union
 from urllib.parse import quote, urldefrag
 
-from .. import html_parser
+from . import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
 
 

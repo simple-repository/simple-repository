@@ -1,7 +1,7 @@
 import aiosqlite
 
 from .. import model
-from ...ttl_cache import TTLDatabaseCache
+from ..ttl_cache import TTLDatabaseCache
 from .core import RepositoryContainer, SimpleRepository
 
 

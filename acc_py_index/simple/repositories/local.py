@@ -6,7 +6,7 @@ from packaging.utils import canonicalize_name
 
 from acc_py_index.simple import model
 
-from ... import errors
+from .. import errors
 from .core import SimpleRepository
 
 

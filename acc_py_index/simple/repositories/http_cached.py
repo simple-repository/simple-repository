@@ -3,7 +3,7 @@ import logging
 import aiohttp
 import aiosqlite
 
-from ...ttl_cache import TTLDatabaseCache
+from ..ttl_cache import TTLDatabaseCache
 from .http import HttpRepository
 
 error_logger = logging.getLogger("gunicorn.error")

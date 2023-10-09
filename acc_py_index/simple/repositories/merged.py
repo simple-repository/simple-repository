@@ -3,8 +3,7 @@ import typing
 
 from packaging.version import Version
 
-from .. import model
-from ... import errors
+from .. import errors, model
 from .priority_selected import PrioritySelectedProjectsRepository
 
 

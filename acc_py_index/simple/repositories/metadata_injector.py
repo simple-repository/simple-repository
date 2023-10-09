@@ -6,8 +6,7 @@ import zipfile
 import aiohttp
 import aiosqlite
 
-from .. import model
-from ... import errors, ttl_cache, utils
+from .. import errors, model, ttl_cache, utils
 from .core import RepositoryContainer, SimpleRepository
 
 
