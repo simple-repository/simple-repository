@@ -6,7 +6,7 @@ import aiosqlite
 import pytest
 import pytest_asyncio
 
-from acc_py_index.ttl_cache import TTLDatabaseCache
+from acc_py_index.simple.ttl_cache import TTLDatabaseCache
 
 
 @pytest_asyncio.fixture

@@ -7,8 +7,7 @@ import aiosqlite
 import pytest
 import pytest_asyncio
 
-from acc_py_index import errors
-import acc_py_index.simple.model as model
+from acc_py_index.simple import errors, model
 from acc_py_index.simple.repositories.core import SimpleRepository
 from acc_py_index.simple.repositories.metadata_injector import MetadataInjectorRepository
 from acc_py_index.tests.aiohttp_mock import MockClientSession
@@ -189,7 +188,7 @@ async def test_download_metadata(repository: MetadataInjectorRepository) -> None
             repository,
             "_get_metadata_from_package",
         ) as get_metadata_from_package_mock,
-        mock.patch("acc_py_index.utils.download_file") as download_file_mock,
+        mock.patch("acc_py_index.simple.utils.download_file") as download_file_mock,
     ):
         await repository._download_metadata("name", "url", MockClientSession())
 

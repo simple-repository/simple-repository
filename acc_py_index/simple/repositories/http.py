@@ -3,8 +3,7 @@ from urllib.parse import urljoin
 
 import aiohttp
 
-from .. import model, parser
-from ... import errors, utils
+from .. import errors, model, parser, utils
 from .core import SimpleRepository
 
 

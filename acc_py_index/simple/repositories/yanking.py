@@ -7,8 +7,7 @@ import typing
 import aiosqlite
 from packaging.utils import canonicalize_name
 
-from .. import model
-from ... import errors, utils
+from .. import errors, model, packaging, utils
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -31,7 +30,7 @@ def add_yanked_attribute_per_version(
     files = []
     for file in project_page.files:
         try:
-            version = utils.extract_package_version(
+            version = packaging.extract_package_version(
                 filename=file.filename,
                 project_name=canonicalize_name(project_page.name),
             )

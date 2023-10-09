@@ -2,8 +2,7 @@ import pathlib
 
 import packaging.utils
 
-from .. import model
-from ... import errors, utils
+from .. import errors, model, utils
 from .core import SimpleRepository
 
 

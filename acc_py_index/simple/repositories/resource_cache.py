@@ -5,8 +5,7 @@ import uuid
 
 import aiohttp
 
-from .. import model
-from ... import utils
+from .. import model, utils
 from .core import RepositoryContainer, SimpleRepository
 
 

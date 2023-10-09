@@ -1,7 +1,6 @@
 from typing import Optional
 
-from acc_py_index import errors
-from acc_py_index.simple import model
+from acc_py_index.simple import errors, model
 from acc_py_index.simple.repositories.core import SimpleRepository
 
 
