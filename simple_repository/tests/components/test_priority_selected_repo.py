@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 
 from ... import errors, model
-from ...repositories.priority_selected import PrioritySelectedProjectsRepository
+from ...components.priority_selected import PrioritySelectedProjectsRepository
 from .fake_repository import FakeRepository
 
 

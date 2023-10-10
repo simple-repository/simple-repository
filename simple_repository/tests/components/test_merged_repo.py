@@ -1,7 +1,7 @@
 import pytest
 
 from ... import errors, model
-from ...repositories.merged import MergedRepository
+from ...components.merged import MergedRepository
 from .fake_repository import FakeRepository
 
 

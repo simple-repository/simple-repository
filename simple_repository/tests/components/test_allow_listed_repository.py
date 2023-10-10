@@ -3,7 +3,7 @@ import pathlib
 import pytest
 
 from ... import errors, model
-from ...repositories.allow_listed import AllowListedRepository
+from ...components.allow_listed import AllowListedRepository
 from .fake_repository import FakeRepository
 
 

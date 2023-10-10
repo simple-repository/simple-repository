@@ -33,7 +33,7 @@ import packaging.version
 from .packaging import safe_version
 
 if TYPE_CHECKING:
-    from ..simple.repositories.core import SimpleRepository
+    from . import SimpleRepository
 
 
 @dataclass(frozen=True)

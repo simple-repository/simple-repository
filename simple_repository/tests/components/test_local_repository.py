@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from ... import errors, model
-from ...repositories.local import LocalRepository
+from ...components.local import LocalRepository
 
 
 def test_path_resolution(tmp_path: Path) -> None:

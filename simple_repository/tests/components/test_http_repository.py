@@ -4,7 +4,7 @@ import aiohttp
 import pytest
 
 from ... import errors, model
-from ...repositories.http import HttpRepository
+from ...components.http import HttpRepository
 from ..aiohttp_mock import MockClientSession
 
 

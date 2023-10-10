@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 from ... import model
-from ...repositories.resource_cache import ResourceCacheRepository
+from ...components.resource_cache import ResourceCacheRepository
 from .fake_repository import FakeRepository
 
 
