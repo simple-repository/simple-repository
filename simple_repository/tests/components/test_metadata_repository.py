@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 
 from ... import errors, model
-from ...repositories.core import SimpleRepository
-from ...repositories.metadata_injector import MetadataInjectorRepository
+from ...components.core import SimpleRepository
+from ...components.metadata_injector import MetadataInjectorRepository
 from ..aiohttp_mock import MockClientSession
 from .fake_repository import FakeRepository
 

@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 
 from ... import model
-from ...repositories.resource_url_cache import ResourceURLCacheRepository
+from ...components.resource_url_cache import ResourceURLCacheRepository
 from .fake_repository import FakeRepository
 
 

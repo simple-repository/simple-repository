@@ -2,7 +2,7 @@
 import pytest
 
 from ... import errors, model
-from ...repositories.core import RepositoryContainer
+from ...components.core import RepositoryContainer
 from .fake_repository import FakeRepository
 
 

@@ -1,7 +1,7 @@
 import pytest
 
+from ...components.core import SimpleRepositoryMeta
 from ...model import RequestContext
-from ...repositories.core import SimpleRepositoryMeta
 from .fake_repository import FakeRepository
 
 
@@ -22,7 +22,7 @@ async def test_decorated_get_project_page__default_context() -> None:
     context = await test_object.get_project_page()
     assert context != RequestContext.DEFAULT
     assert isinstance(context, RequestContext)
-    assert context.repository is test_object
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_decorated_get_project_list__default_context() -> None:
     test_object = TestClass()
     context = await test_object.get_project_list()
     assert context != RequestContext.DEFAULT
-    assert context.repository is test_object
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio
@@ -59,7 +59,7 @@ async def test_decorated_get_resource__default_context() -> None:
     context = await test_object.get_resource()
     assert context != RequestContext.DEFAULT
     assert isinstance(context, RequestContext)
-    assert context.repository is test_object
+    assert context.repository is test_object  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.asyncio

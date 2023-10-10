@@ -3,7 +3,7 @@ import pathlib
 import pytest
 
 from ... import errors, model
-from ...repositories.yanking import ConfigurableYankRepository
+from ...components.yanking import ConfigurableYankRepository
 from .fake_repository import FakeRepository
 
 

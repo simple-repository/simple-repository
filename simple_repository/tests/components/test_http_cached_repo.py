@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from ... import model
-from ...repositories.http_cached import CachedHttpRepository
+from ...components.http_cached import CachedHttpRepository
 
 
 @pytest_asyncio.fixture

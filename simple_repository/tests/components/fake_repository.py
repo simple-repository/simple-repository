@@ -1,7 +1,7 @@
 from typing import Optional
 
 from ... import errors, model
-from ...repositories.core import SimpleRepository
+from ...components.core import SimpleRepository
 
 
 class FakeRepository(SimpleRepository):
