@@ -24,71 +24,14 @@ build_wheel:
   extends: .acc_py_build_wheel
 
 
-freeze_wheel:
-  # Inject the lockfiles from the source directory into the wheel
-  stage: build
-  needs:
-    - build_wheel
-  extends: .acc_py_run_on_acc_py
-  script:
-    # Figure out the wheel to install, compatible with this python version.
-    - python -m pip wheel ${project_name}
-        --no-deps --no-index
-        --find-links ${project_root}/dist/
-        --wheel-dir ${project_root}/.wheel-to-deploy
-    # Lock the wheel using the existing lock-files.
-    - acc-py -vv app lock ${project_root}/.wheel-to-deploy/*.whl
-  artifacts:
-    paths:
-      - ${project_root}/.wheel-to-deploy/*.whl
-
-
-test_wheel_deployment:
-  stage: test
-  needs:
-    - freeze_wheel
-  extends: .acc_py_run_on_acc_py
-  script:
-    - acc-py -vv app deploy ${project_root}/.wheel-to-deploy/*.whl
-
-
 # A full installation of simple-repository, tested with pytest.
 wheel_test:
-  # TODO: Test the frozen wheel (by installing it with acc-py-deploy), instead of the
-  #       unlocked/unfrozen one.
   extends: .acc_py_wheel_test
 
 
 # A development installation of simple-repository, tested with pytest.
 test_dev:
   extends: .acc_py_dev_test
-
-
-build_and_publish_container_image:
-  # Build a container image with Kaniko, for more details see
-  # https://gitlab.cern.ch/gitlabci-examples/build_docker_image
-  extends: .acc_py_on_tag
-  stage: publish
-  variables:
-    # Temporary solution to ensure comparability with K8S runners.
-    # https://cern.service-now.com/service-portal?id=ticket&table=incident&n=INC3570437
-    FF_KUBERNETES_HONOR_ENTRYPOINT: 0
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: ['']
-  before_script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    # Extract the version (according to setuptools-scm) from one of the wheels.
-    - export VERSION=$(cd ${project_root}/.wheel-to-deploy/ && ls -1 *.whl | head -n 1 | cut -d'-' -f2 | tr + .)
-    - echo $VERSION
-  script:
-    - mkdir -p ${project_root}/context/
-    - cp -r ${project_root}/.wheel-to-deploy ${project_root}/context/
-    - /kaniko/executor
-        --context ${project_root}/context
-        --dockerfile ${project_root}/Dockerfile
-        --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
-        --destination "${CI_REGISTRY_IMAGE}:latest"
 
 
 # A dev build of the documentation, made available through cern.ch/acc-py.
