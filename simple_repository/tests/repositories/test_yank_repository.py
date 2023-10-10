@@ -5,9 +5,8 @@ from unittest import mock
 import aiosqlite
 import pytest
 
-from acc_py_index.simple import model
-import acc_py_index.simple.repositories.yanking as yank_repository
-
+from ... import model
+from ...repositories import yanking as yank_repository
 from .fake_repository import FakeRepository
 
 
@@ -105,7 +104,7 @@ async def test_get_project_page(
     )
 
     with mock.patch(
-        "acc_py_index.simple.repositories.yanking.get_yanked_versions",
+        "simple_repository.repositories.yanking.get_yanked_versions",
         return_value=yanked_versions,
     ):
         result = await repository.get_project_page("project")

@@ -3,8 +3,8 @@ import pathlib
 
 import pytest
 
-from acc_py_index.simple import errors, utils
-from acc_py_index.tests.aiohttp_mock import MockClientSession
+from .. import errors, utils
+from .aiohttp_mock import MockClientSession
 
 
 @pytest.mark.parametrize(

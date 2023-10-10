@@ -1,9 +1,8 @@
 
 import pytest
 
-from acc_py_index.simple import errors, model
-from acc_py_index.simple.repositories.core import RepositoryContainer
-
+from ... import errors, model
+from ...repositories.core import RepositoryContainer
 from .fake_repository import FakeRepository
 
 

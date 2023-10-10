@@ -3,9 +3,9 @@ from unittest import mock
 import aiohttp
 import pytest
 
-from acc_py_index.simple import errors, model
-from acc_py_index.simple.repositories.http import HttpRepository
-from acc_py_index.tests.aiohttp_mock import MockClientSession
+from ... import errors, model
+from ...repositories.http import HttpRepository
+from ..aiohttp_mock import MockClientSession
 
 
 def create_repository(session: aiohttp.ClientSession) -> HttpRepository:

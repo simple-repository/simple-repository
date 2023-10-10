@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from acc_py_index.simple import errors, model
-from acc_py_index.simple.repositories.local import LocalRepository
+from ... import errors, model
+from ...repositories.local import LocalRepository
 
 
 def test_path_resolution(tmp_path: Path) -> None:

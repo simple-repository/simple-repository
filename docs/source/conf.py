@@ -1,10 +1,10 @@
 import datetime
 
-import acc_py_index
+import simple_repository
 
-project = "acc-py-index"
-author = "Wouter Koorn"
-version = acc_py_index.__version__
+project = "simple-repository"
+author = "Francesco Iannaccone"
+version = simple_repository.__version__
 
 copyright = "{0}, CERN".format(datetime.datetime.now().year)
 
@@ -29,7 +29,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns: list[str] = []
 
 
 # -- Options for HTML output -------------------------------------------------

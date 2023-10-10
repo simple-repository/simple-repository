@@ -1,7 +1,7 @@
 import pytest
 
-from acc_py_index.simple import errors
-from acc_py_index.simple.content_negotiation import Format, select_response_format
+from .. import errors
+from ..content_negotiation import Format, select_response_format
 
 
 @pytest.mark.parametrize(

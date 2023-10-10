@@ -4,8 +4,8 @@ from typing import Optional, Union
 
 import pytest
 
-from acc_py_index.simple.model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
-from acc_py_index.simple.serializer import SerializerHtmlV1, SerializerJsonV1
+from ..model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
+from ..serializer import SerializerHtmlV1, SerializerJsonV1
 
 
 def test_serialize_file_html() -> None:

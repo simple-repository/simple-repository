@@ -1,7 +1,7 @@
 from packaging.version import Version
 import pytest
 
-from acc_py_index.simple import packaging
+from .. import packaging
 
 
 @pytest.mark.parametrize(

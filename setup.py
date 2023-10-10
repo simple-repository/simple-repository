@@ -1,5 +1,5 @@
 """
-setup.py for acc-py-index.
+setup.py for simple-repository.
 
 For reference see
 https://packaging.python.org/guides/distributing-packages-using-setuptools/
@@ -16,19 +16,11 @@ REQUIREMENTS: dict[str, list[str]] = {
     "core": [
         "aiohttp",
         "aiosqlite",
-        "fastapi>=0.100.0",
-        "gunicorn",
         "packaging",
-        "uvicorn[standard]",
-        "cmw-tracing",
-        "pydantic-settings",
     ],
     "test": [
-        # httpx is needed for starlette.TestClient. https://www.starlette.io/#dependencies
-        "httpx>=0.25",
         "pytest",
         "pytest_asyncio",
-        "starlette>=0.26.1",
     ],
     "dev": [
         "pre-commit",
@@ -40,14 +32,14 @@ REQUIREMENTS: dict[str, list[str]] = {
 }
 
 setup(
-    name="acc-py-index",
+    name="simple-repository",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    author="Wouter Koorn",
-    author_email="wouter.koorn@cern.ch",
+    author="Francesco Iannaccone",
+    author_email="francesco.iannaccone@cern.ch",
     maintainer="Acc-Py team",
     maintainer_email="acc-python-support@cern.ch",
-    url="https://gitlab.cern.ch/acc-co/devops/python/package-index/acc-py-index",
+    url="https://gitlab.cern.ch/acc-co/devops/python/package-index/simple-repository",
     packages=find_packages(),
     python_requires="~=3.11",
     classifiers=[

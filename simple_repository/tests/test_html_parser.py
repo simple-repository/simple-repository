@@ -4,7 +4,7 @@ Currently, there are no tests written for parsing invalid HTML.
 This is because it (html.parser.HTMLParser) does not throw errors, but gives strange results instead
 """
 
-from acc_py_index.simple.html_parser import HTMLElement, SimpleHTMLParser
+from ..html_parser import HTMLElement, SimpleHTMLParser
 
 
 def test_parser() -> None:

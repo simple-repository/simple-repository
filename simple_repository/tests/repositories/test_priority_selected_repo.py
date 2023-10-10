@@ -2,9 +2,8 @@ from unittest import mock
 
 import pytest
 
-from acc_py_index.simple import errors, model
-from acc_py_index.simple.repositories.priority_selected import PrioritySelectedProjectsRepository
-
+from ... import errors, model
+from ...repositories.priority_selected import PrioritySelectedProjectsRepository
 from .fake_repository import FakeRepository
 
 

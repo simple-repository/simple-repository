@@ -4,9 +4,7 @@ import pathlib
 
 from packaging.utils import canonicalize_name
 
-from acc_py_index.simple import model
-
-from .. import errors
+from .. import errors, model
 from .core import SimpleRepository
 
 
