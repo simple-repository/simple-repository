@@ -5,7 +5,6 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from enum import Enum
 from html import escape
 import json
 import typing
@@ -14,13 +13,8 @@ from typing import Union
 import packaging.utils
 import packaging.version
 
+from .content_negotiation import Format
 from .model import File, ProjectDetail, ProjectList
-
-
-class Format(Enum):
-    JSON_V1: str = "application/vnd.pypi.simple.v1+json"
-    HTML_V1: str = "application/vnd.pypi.simple.v1+html"
-    HTML_LEGACY: str = "text/html"
 
 
 class Serializer(typing.Protocol):
@@ -188,7 +182,7 @@ class SerializerHtmlV1(Serializer):
                 attributes.append(f'data-yanked="{file.yanked}"')
 
         # From PEP 503: A repository MAY include a data-gpg-sig attribute on a file link with
-        # a value of either true or false to indicate whether there is a GPG signature.
+        # a value of either true or false to indicate whether or not there is a GPG signature.
         if file.gpg_sig:
             attributes.append('data-gpg-sig="true"')
         elif file.gpg_sig is False:

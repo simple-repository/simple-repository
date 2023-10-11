@@ -11,7 +11,7 @@ import json
 from typing import Optional, Union
 from urllib.parse import quote, urldefrag
 
-from .. import html_parser
+from . import html_parser
 from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
 
 
@@ -83,7 +83,7 @@ def parse_json_project_page(body: str) -> ProjectDetail:
                 url=quote(file["url"], safe=":/"),
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
-                # PEP-714: Clients consuming the JSON representation of the Simple API MUST
+                # PEP-714: Clients consuming the JSON represenation of the Simple API MUST
                 #          read the PEP 658 metadata from the key core-metadata if it is present.
                 dist_info_metadata=file.get("core-metadata"),
                 gpg_sig=file.get("gpg-sig"),
@@ -163,7 +163,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
         gpg_sig: Optional[bool] = None
         if gpg_sig_value := a_tag.attrs.get("data-gpg-sig"):
             # PEP-503: A repository MAY include a data-gpg-sig attribute on a file link with
-            #          a value of either true or false to indicate whether there is a
+            #          a value of either true or false to indicate whether or not there is a
             #          GPG signature. Repositories that do this SHOULD include it on every link.
             if gpg_sig_value == "true":
                 gpg_sig = True
@@ -176,7 +176,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             # PEP-503: A repository MAY include a data-requires-python attribute on a file link.
             #          This exposes the Requires-Python metadata field, specified in PEP 345, for
             #          the corresponding release. Where this is present, installer tools SHOULD
-            #          ignore the download when installing to a Python version that does not
+            #          ignore the download when installing to a Python version that doesn’t
             #          satisfy the requirement. In the attribute value, < and > have to be HTML
             #          encoded as &lt; and &gt;, respectively.
             requires_python = unescape(requires_python_attr)

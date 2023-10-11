@@ -32,12 +32,15 @@ brackets, for example ``[additional context]``.
 from dataclasses import dataclass, field
 from datetime import datetime
 import pathlib
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, TypedDict, Union
 
 import packaging.utils
 import packaging.version
 
-from .. import utils
+from .packaging import safe_version
+
+if TYPE_CHECKING:
+    from . import SimpleRepository
 
 
 @dataclass(frozen=True)
@@ -74,7 +77,7 @@ class File:
     # A None value indicates the key does not exist (i.e. there may or may not be a sig file).
     gpg_sig: Optional[bool] = None
 
-    # PEP-691: either a boolean to indicate if the file has been yanked, or a non-empty,
+    # PEP-691: either a boolean to indicate if the file has been yanked, or a non empty,
     #          but otherwise arbitrary, string to indicate that a file
     #          has been yanked with a specific reason. If the yanked key is present and
     #          is a [JSON] truthy value, then it SHOULD be interpreted as indicating that
@@ -115,7 +118,7 @@ class ProjectDetail:
     files: tuple[File, ...]
     # PEP-700: An additional key, versions MUST be present at the top level, in addition to the
     #          keys name, files and meta defined in PEP 691. This key MUST contain a list of version
-    #          strings specifying all the project versions uploaded for this project.
+    #          strings specifying all of the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
     versions: Optional[set[str]] = field(init=False)
@@ -129,7 +132,7 @@ class ProjectDetail:
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
             versions = {
-                str(utils.safe_version(file.filename, self._normalized_name))
+                str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             }
         else:
@@ -157,9 +160,29 @@ class ProjectList:
     projects: frozenset[ProjectListElement]
 
 
+class Context(TypedDict, total=False):
+    etag: str
+
+
+@dataclass(frozen=True)
 class Resource:
-    # Resource downloadable through the index.
-    pass
+    context: Context = field(default_factory=lambda: Context(), init=False)
+
+
+@dataclass(frozen=True)
+class RequestContext:
+    repository: "SimpleRepository"
+    # TODO: Worry that context is mutable.
+    context: dict[str, str] = field(default_factory=dict)
+
+    # Provider a default context which can be used in all signatures using RequestContext.
+    # By default, if not specified, the default request context will be the one containing the
+    # repository of the originating call (i.e. the repository upon which you call a method is the
+    # one that is injected into the context, and passed down to each subsequent (nested) request.
+    # We know that None isn't a RequestContext instance... as a result of this, every user
+    # of RequestContext should handle this. RepositorySource automatically transforms this
+    # to a sensible incoming request (see RepositorySource._build_request_context).
+    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)

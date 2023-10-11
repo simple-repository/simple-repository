@@ -5,12 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""
-Specialised PEP-503 simple repository components exposed through a standardised
-client interface, suitable for re-use in both client and server implementations
-"""
+import simple_repository
 
-from ._version import version as __version__  # noqa
-from .components.core import SimpleRepository  # noqa
 
-__all__ = ['__version__', 'SimpleRepository']
+def test_version() -> None:
+    assert simple_repository.__version__ != "0.0.0"

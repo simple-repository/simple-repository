@@ -15,8 +15,8 @@ class HTMLElement:
     def __init__(
             self,
             tag: str,
-            attrs: dict[str, typing.Optional[str]],
-            content: typing.Optional[str] = None,
+            attrs: dict[str, str | None],
+            content: str | None = None,
     ):
         self.tag = tag
         self.attrs = attrs
@@ -51,15 +51,15 @@ class SimpleHTMLParser(html.parser.HTMLParser):
 
     def __init__(self, *, convert_charrefs: bool = True):
         super().__init__(convert_charrefs=convert_charrefs)
-        self.declaration: typing.Optional[str] = None
+        self.declaration: str | None = None
         self.elements: list[HTMLElement] = []
-        self._current_tag: typing.Optional[str] = None
-        self._current_data: typing.Optional[str] = None
+        self._current_tag: str | None = None
+        self._current_data: str | None = None
 
     def handle_decl(self, decl: str) -> None:
         self.declaration = decl
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, typing.Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.elements.append(HTMLElement(tag, dict(attrs)))
         self._current_tag = tag
         self._current_data = None

@@ -11,16 +11,7 @@ import pathlib
 
 from packaging.utils import canonicalize_name
 
-from ... import errors
-from ..model import (
-    File,
-    LocalResource,
-    Meta,
-    ProjectDetail,
-    ProjectList,
-    ProjectListElement,
-    Resource,
-)
+from .. import errors, model
 from .core import SimpleRepository
 
 
@@ -39,22 +30,28 @@ class LocalRepository(SimpleRepository):
     ) -> None:
         if not index_path.is_dir():
             raise ValueError("index_path must be a directory")
-        self._index_path = index_path.absolute()
+        self._index_path = index_path.resolve()
 
-    async def get_project_list(self) -> ProjectList:
-        return ProjectList(
-            meta=Meta("1.0"),
+    async def get_project_list(
+        self,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectList:
+        return model.ProjectList(
+            meta=model.Meta("1.0"),
             projects=frozenset(
-                ProjectListElement(x.name)
+                model.ProjectListElement(x.name)
                 for x in self._index_path.iterdir()
                 if x.is_dir() and x.name == canonicalize_name(x.name)
             ),
         )
 
-    async def get_project_page(self, project_name: str) -> ProjectDetail:
-        if project_name != canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
+    async def get_project_page(
+        self,
+        project_name: str,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectDetail:
         project_dir = (self._index_path / project_name).resolve()
         if not project_dir.is_dir():
             raise errors.PackageNotFoundError(project_name)
@@ -65,9 +62,9 @@ class LocalRepository(SimpleRepository):
                 continue
             file_stat = os.stat(file)
             files.append(
-                File(
+                model.File(
                     filename=file.name,
-                    url=f"file://{file.absolute()}",
+                    url=f"file://{file.resolve()}",
                     hashes={},
                     upload_time=datetime.utcfromtimestamp(
                         file_stat.st_ctime,
@@ -76,16 +73,19 @@ class LocalRepository(SimpleRepository):
                 ),
             )
 
-        return ProjectDetail(
-            meta=Meta("1.1"),
+        return model.ProjectDetail(
+            meta=model.Meta("1.1"),
             name=project_name,
             files=tuple(files),
         )
 
-    async def get_resource(self, project_name: str, resource_name: str) -> Resource:
-        if project_name != canonicalize_name(project_name):
-            raise errors.NotNormalizedProjectName()
-
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        *,
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.Resource:
         repository_uri = (self._index_path / project_name).resolve()
         resource_uri = (repository_uri / resource_name).resolve()
 
@@ -99,6 +99,6 @@ class LocalRepository(SimpleRepository):
         if not resource_uri.is_file():
             raise errors.ResourceUnavailable(resource_name)
 
-        return LocalResource(
+        return model.LocalResource(
             path=resource_uri,
         )

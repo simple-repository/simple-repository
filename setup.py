@@ -5,15 +5,46 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+"""
+setup.py for simple-repository.
+
+For reference see
+https://packaging.python.org/guides/distributing-packages-using-setuptools/
+"""
+from pathlib import Path
+
 from setuptools import find_packages, setup
+
+HERE = Path(__file__).parent.absolute()
+with (HERE / "README.md").open("rt") as fh:
+    LONG_DESCRIPTION = fh.read().strip()
+
+REQUIREMENTS: dict[str, list[str]] = {
+    "core": [
+        "aiohttp",
+        "aiosqlite",
+        "packaging",
+    ],
+    "test": [
+        "pytest",
+        "pytest_asyncio",
+    ],
+    "dev": [
+        "pre-commit",
+    ],
+    "doc": [
+        "acc-py-sphinx",
+        "sphinx",
+    ],
+}
 
 setup(
     name="simple-repository",
+    long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     author="BE-CSS-SET, CERN",
-    url="",
     packages=find_packages(),
-    python_requires="~=3.9",
+    python_requires="~=3.11",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
@@ -21,20 +52,22 @@ setup(
         "Operating System :: OS Independent",
         "Typing :: Typed",
     ],
-    install_requires=[
-        "aiohttp",
-        "fastapi>=0.93.0,<0.100.0",
-        "packaging",
-        "uvicorn[standard]",
-    ],
+    install_requires=REQUIREMENTS["core"],
     extras_require={
+        **REQUIREMENTS,
+        # The "dev" extra is the union of "test" and "doc", with an option
+        # to have explicit development dependencies listed.
         "dev": [
-            "pre-commit",
+            req
+            for extra in ["dev", "test", "doc"]
+            for req in REQUIREMENTS.get(extra, [])
         ],
+        # The "all" extra is the union of all requirements.
+        "all": [req for reqs in REQUIREMENTS.values() for req in reqs],
     },
     entry_points={
         'console_scripts': [
-            'simple-repository = simple_repository.cli:main',
+            'simple-repository = simple_repository.__main__:main',
         ],
     },
 )
