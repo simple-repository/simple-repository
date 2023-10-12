@@ -5,12 +5,6 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-"""
-setup.py for simple-repository.
-
-For reference see
-https://packaging.python.org/guides/distributing-packages-using-setuptools/
-"""
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -32,17 +26,15 @@ REQUIREMENTS: dict[str, list[str]] = {
     "dev": [
         "pre-commit",
     ],
-    "doc": [
-        "acc-py-sphinx",
-        "sphinx",
-    ],
 }
 
 setup(
     name="simple-repository",
+    description="The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    author="BE-CSS-SET, CERN",
+    author="CERN, BE-CSS-SET",
+    url="https://github.com/simple-repository/simple-repository",
     packages=find_packages(),
     python_requires="~=3.11",
     classifiers=[
