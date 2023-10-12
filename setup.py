@@ -23,7 +23,10 @@ REQUIREMENTS: dict[str, list[str]] = {
 
 setup(
     name="simple-repository",
-    description="The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers",
+    description=(
+        "The core simple repository (PEP-503) interface, including powerful "
+        "component implementations suitable for use in repository clients and servers"
+    ),
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     author="Francesco Iannaccone",
@@ -52,10 +55,5 @@ setup(
         ],
         # The "all" extra is the union of all requirements.
         "all": [req for reqs in REQUIREMENTS.values() for req in reqs],
-    },
-    entry_points={
-        'console_scripts': [
-            'simple-repository = simple_repository.__main__:main',
-        ],
     },
 )
