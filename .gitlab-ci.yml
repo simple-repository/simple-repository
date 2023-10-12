@@ -34,17 +34,6 @@ test_dev:
   extends: .acc_py_dev_test
 
 
-# A dev build of the documentation, made available through cern.ch/acc-py.
-build_docs:
-  extends: .acc_py_build_docs
-
-
-# A release build of the documentation, made available through cern.ch/acc-py.
-build_docs_on_tag:
-  stage: publish
-  extends: .acc_py_build_docs_on_tag
-
-
 publish_package_to_index:
   stage: publish
   extends: .acc_py_publish
