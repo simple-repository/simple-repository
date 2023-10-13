@@ -1,5 +1,5 @@
-import shutil
 from pathlib import Path
+import shutil
 
 here = Path(__file__).parent
 
