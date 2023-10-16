@@ -42,6 +42,7 @@ setup(
     url="https://gitlab.cern.ch/acc-co/devops/python/package-index/simple-repository",
     packages=find_packages(),
     python_requires="~=3.11",
+    package_data={"simple_repository": ["py.typed"]},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
