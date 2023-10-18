@@ -18,6 +18,7 @@ REQUIREMENTS: dict[str, list[str]] = {
     ],
     "dev": [
         "pre-commit",
+        "types-setuptools",
     ],
 }
 

@@ -26,15 +26,8 @@ repos:
           - "--max-line-length=100"
           - "--per-file-ignores=simple_repository/tests/*.py:E501"
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.5.1'
+  - repo: ssh://git@gitlab.cern.ch:7999/acc-co/devops/python/incubator/acc-pre-commit-hooks/mypy-hook.git
+    rev: 'v0.2.0'
     hooks:
       - id: mypy
-        additional_dependencies:
-          [
-            pytest,
-            "fastapi>=0.100.0",
-            uvicorn,
-            pydantic-settings,
-            pytest-asyncio,
-          ]
+        exclude: '^simple_repository/tests/.*$'
