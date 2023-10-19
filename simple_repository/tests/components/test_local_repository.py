@@ -124,7 +124,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 },
                 upload_time=datetime.utcfromtimestamp(
-                        os.path.getctime(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+                        os.path.getmtime(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 ),
                 size=os.stat(simple_dir / "numpy" / "numpy-1.0-any.whl").st_size,
             ),
@@ -135,7 +135,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
                 upload_time=datetime.utcfromtimestamp(
-                        os.path.getctime(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
+                        os.path.getmtime(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 ),
                 size=os.stat(simple_dir / "numpy" / "numpy-1.1.tar.gz").st_size,
             ),
