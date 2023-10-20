@@ -60,7 +60,7 @@ class LocalRepository(SimpleRepository):
                     url=f"file://{file.resolve()}",
                     hashes={},
                     upload_time=datetime.utcfromtimestamp(
-                        file_stat.st_ctime,
+                        file_stat.st_mtime,
                     ),
                     size=file_stat.st_size,
                 ),
