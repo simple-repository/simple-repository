@@ -72,32 +72,89 @@ def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
     assert result.files[3].dist_info_metadata == {"sha": "..."}
 
 
-def test_get_metadata_from_package(repository: MetadataInjectorRepository) -> None:
-    m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
-    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
+@pytest.mark.parametrize(
+    "namelist, metadata_name", [
+        (
+            [
+                "my_package/files",
+                "not_my_package-0.0.1.dist-info/METADATA",
+                "my_package-0.0.1.dist-info/METADATA",
+            ], "my_package-0.0.1.dist-info/METADATA",
+        ),
+        (
+            [
+                "my_package/files",
+                "my_package-0.0.1.dist-info/METADATA",
+                "My_Package-0.0.1.dist-info/METADATA",
+            ], "my_package-0.0.1.dist-info/METADATA",
+        ),
+        (
+            [
+                "my_package/files",
+                "My_Package-0.0.1.dist-info/METADATA",
+            ], "My_Package-0.0.1.dist-info/METADATA",
+        ),
+        (
+            [
+                "my_package/files",
+                "my.package-0.0.1.dist-info/METADATA",
+            ], "my.package-0.0.1.dist-info/METADATA",
+        ),
+        (
+            [
+                "my_package/files",
+                "my-package-0.0.1.dist-info/METADATA",
+            ], "my-package-0.0.1.dist-info/METADATA",
+        ),
+    ],
+)
+def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: list[str], metadata_name: str) -> None:
+    ziparchive = mock.MagicMock(spec=zipfile.ZipFile)
+    ziparchive_ctx = ziparchive.__enter__.return_value
+    read_method = ziparchive_ctx.read
+    ziparchive_ctx.namelist.return_value = namelist
 
-    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
-        repository._get_metadata_from_package(pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl')
-        read_method.assert_called_once_with('trvial_name-0.0.1.dist-info/METADATA')
+    with mock.patch('zipfile.ZipFile', return_value=ziparchive):
+        repository._get_metadata_from_package(pathlib.Path('my_package') / 'my_package-0.0.1-anylinux.whl')
 
+        read_method.assert_called_once_with(metadata_name)
+
+
+def test_get_metadata_from_package__not_wheel(repository: MetadataInjectorRepository) -> None:
     with pytest.raises(ValueError, match="Package provided is not a wheel"):
-        repository._get_metadata_from_package(pathlib.Path('trivial_dir') / 'package.mp4')
+        repository._get_metadata_from_package(pathlib.Path('my_package') / 'package.tar.gz')
 
 
-def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository) -> None:
+@pytest.mark.parametrize(
+    "namelist", [
+        [
+            "my_package/files",
+            "not_my_package-0.0.1.dist-info/METADATA",
+        ],
+        [
+            "my_package/files",
+            "my_package.dist-info/METADATA",
+        ],
+        [
+            "my_package/files",
+            "my_package-0.0.1.dist-info/NOT_METADATA",
+        ],
+    ],
+)
+def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: list[str]) -> None:
     m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
-    read_method = m_zipfile_cls.return_value.__enter__.return_value.read
-    read_method.side_effect = KeyError()
+    m_zipfile_cls.return_value.__enter__.return_value.namelist.return_value = [
+        "not_my_package-0.0.1.dist-info/METADATA",
+    ]
 
     with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
         with pytest.raises(
             errors.InvalidPackageError,
             match="Provided wheel doesn't contain a metadata file.",
-        ) as exc_info:
+        ):
             repository._get_metadata_from_package(
-                package_path=pathlib.Path('trivial_dir') / 'trvial_name-0.0.1-anylinux.whl',
+                package_path=pathlib.Path('my_package') / 'my_package-0.0.1-anylinux.whl',
             )
-    assert isinstance(exc_info.value.__cause__, KeyError)
 
 
 @pytest.mark.asyncio
