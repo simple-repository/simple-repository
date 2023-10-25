@@ -1,19 +1,10 @@
 from unittest import mock
 
-import aiohttp
 import pytest
+from pytest_httpx import HTTPXMock
 
 from ... import errors, model
 from ...components.http import HttpRepository
-from ..aiohttp_mock import MockClientSession
-
-
-def create_repository(session: aiohttp.ClientSession) -> HttpRepository:
-    repo = HttpRepository(
-        url="https://example.com/simple/",
-        session=session,
-    )
-    return repo
 
 
 @pytest.mark.parametrize(
@@ -76,13 +67,9 @@ def create_repository(session: aiohttp.ClientSession) -> HttpRepository:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page(text: str, header: str) -> None:
-    repository = create_repository(
-        session=MockClientSession(
-            content=text,
-            headers={"content-type": header},
-        ),
-    )
+async def test_get_project_page(text: str, header: str, httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(content=text, headers={"content-type": header})
 
     resp = await repository.get_project_page("project")
     assert resp == model.ProjectDetail(
@@ -106,22 +93,18 @@ async def test_get_project_page(text: str, header: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_unsupported_serialization() -> None:
-    repository = create_repository(
-        session=MockClientSession(
-            content="abc",
-            headers={"content-type": "multipart/form-data"},
-        ),
-    )
+async def test_get_project_page_unsupported_serialization(httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(content="abc", headers={"content-type": "multipart/form-data"})
+
     with pytest.raises(errors.UnsupportedSerialization):
         await repository.get_project_page("project")
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_failed() -> None:
-    repository = create_repository(
-        session=MockClientSession(raise_status_code=404),
-    )
+async def test_get_project_page_failed(httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(status_code=404)
 
     with pytest.raises(errors.PackageNotFoundError):
         await repository.get_project_page("project")
@@ -156,13 +139,9 @@ async def test_get_project_page_failed() -> None:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_list(text: str, header: str) -> None:
-    repository = create_repository(
-        session=MockClientSession(
-            content=text,
-            headers={"content-type": header},
-        ),
-    )
+async def test_get_project_list(text: str, header: str, httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(content=text, headers={"content-type": header})
 
     resp = await repository.get_project_list()
     assert resp == model.ProjectList(
@@ -177,8 +156,9 @@ async def test_get_project_list(text: str, header: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_project_list_failed() -> None:
-    repository = create_repository(session=MockClientSession(raise_status_code=404))
+async def test_get_project_list_failed(httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(status_code=404)
 
     with pytest.raises(errors.SourceRepositoryUnavailable):
         await repository.get_project_list()
@@ -192,13 +172,13 @@ def project_detail() -> model.ProjectDetail:
         files=(
             model.File(
                 filename="numpy-1.0.whl",
-                url="my_url/numpy-1.0.whl",
+                url="http://my_url/numpy-1.0.whl",
                 hashes={},
                 dist_info_metadata={"sha256": "..."},
             ),
             model.File(
                 filename="numpy-2.0.whl",
-                url="my_url/numpy-2.0.whl",
+                url="http://my_url/numpy-2.0.whl",
                 hashes={},
             ),
         ),
@@ -212,30 +192,29 @@ def project_detail() -> model.ProjectDetail:
 async def test_get_resource(
     project_detail: model.ProjectDetail,
     source_etag: str | None,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    repository = create_repository(
-        session=MockClientSession(
-            headers={"ETag": source_etag} if source_etag else {},
-        ),
-    )
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})
+
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, model.HttpResource)
-        assert resp.url == "my_url/numpy-2.0.whl"
+        assert resp.url == "http://my_url/numpy-2.0.whl"
         assert resp.context.get("etag") == source_etag
 
 
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(project_detail: model.ProjectDetail) -> None:
-    repository = create_repository(MockClientSession())
+async def test_get_resource_unavailable(project_detail: model.ProjectDetail, httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
-async def test_get_resource_project_unavailable() -> None:
-    repository = create_repository(MockClientSession())
+async def test_get_resource_project_unavailable(httpx_mock: HTTPXMock) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
     with mock.patch.object(HttpRepository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
@@ -248,16 +227,15 @@ async def test_get_resource_project_unavailable() -> None:
 async def test_get_resource_metadata(
     project_detail: model.ProjectDetail,
     source_etag: str | None,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    repository = create_repository(
-        session=MockClientSession(
-            headers={"ETag": source_etag} if source_etag else {},
-        ),
-    )
+    repository = HttpRepository(url="https://example.com/simple/")
+    httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})
+
     with mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail):
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, model.HttpResource)
-        assert resp.url == "my_url/numpy-1.0.whl.metadata"
+        assert resp.url == "http://my_url/numpy-1.0.whl.metadata"
         assert resp.context.get("etag") == source_etag
 
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
@@ -265,8 +243,11 @@ async def test_get_resource_metadata(
 
 
 @pytest.mark.asyncio
-async def test_get_resource_metadata__unavailable(project_detail: model.ProjectDetail) -> None:
-    repository = create_repository(MockClientSession())
+async def test_get_resource_metadata__unavailable(
+    project_detail: model.ProjectDetail,
+    httpx_mock: HTTPXMock,
+) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
     with (
         mock.patch.object(HttpRepository, "get_project_page", return_value=project_detail),
         pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"),

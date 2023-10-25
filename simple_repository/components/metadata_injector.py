@@ -3,8 +3,8 @@ import pathlib
 import tempfile
 import zipfile
 
-import aiohttp
 import aiosqlite
+import httpx
 
 from .. import errors, model, ttl_cache, utils
 from .core import RepositoryContainer, SimpleRepository
@@ -19,11 +19,11 @@ class MetadataInjectorRepository(RepositoryContainer):
         self,
         source: SimpleRepository,
         database: aiosqlite.Connection,
-        session: aiohttp.ClientSession,
+        http_client: httpx.AsyncClient | None = None,
         ttl_days: int = 7,
         table_name: str = "metadata_cache",
     ) -> None:
-        self._session = session
+        self._http_client = http_client or httpx.AsyncClient()
         self._cache = ttl_cache.TTLDatabaseCache(
             database=database,
             ttl_seconds=ttl_days * 60 * 60 * 24,
@@ -78,7 +78,7 @@ class MetadataInjectorRepository(RepositoryContainer):
                     metadata = await self._download_metadata(
                         package_name=resource_name.removesuffix(".metadata"),
                         download_url=resource.url,
-                        session=self._session,
+                        http_client=self._http_client,
                     )
                 except ValueError as e:
                     # If we can't get hold of the metadata from the file then raise
@@ -132,11 +132,11 @@ class MetadataInjectorRepository(RepositoryContainer):
         self,
         package_name: str,
         download_url: str,
-        session: aiohttp.ClientSession,
+        http_client: httpx.AsyncClient,
     ) -> str:
         with tempfile.TemporaryDirectory() as tmpdir:
             pkg_path = pathlib.Path(tmpdir) / package_name
-            await utils.download_file(download_url, pkg_path, session)
+            await utils.download_file(download_url, pkg_path, http_client)
             return self._get_metadata_from_package(pkg_path)
 
     def _add_metadata_attribute(

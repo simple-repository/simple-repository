@@ -1,11 +1,11 @@
 import pathlib
 import typing
-from unittest import mock
 
-import aiohttp
 import aiosqlite
+import httpx
 import pytest
 import pytest_asyncio
+from pytest_httpx import HTTPXMock
 
 from ... import model
 from ...components.http_cached import CachedHttpRepository
@@ -15,54 +15,47 @@ from ...components.http_cached import CachedHttpRepository
 async def repository(
     tmp_path: pathlib.Path,
 ) -> typing.AsyncGenerator[CachedHttpRepository, None]:
-    async with aiosqlite.connect(tmp_path / "tmp.db") as db:
+    async with (
+        aiosqlite.connect(tmp_path / "tmp.db") as db,
+        httpx.AsyncClient() as client,
+    ):
         yield CachedHttpRepository(
             url="https://example.com/simple/",
-            session=mock.Mock(),
+            http_client=client,
             database=db,
         )
-
-
-@pytest.fixture
-def response_mock() -> mock.AsyncMock:
-    return mock.AsyncMock(
-        status=200,
-        headers={
-            "Content-Type": "new-type",
-            "ETag": "new-etag",
-        },
-        text=mock.AsyncMock(return_value="new-body"),
-    )
 
 
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_miss(
     repository: CachedHttpRepository,
-    response_mock: mock.AsyncMock,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.return_value = response_mock
-    repository.session.get.return_value = request_context_mock
+    httpx_mock.add_response(
+        content="new-body",
+        headers={
+            "Content-Type": "new-type",
+            "ETag": "new-etag",
+        },
+    )
 
-    body, content_type = await repository._fetch_simple_page("url")
+    body, content_type = await repository._fetch_simple_page("http://url")
     assert body == "new-body"
     assert content_type == "new-type"
 
-    cached = await repository._cache.get("url")
+    cached = await repository._cache.get("http://url")
     assert cached == "new-etag,new-type,new-body"
 
 
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_not_modified(
     repository: CachedHttpRepository,
-    response_mock: mock.AsyncMock,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
-    response_mock.status = 304
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.return_value = response_mock
-    repository.session.get.return_value = request_context_mock
-    body, content_type = await repository._fetch_simple_page("url")
+    httpx_mock.add_response(status_code=304)
+
+    await repository._cache.set("http://url", "stored-etag,stored-type,stored-body")
+    body, content_type = await repository._fetch_simple_page("http://url")
     assert body == "stored-body"
     assert content_type == "stored-type"
 
@@ -70,26 +63,29 @@ async def test_fetch_simple_page__cache_hit_not_modified(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_modified(
     repository: CachedHttpRepository,
-    response_mock: mock.AsyncMock,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.return_value = response_mock
-    repository.session.get.return_value = request_context_mock
-    body, content_type = await repository._fetch_simple_page("url")
+    httpx_mock.add_response(
+        content="new-body",
+        headers={
+            "Content-Type": "new-type",
+            "ETag": "new-etag",
+        },
+    )
+    await repository._cache.set("http://url", "stored-etag,stored-type,stored-body")
+    body, content_type = await repository._fetch_simple_page("http://url")
     assert body == "new-body"
     assert content_type == "new-type"
-    assert await repository._cache.get("url") == "new-etag,new-type,new-body"
+    assert await repository._cache.get("http://url") == "new-etag,new-type,new-body"
 
 
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_source_unreachable(
     repository: CachedHttpRepository,
+    httpx_mock: HTTPXMock,
 ) -> None:
     await repository._cache.set("url", "stored-etag,stored-type,stored-body")
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
-    repository.session.get.return_value = request_context_mock
+    httpx_mock.add_exception(httpx.RequestError("error"))
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "stored-body"
     assert content_type == "stored-type"
@@ -99,18 +95,17 @@ async def test_fetch_simple_page__cache_hit_source_unreachable(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_miss_source_unreachable(
     repository: CachedHttpRepository,
+    httpx_mock: HTTPXMock,
 ) -> None:
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
-    repository.session.get.return_value = request_context_mock
-    with pytest.raises(aiohttp.ClientConnectionError):
+    httpx_mock.add_exception(httpx.RequestError("error"))
+    with pytest.raises(httpx.RequestError, match="error"):
         await repository._fetch_simple_page("url")
 
 
 @pytest.mark.asyncio
 async def test_get_project_page__cached(
     repository: CachedHttpRepository,
-    response_mock: mock.AsyncMock,
+    httpx_mock: HTTPXMock,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/project/", "stored-etag,text/html," + """
@@ -118,11 +113,7 @@ async def test_get_project_page__cached(
         <a href="http://test2.whl">test2.whl</a>
     """,
     )
-    response_mock.status = 304
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
-    repository.session.get.return_value = request_context_mock
-
+    httpx_mock.add_response(status_code=304)
     response = await repository.get_project_page("project")
 
     assert response == model.ProjectDetail(
@@ -148,7 +139,7 @@ async def test_get_project_page__cached(
 @pytest.mark.asyncio
 async def test_get_project_list__cached(
     repository: CachedHttpRepository,
-    response_mock: mock.AsyncMock,
+    httpx_mock: HTTPXMock,
 ) -> None:
     await repository._cache.set(
         "https://example.com/simple/", "stored-etag,text/html," + """
@@ -156,10 +147,7 @@ async def test_get_project_list__cached(
         <a href="/p2/">p2</a>
     """,
     )
-    response_mock.status = 304
-    request_context_mock = mock.AsyncMock()
-    request_context_mock.__aenter__.side_effect = aiohttp.ClientConnectionError()
-    repository.session.get.return_value = request_context_mock
+    httpx_mock.add_response(status_code=304)
 
     resp = await repository.get_project_list()
     assert resp == model.ProjectList(

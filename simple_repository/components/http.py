@@ -1,7 +1,7 @@
 from dataclasses import replace
 from urllib.parse import urljoin
 
-import aiohttp
+import httpx
 
 from .. import errors, model, parser, utils
 from .core import SimpleRepository
@@ -10,9 +10,9 @@ from .core import SimpleRepository
 class HttpRepository(SimpleRepository):
     """Proxy of a remote simple repository"""
 
-    def __init__(self, url: str, session: aiohttp.ClientSession):
+    def __init__(self, url: str, http_client: httpx.AsyncClient | None = None):
         self.source_url = url
-        self.session = session
+        self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([
             "application/vnd.pypi.simple.v1+json",
             "application/vnd.pypi.simple.v1+html;q=0.2",
@@ -27,10 +27,10 @@ class HttpRepository(SimpleRepository):
         Returns the body and the content type received.
         """
         headers = {"Accept": self.downstream_content_types}
-        async with self.session.get(page_url, headers=headers) as response:
-            response.raise_for_status()
-            body: str = await response.text()
-            content_type = response.headers.get("content-type", "")
+        response = await self._http_client.get(page_url, headers=headers)
+        response.raise_for_status()
+        body = response.text
+        content_type: str = response.headers.get("content-type", "")
         return body, content_type
 
     async def get_project_page(
@@ -42,8 +42,8 @@ class HttpRepository(SimpleRepository):
         page_url = urljoin(self.source_url, f"{project_name}/")
         try:
             body, content_type = await self._fetch_simple_page(page_url)
-        except aiohttp.ClientResponseError as e:
-            if e.status == 404:
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
                 raise errors.PackageNotFoundError(
                     package_name=project_name,
                 ) from e
@@ -75,7 +75,7 @@ class HttpRepository(SimpleRepository):
     ) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self.source_url)
-        except aiohttp.ClientResponseError as e:
+        except httpx.HTTPStatusError as e:
             raise errors.SourceRepositoryUnavailable() from e
 
         if (
@@ -115,9 +115,9 @@ class HttpRepository(SimpleRepository):
         if not resource:
             raise errors.ResourceUnavailable(resource_name)
 
-        async with self.session.head(resource.url) as resp:
-            if etag := resp.headers.get("ETag"):
-                resource.context["etag"] = etag
+        resp = await self._http_client.head(resource.url)
+        if etag := resp.headers.get("ETag"):
+            resource.context["etag"] = etag
 
         return resource
 
