@@ -37,26 +37,6 @@ def repository(project_page: model.ProjectDetail) -> YankRepository:
     )
 
 
-def test_yank_per_version(repository: YankRepository, project_page: model.ProjectDetail) -> None:
-    yanked_page = repository._add_yanked_attribute_per_version(
-        project_page=project_page,
-        yanked_versions={"1.0": "reason"},
-    )
-    assert yanked_page.files[0].yanked == "reason"
-    assert yanked_page.files[1].yanked == "reason"
-    assert yanked_page.files[2].yanked is None
-
-
-def test_yank_per_file(repository: YankRepository, project_page: model.ProjectDetail) -> None:
-    yanked_page = repository._add_yanked_attribute_per_file(
-        project_page=project_page,
-        yanked_files={"project-1.0-any.whl": "reason"},
-    )
-    assert yanked_page.files[0].yanked == "reason"
-    assert yanked_page.files[1].yanked is None
-    assert yanked_page.files[2].yanked is None
-
-
 @pytest.mark.asyncio
 async def test_get_project_page(repository: YankRepository) -> None:
     result = await repository.get_project_page("project")

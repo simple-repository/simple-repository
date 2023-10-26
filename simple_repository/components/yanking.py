@@ -7,7 +7,9 @@ import typing
 import aiosqlite
 from packaging.utils import canonicalize_name
 
-from .. import errors, model, packaging, utils
+from .. import errors, model
+from .. import packaging as _packaging
+from .. import utils
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -48,6 +50,7 @@ class SqliteYankProvider(YankProvider):
         }
 
     async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+        # TODO: Manage yanked_files in this component
         return {}
 
 
@@ -71,6 +74,7 @@ class GlobYankProvider(YankProvider):
         self._yank_config: dict[str, tuple[str, str]] = self._load_config_json(yank_config_file)
 
     async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+        # TODO: Manage yanked_versions in this component
         return {}
 
     async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
@@ -105,6 +109,14 @@ class GlobYankProvider(YankProvider):
         return config_dict
 
 
+def update_yanked_attribute(file: model.File, reason: str) -> model.File:
+    if reason == '':
+        yanked: bool | str = True
+    else:
+        yanked = html.escape(reason)
+    return replace(file, yanked=yanked)
+
+
 class YankRepository(RepositoryContainer):
     """
     A class that adds support for PEP-592 yank to a SimpleRepository.
@@ -134,61 +146,40 @@ class YankRepository(RepositoryContainer):
         yanked_versions = await self._yank_provider.yanked_versions(project_page)
         yanked_files = await self._yank_provider.yanked_files(project_page)
 
-        if yanked_versions:
-            project_page = self._add_yanked_attribute_per_version(
-                project_page=project_page,
-                yanked_versions=yanked_versions,
-            )
-        if yanked_files:
-            project_page = self._add_yanked_attribute_per_file(
+        if yanked_versions or yanked_files:
+            project_page = self._add_yanked_attribute(
                 project_page=project_page,
                 yanked_files=yanked_files,
+                yanked_versions=yanked_versions,
             )
 
         return project_page
 
-    def _add_yanked_attribute_per_version(
+    def _add_yanked_attribute(
         self,
         project_page: model.ProjectDetail,
         yanked_versions: dict[str, str],
-    ) -> model.ProjectDetail:
-        if not yanked_versions:
-            return project_page
-
-        files = []
-        for file in project_page.files:
-            try:
-                version = packaging.extract_package_version(
-                    filename=file.filename,
-                    project_name=canonicalize_name(project_page.name),
-                )
-            except ValueError:
-                version = "unknown"
-            reason = yanked_versions.get(version)
-            if (not file.yanked) and (reason is not None):
-                if reason == '':
-                    yanked: typing.Union[bool, str] = True
-                else:
-                    yanked = html.escape(reason)
-                file = replace(file, yanked=yanked)
-            files.append(file)
-        project_page = replace(project_page, files=tuple(files))
-        return project_page
-
-    def _add_yanked_attribute_per_file(
-        self,
-        project_page: model.ProjectDetail,
         yanked_files: dict[str, str],
     ) -> model.ProjectDetail:
         files = []
         for file in project_page.files:
-            reason = yanked_files.get(file.filename)
-            if (not file.yanked) and (reason is not None):
-                if reason == '':
-                    yanked: bool | str = True
+            if file.yanked:
+                # Skip already yanked files
+                pass
+            elif reason := yanked_files.get(file.filename):
+                file = update_yanked_attribute(file, reason)
+            else:
+                try:
+                    version = _packaging.extract_package_version(
+                        filename=file.filename,
+                        project_name=canonicalize_name(project_page.name),
+                    )
+                except ValueError:
+                    pass
                 else:
-                    yanked = html.escape(reason)
-                file = replace(file, yanked=yanked)
+                    if reason := yanked_versions.get(version):
+                        file = update_yanked_attribute(file, reason)
+
             files.append(file)
-        project_page = replace(project_page, files=tuple(files))
-        return project_page
+
+        return replace(project_page, files=tuple(files))
