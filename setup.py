@@ -8,13 +8,14 @@ with (HERE / "README.md").open("rt") as fh:
 
 REQUIREMENTS: dict[str, list[str]] = {
     "core": [
-        "aiohttp",
+        "httpx",
         "aiosqlite",
         "packaging",
     ],
     "test": [
         "pytest",
         "pytest_asyncio",
+        "pytest_httpx",
     ],
     "dev": [
         "pre-commit",

@@ -4,13 +4,13 @@ from unittest import mock
 import zipfile
 
 import aiosqlite
+import httpx
 import pytest
 import pytest_asyncio
 
 from ... import errors, model
 from ...components.core import SimpleRepository
 from ...components.metadata_injector import MetadataInjectorRepository
-from ..aiohttp_mock import MockClientSession
 from .fake_repository import FakeRepository
 
 
@@ -47,7 +47,7 @@ def repository(
             },
         ),
         database=tmp_db,
-        session=mock.AsyncMock(),
+        http_client=mock.AsyncMock(),
     )
 
 
@@ -161,7 +161,7 @@ async def test_get_resource__not_valid_resource(
     repo = MetadataInjectorRepository(
         source=typing.cast(SimpleRepository, source_repo),
         database=tmp_db,
-        session=mock.AsyncMock(),
+        http_client=mock.AsyncMock(),
     )
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
         await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
@@ -181,7 +181,9 @@ async def test_get_resource__not_metadata(
 
 
 @pytest.mark.asyncio
-async def test_download_metadata(repository: MetadataInjectorRepository) -> None:
+async def test_download_metadata(
+    repository: MetadataInjectorRepository,
+) -> None:
     with (
         mock.patch.object(
             repository,
@@ -189,7 +191,7 @@ async def test_download_metadata(repository: MetadataInjectorRepository) -> None
         ) as get_metadata_from_package_mock,
         mock.patch("simple_repository.utils.download_file") as download_file_mock,
     ):
-        await repository._download_metadata("name", "url", MockClientSession())
+        await repository._download_metadata("name", "url", httpx.AsyncClient())
 
     get_metadata_from_package_mock.assert_called_once()
     download_file_mock.assert_awaited_once()

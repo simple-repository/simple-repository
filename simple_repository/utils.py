@@ -3,7 +3,7 @@ import pathlib
 import typing
 from urllib.parse import urljoin, urlparse
 
-import aiohttp
+import httpx
 
 from . import errors
 
@@ -33,10 +33,10 @@ def load_config_json(json_file: pathlib.Path) -> dict[typing.Any, typing.Any]:
 async def download_file(
     download_url: str,
     dest_file: pathlib.Path,
-    session: aiohttp.ClientSession,
+    http_client: httpx.AsyncClient,
     chunk_size: int = 1024 * 64,
 ) -> None:
     with dest_file.open('wb') as file:
-        async with session.get(download_url) as data:
-            async for chunk in data.content.iter_chunked(chunk_size):
+        async with http_client.stream("GET", download_url) as data:
+            async for chunk in data.aiter_bytes(chunk_size):
                 file.write(chunk)
