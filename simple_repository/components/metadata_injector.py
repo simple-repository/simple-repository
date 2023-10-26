@@ -1,13 +1,17 @@
 from dataclasses import replace
 import pathlib
+import re
 import tempfile
 import zipfile
 
 import aiosqlite
 import httpx
+from packaging.utils import canonicalize_name
 
 from .. import errors, model, ttl_cache, utils
 from .core import RepositoryContainer, SimpleRepository
+
+metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
 
 
 class MetadataInjectorRepository(RepositoryContainer):
@@ -108,16 +112,20 @@ class MetadataInjectorRepository(RepositoryContainer):
             raise ValueError(
                 f"Filename {package_path.name} is not normalized according to PEP-427",
             )
-        name_ver = package_tokens[0] + '-' + package_tokens[1]
-
+        distribution = canonicalize_name(package_tokens[0])
+        # Package consumer, when extracting metadata, should tolerate small differences
+        # respecting what is strictly described in PEP-427, for reference see:
+        # https://packaging.python.org/en/latest/specifications/binary-distribution-format/
         try:
             with zipfile.ZipFile(package_path, 'r') as ziparchive:
-                try:
-                    return ziparchive.read(name_ver + ".dist-info/METADATA").decode()
-                except KeyError as e:
-                    raise errors.InvalidPackageError(
-                        "Provided wheel doesn't contain a metadata file.",
-                    ) from e
+                for file in ziparchive.namelist():
+                    if not (match := metadata_regex.match(file)):
+                        continue
+                    if canonicalize_name(match.group(1)) == distribution:
+                        return ziparchive.read(file).decode()
+                raise errors.InvalidPackageError(
+                    "Provided wheel doesn't contain a metadata file.",
+                )
         except (zipfile.BadZipFile, zipfile.LargeZipFile) as e:
             raise errors.InvalidPackageError(
                 "Unable to decompress the provided wheel.",
