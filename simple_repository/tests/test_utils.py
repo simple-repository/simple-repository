@@ -8,10 +8,11 @@
 import json
 import pathlib
 
+import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
 from .. import errors, utils
-from .aiohttp_mock import MockClientSession
 
 
 @pytest.mark.parametrize(
@@ -84,13 +85,13 @@ async def test_load_config_file_not_found(
 
 
 @pytest.mark.asyncio
-async def test_download_file(tmp_path: pathlib.PosixPath) -> None:
+async def test_download_file(tmp_path: pathlib.PosixPath, httpx_mock: HTTPXMock) -> None:
     download_url = "https://example.com/package.tar.gz"
     dest_file = tmp_path / "package.tar.gz"
-    session = MockClientSession(
-        content="my_file",
-    )
-    await utils.download_file(download_url, dest_file, session)
+
+    httpx_mock.add_response(content="my_file")
+    async with httpx.AsyncClient() as http_client:
+        await utils.download_file(download_url, dest_file, http_client)
 
     assert dest_file.exists()
     assert dest_file.read_text() == "my_file"

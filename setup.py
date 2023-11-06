@@ -15,28 +15,34 @@ with (HERE / "README.md").open("rt") as fh:
 
 REQUIREMENTS: dict[str, list[str]] = {
     "core": [
-        "aiohttp",
+        "httpx",
         "aiosqlite",
         "packaging",
     ],
     "test": [
         "pytest",
         "pytest_asyncio",
+        "pytest_httpx",
     ],
     "dev": [
         "pre-commit",
+        "types-setuptools",
     ],
 }
 
 setup(
     name="simple-repository",
-    description="The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers",
+    description=(
+        "The core simple repository (PEP-503) interface, including powerful "
+        "component implementations suitable for use in repository clients and servers"
+    ),
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     author="CERN, BE-CSS-SET",
     url="https://github.com/simple-repository/simple-repository",
     packages=find_packages(),
     python_requires="~=3.11",
+    package_data={"simple_repository": ["py.typed"]},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",

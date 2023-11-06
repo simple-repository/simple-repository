@@ -31,7 +31,7 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     return ResourceCacheRepository(
         source=source,
         cache_path=tmp_path,
-        session=mock.MagicMock(),
+        http_client=mock.MagicMock(),
     )
 
 
@@ -129,7 +129,7 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     repo = ResourceCacheRepository(
         source=mock.AsyncMock(),
         cache_path=symlink,
-        session=mock.MagicMock(),
+        http_client=mock.MagicMock(),
     )
     assert str(symlink) != str(real_repo)
     assert str(repo._cache_path) == str(real_repo)

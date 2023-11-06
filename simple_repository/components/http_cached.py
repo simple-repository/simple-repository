@@ -7,8 +7,8 @@
 
 import logging
 
-import aiohttp
 import aiosqlite
+import httpx
 
 from ..ttl_cache import TTLDatabaseCache
 from .http import HttpRepository
@@ -32,15 +32,15 @@ class CachedHttpRepository(HttpRepository):
     def __init__(
         self,
         url: str,
-        session: aiohttp.ClientSession,
         database: aiosqlite.Connection,
+        http_client: httpx.AsyncClient | None = None,
         table_name: str = "simple_repository_cache",
         # Cached pages (even if still valid) will
         # be deleted after 7 days if not accessed
         ttl_seconds: int = 60 * 60 * 24 * 7,
         connection_timeout_seconds: int = 15,
     ):
-        super().__init__(url, session)
+        super().__init__(url, http_client)
         self._cache = TTLDatabaseCache(database, ttl_seconds, table_name)
         self._connection_timeout_seconds = connection_timeout_seconds
 
@@ -54,37 +54,36 @@ class CachedHttpRepository(HttpRepository):
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if res := await self._cache.get(page_url):
-            etag, cached_content_type, cached_page = res.split(",", 2)
+        if cached_content := await self._cache.get(page_url):
+            etag, cached_content_type, cached_page = cached_content.split(",", 2)
             headers.update({"If-None-Match": etag})
 
         try:
-            async with self.session.get(
+            response = await self._http_client.get(
                 url=page_url,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(
-                    connect=self._connection_timeout_seconds,
-                ),
-                raise_for_stauts=True,
-            ) as response:
-
-                if response.status == 304 and res:
-                    # The cached content is still valid.
-                    return cached_page, cached_content_type
-                else:
-                    body: str = await response.text()
-                    content_type = response.headers.get("Content-Type", "")
-                    if new_etag := response.headers.get("ETag", ""):
-                        # If the ETag is set, cache the response for future use.
-                        await self._cache.set(page_url, ",".join([new_etag, content_type, body]))
-                    return body, content_type
-        except (aiohttp.ServerTimeoutError, aiohttp.ClientConnectionError) as e:
+                timeout=self._connection_timeout_seconds,
+            )
+        except (httpx.TimeoutException, httpx.RequestError) as e:
             # If the connection to the source fails, and there is a cached page for
             # the requested URL, return the cached content, otherwise raise the error.
             error_logger.error(
                 f"Connection to {page_url} failed with"
                 f" the following error: {str(e)}",
             )
-            if res:
+            if cached_content:
                 return cached_page, cached_content_type
             raise
+
+        if response.status_code == 304 and cached_content:
+            # The cached content is still valid.
+            return cached_page, cached_content_type
+
+        response.raise_for_status()
+
+        body = response.text
+        content_type = response.headers.get("Content-Type", "")
+        if new_etag := response.headers.get("ETag", ""):
+            # If the ETag is set, cache the response for future use.
+            await self._cache.set(page_url, ",".join([new_etag, content_type, body]))
+        return body, content_type

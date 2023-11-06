@@ -10,7 +10,7 @@ import os
 import pathlib
 import uuid
 
-import aiohttp
+import httpx
 
 from .. import model, utils
 from .core import RepositoryContainer, SimpleRepository
@@ -26,13 +26,13 @@ class ResourceCacheRepository(RepositoryContainer):
         self,
         source: SimpleRepository,
         cache_path: pathlib.Path,
-        session: aiohttp.ClientSession,
+        http_client: httpx.AsyncClient | None = None,
     ) -> None:
         super().__init__(source)
         self._cache_path = cache_path.resolve()
         self._tmp_path = self._cache_path / ".incomplete"
         self._tmp_path.mkdir(parents=True, exist_ok=True)
-        self._session = session
+        self._http_client = http_client or httpx.AsyncClient()
 
     async def get_resource(
         self,
@@ -79,7 +79,7 @@ class ResourceCacheRepository(RepositoryContainer):
             await utils.download_file(
                 download_url=resource.url,
                 dest_file=dest_file,
-                session=self._session,
+                http_client=self._http_client,
             )
             dest_file.rename(resource_path)
             resource_info_path.write_text(upstream_etag)
