@@ -128,3 +128,28 @@ async def test_sqlite_provider__yanked_versions(
         versions = await provider.yanked_versions(project_page)
 
     assert versions == {"1.0": "reason1", "2.0": "reason2"}
+
+
+@pytest.mark.asyncio
+async def test_sqlite_provider__yanked_files(
+    tmp_path: pathlib.Path,
+    project_page: model.ProjectDetail,
+) -> None:
+    database_path = tmp_path / "temp.db"
+    async with aiosqlite.connect(database_path) as database:
+        provider = SqliteYankProvider(database)
+        await provider._init_db()
+        await provider._database.executemany(
+            "INSERT INTO yanked_releases (project_name, file_name, reason)"
+            " VALUES(:project_name, :filename, :reason)",
+            [
+                {"project_name": "project", "filename": "project-1.0.whl", "reason": "reason1"},
+                {"project_name": "project", "filename": "project-2.0.whl", "reason": "reason2"},
+            ],
+        )
+
+        await provider._database.commit()
+
+        versions = await provider.yanked_files(project_page)
+
+    assert versions == {"project-1.0.whl": "reason1", "project-2.0.whl": "reason2"}
