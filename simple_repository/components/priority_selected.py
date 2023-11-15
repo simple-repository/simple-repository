@@ -55,23 +55,26 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
-        project_lists: list[model.ProjectList] = await asyncio.gather(
+        results: list[model.ProjectList | BaseException] = await asyncio.gather(
             *(
                 source.get_project_list(request_context=request_context)
                 for source in self.sources
             ),
             return_exceptions=True,
         )
-        for project_list in project_lists:
-            if isinstance(project_list, Exception):
-                # TODO: Use an exception group to raise
-                # multiple exceptions together.
-                raise project_list
+
+        project_lists = [item for item in results if isinstance(item, model.ProjectList)]
+
+        if len(project_lists) != len(self.sources):
+            # TODO: Use an exception group to raise
+            # multiple exceptions together.
+            any_exception = next(item for item in results if isinstance(item, BaseException))
+            raise any_exception
 
         projects = set().union(
-            *[
+            *(
                 index.projects for index in project_lists
-            ],
+            ),
         )
 
         # Downgrade the API version to the lowest available, as it will not be
