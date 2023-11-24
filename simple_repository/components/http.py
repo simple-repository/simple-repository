@@ -117,6 +117,10 @@ class HttpRepository(SimpleRepository):
 
         resp = await self._http_client.head(resource.url)
         if etag := resp.headers.get("ETag"):
+            if etag == request_context.context.get("etag"):
+                # If the etag served from the source repository
+                # matches the one in the request raise NotModified
+                raise model.NotModified()
             resource.context["etag"] = etag
 
         return resource

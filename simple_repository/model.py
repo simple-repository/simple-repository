@@ -191,3 +191,10 @@ class HttpResource(Resource):
 @dataclass(frozen=True)
 class TextResource(Resource):
     text: str
+
+
+class NotModified(Exception):
+    """
+    Exception to be used if the requested resource
+    is not changed with respect to the request ETag.
+    """
