@@ -36,8 +36,8 @@ class ResourceCacheRepository(RepositoryContainer):
     ) -> model.Resource:
         """
         Get a resource from the cache. If it is not present in the
-        cache, retrieve it from the source repository. If it's a
-        remote resource, download the resource and cache it.
+        cache, or its etag has expired, retrieve it from the source repository.
+        If it's a remote resource, download the resource and cache it.
         """
         project_dir = (self._cache_path / project_name).resolve()
         resource_path = (project_dir / resource_name).resolve()
@@ -53,12 +53,34 @@ class ResourceCacheRepository(RepositoryContainer):
 
         project_dir.mkdir(exist_ok=True)
 
+        # Require the resource upstream, if available use the cached etag.
         cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
-        resource = await super().get_resource(
-            project_name,
-            resource_name,
-            request_context=request_context,
+        if cache_etag:
+            context = request_context.context | {"etag": cache_etag}
+        else:
+            context = request_context.context
+        new_request_context = model.RequestContext(
+            repository=request_context.repository,
+            context=context,
         )
+        try:
+            resource = await super().get_resource(
+                project_name,
+                resource_name,
+                request_context=new_request_context,
+            )
+        except model.NotModified:
+            # The upstream repository serves the same content that has been cached.
+            # If the request also provides the same etag, raise NotModified,
+            # otherwhise return the locally cached resource.
+            if cache_etag == request_context.context.get("etag"):
+                raise
+            return self._cached_resource(
+                resource_path=resource_path,
+                resource_info_path=resource_info_path,
+                context=model.Context(etag=cache_etag) if cache_etag else model.Context(),
+            )
+
         upstream_etag = resource.context.get("etag")
         if not isinstance(resource, model.HttpResource) or not upstream_etag:
             # Only cache HttpResources if the source repo sets an etag.
@@ -77,11 +99,21 @@ class ResourceCacheRepository(RepositoryContainer):
             dest_file.rename(resource_path)
             resource_info_path.write_text(upstream_etag)
 
+        return self._cached_resource(
+            resource_path=resource_path,
+            resource_info_path=resource_info_path,
+            context=resource.context,
+        )
+
+    def _cached_resource(
+        self,
+        resource_path: pathlib.Path,
+        resource_info_path: pathlib.Path,
+        context: model.Context,
+    ) -> model.LocalResource:
         self._update_last_access(resource_info_path)
-
         local_resource = model.LocalResource(path=resource_path)
-        local_resource.context.update(resource.context)
-
+        local_resource.context.update(context)
         return local_resource
 
     def _update_last_access(

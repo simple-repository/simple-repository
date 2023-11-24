@@ -52,7 +52,38 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRepository) -> None:
+    (repository._cache_path / "numpy").mkdir()
+    cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
+    cached_file.write_text("invalid cached content")
+    cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    # The content of the the info file matches the upstream cache
+    cached_info_file.write_text("wrong_etag")
+
+    context = model.RequestContext(repository)
+
+    with mock.patch(
+        "simple_repository.utils.download_file",
+        mock.AsyncMock(
+            side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
+        ),
+    ):
+        response = await repository.get_resource(
+            project_name="numpy",
+            resource_name="numpy-1.0-any.whl",
+            request_context=context,
+        )
+
+    # after the cache miss, the upstream file is downloaded and the info file is created.
+    # The cache returns a LocalResource pointing to the downloaded file.
+    assert isinstance(response, model.LocalResource)
+    assert response.path == repository._cache_path / "numpy" / "numpy-1.0-any.whl"
+    assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").read_text() == "etag"
+    assert (repository._cache_path / "numpy" / "numpy-1.0-any.whl").read_text() != "invalid cached content"
+
+
+@pytest.mark.asyncio
+async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheRepository) -> None:
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl.info").is_file()
     assert not (repository._cache_path / "numpy" / "numpy-1.0-any.whl").is_file()
     context = model.RequestContext(repository)
@@ -108,6 +139,77 @@ async def test_get_resource__path_traversal(
         await repository.get_resource(
             project_name="not-used",
             resource_name="../../../etc/passwords",
+            request_context=context,
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
+    repository: ResourceCacheRepository,
+) -> None:
+    context = model.RequestContext(repository)
+    resource = await repository.get_resource(
+        project_name="numpy",
+        resource_name="numpy-1.1-any.whl",
+        request_context=context,
+    )
+
+    # Upstream doesn't set an etag so the HttpResource is not cached,
+    # otherwise a LocalResource would have been returned
+    # No cache file or info file gets created and an http resource is returned.
+    assert isinstance(resource, model.HttpResource)
+    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl").is_file()
+    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl.info").is_file()
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_raised_not_modified__request_etag_invalid(
+    repository: ResourceCacheRepository,
+) -> None:
+    # Upsream raised not modified and the request context misses the etag.
+    repository.source = mock.Mock(get_resource=mock.AsyncMock(side_effect=model.NotModified))
+
+    (repository._cache_path / "numpy").mkdir()
+    cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
+    cached_file.write_text("cached content")
+    cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    # The content of the the info file matches the upstream cache
+    cached_info_file.write_text("etag")
+
+    context = model.RequestContext(repository)
+    resource = await repository.get_resource(
+        project_name="numpy",
+        resource_name="numpy-1.0-any.whl",
+        request_context=context,
+    )
+    # The cache returns a LocalResource pointing to
+    # the cached file with the same etag as upstream
+    assert isinstance(resource, model.LocalResource)
+    assert resource.path == cached_file
+    assert resource.context["etag"] == "etag"
+    assert cached_file.read_text() == "cached content"
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_raised_not_modified__request_etag_valid(
+    repository: ResourceCacheRepository,
+) -> None:
+    # Upsream raised not modified and the request etag matches.
+    repository.source = mock.Mock(get_resource=mock.AsyncMock(side_effect=model.NotModified))
+
+    (repository._cache_path / "numpy").mkdir()
+    cached_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl"
+    cached_file.write_text("cached content")
+    cached_info_file = repository._cache_path / "numpy" / "numpy-1.0-any.whl.info"
+    # The content of the the info file matches the upstream cache
+    cached_info_file.write_text("etag")
+
+    context = model.RequestContext(repository, {"etag": "etag"})
+
+    with pytest.raises(model.NotModified):
+        await repository.get_resource(
+            project_name="numpy",
+            resource_name="numpy-1.0-any.whl",
             request_context=context,
         )
 
@@ -225,22 +327,3 @@ async def test_update_last_access_for__cache_miss_remote_called(
             request_context=context,
         )
     update_last_access_for_mock.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
-    repository: ResourceCacheRepository,
-) -> None:
-    context = model.RequestContext(repository)
-    resource = await repository.get_resource(
-        project_name="numpy",
-        resource_name="numpy-1.1-any.whl",
-        request_context=context,
-    )
-
-    # Upstream doesn't set an etag so the HttpResource is not cached,
-    # otherwise a LocalResource would have been returned
-    # No cache file or info file gets created and an http resource is returned.
-    assert isinstance(resource, model.HttpResource)
-    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl").is_file()
-    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl.info").is_file()
