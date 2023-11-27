@@ -1,6 +1,7 @@
 import datetime
 import os
 import pathlib
+import shutil
 import uuid
 
 import httpx
@@ -11,9 +12,9 @@ from .core import RepositoryContainer, SimpleRepository
 
 class ResourceCacheRepository(RepositoryContainer):
     """
-    A cache for remote resources. It stores temporarily remote
-    resources on the local disk, allowing faster access and
-    mitigating the effects of source repository downtime.
+    A cache for resources based on etags. It stores temporarily
+    resources with an asigned etag on the local disk, allowing
+    faster access and mitigating the effects of source repository downtime.
     """
     def __init__(
         self,
@@ -82,11 +83,32 @@ class ResourceCacheRepository(RepositoryContainer):
             )
 
         upstream_etag = resource.context.get("etag")
-        if not isinstance(resource, model.HttpResource) or not upstream_etag:
-            # Only cache HttpResources if the source repo sets an etag.
+        if not upstream_etag or resource.to_cache is False:
+            # Only cache a resource if has an etag and to_cache is set to True.
             return resource
 
         if upstream_etag != cache_etag:
+            await self._store_resource(
+                resource=resource,
+                upstream_etag=upstream_etag,
+                resource_path=resource_path,
+                resource_info_path=resource_info_path,
+            )
+
+        return self._cached_resource(
+            resource_path=resource_path,
+            resource_info_path=resource_info_path,
+            context=resource.context,
+        )
+
+    async def _store_resource(
+        self,
+        resource: model.Resource,
+        upstream_etag: str,
+        resource_path: pathlib.Path,
+        resource_info_path: pathlib.Path,
+    ) -> None:
+        if isinstance(resource, model.HttpResource):
             # The upstream resource changed or no cached version is available.
             # Fetch the resource and cache it and its etag.
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -97,13 +119,13 @@ class ResourceCacheRepository(RepositoryContainer):
                 http_client=self._http_client,
             )
             dest_file.rename(resource_path)
-            resource_info_path.write_text(upstream_etag)
-
-        return self._cached_resource(
-            resource_path=resource_path,
-            resource_info_path=resource_info_path,
-            context=resource.context,
-        )
+        elif isinstance(resource, model.TextResource):
+            resource_path.write_text(resource.text)
+        elif isinstance(resource, model.LocalResource):
+            shutil.copy(resource.path, resource_path)
+        else:
+            raise ValueError(f"Unknow resource type: {type(resource)}.")
+        resource_info_path.write_text(upstream_etag)
 
     def _cached_resource(
         self,
