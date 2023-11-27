@@ -201,24 +201,6 @@ async def test_get_resource__no_cache_created_when_to_cache_is_false(
 
 
 @pytest.mark.asyncio
-async def test_get_resource__no_cache_created_when_to_cache_is_false(
-    repository: ResourceCacheRepository,
-) -> None:
-    context = model.RequestContext(repository)
-    resource = await repository.get_resource(
-        project_name="numpy",
-        resource_name="numpy-2.0-any.whl",
-        request_context=context,
-    )
-
-    # Upstream sets an etag but the to_cache attribute is False so the resource is not cached.
-    # No cache file or info file gets created and an http resource is returned.
-    assert isinstance(resource, model.HttpResource)
-    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl").is_file()
-    assert not (repository._cache_path / "numpy" / "numpy-1.1-any.whl.info").is_file()
-
-
-@pytest.mark.asyncio
 async def test_get_resource__source_raised_not_modified__request_etag_invalid(
     repository: ResourceCacheRepository,
 ) -> None:
