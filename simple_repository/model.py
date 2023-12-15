@@ -160,6 +160,8 @@ class Context(TypedDict, total=False):
 @dataclass(frozen=True)
 class Resource:
     context: Context = field(default_factory=lambda: Context(), init=False)
+    # If this attribute is set to False, cache components will ignore this resource
+    to_cache: bool = field(default=True, kw_only=True)
 
 
 @dataclass(frozen=True)
