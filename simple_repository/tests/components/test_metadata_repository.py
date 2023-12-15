@@ -3,10 +3,8 @@ import typing
 from unittest import mock
 import zipfile
 
-import aiosqlite
 import httpx
 import pytest
-import pytest_asyncio
 
 from ... import errors, model
 from ...components.core import SimpleRepository
@@ -14,16 +12,8 @@ from ...components.metadata_injector import MetadataInjectorRepository
 from .fake_repository import FakeRepository
 
 
-@pytest_asyncio.fixture
-async def tmp_db(tmp_path: pathlib.Path) -> aiosqlite.Connection:
-    async with aiosqlite.connect(tmp_path / "test.db") as db:
-        yield db
-
-
 @pytest.fixture
-def repository(
-    tmp_db: aiosqlite.Connection,
-) -> MetadataInjectorRepository:
+def repository() -> MetadataInjectorRepository:
     return MetadataInjectorRepository(
         source=FakeRepository(
             project_pages=[
@@ -46,7 +36,6 @@ def repository(
                 ),
             },
         ),
-        database=tmp_db,
         http_client=mock.AsyncMock(),
     )
 
@@ -166,18 +155,7 @@ async def test_get_project_page(
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cached(
-    repository: MetadataInjectorRepository,
-) -> None:
-    await repository._cache.set("name/resource.metadata", "cached_meta")
-
-    response = await repository.get_resource("name", "resource.metadata")
-    assert isinstance(response, model.TextResource)
-    assert response.text == "cached_meta"
-
-
-@pytest.mark.asyncio
-async def test_get_resource__not_cached(
+async def test_get_resource(
     repository: MetadataInjectorRepository,
 ) -> None:
     with mock.patch.object(
@@ -207,9 +185,7 @@ async def test_get_resource__local_resource(
 
 
 @pytest.mark.asyncio
-async def test_get_resource__not_valid_resource(
-    tmp_db: aiosqlite.Connection,
-) -> None:
+async def test_get_resource__not_valid_resource() -> None:
     source_repo = mock.Mock(spec=SimpleRepository)
     source_repo.get_resource.side_effect = [
         errors.ResourceUnavailable('name'),
@@ -217,7 +193,6 @@ async def test_get_resource__not_valid_resource(
     ]
     repo = MetadataInjectorRepository(
         source=typing.cast(SimpleRepository, source_repo),
-        database=tmp_db,
         http_client=mock.AsyncMock(),
     )
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):

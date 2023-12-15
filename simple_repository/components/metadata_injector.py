@@ -4,11 +4,10 @@ import re
 import tempfile
 import zipfile
 
-import aiosqlite
 import httpx
 from packaging.utils import canonicalize_name
 
-from .. import errors, model, ttl_cache, utils
+from .. import errors, model, utils
 from .core import RepositoryContainer, SimpleRepository
 
 metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
@@ -22,17 +21,9 @@ class MetadataInjectorRepository(RepositoryContainer):
     def __init__(
         self,
         source: SimpleRepository,
-        database: aiosqlite.Connection,
         http_client: httpx.AsyncClient | None = None,
-        ttl_days: int = 7,
-        table_name: str = "metadata_cache",
     ) -> None:
         self._http_client = http_client or httpx.AsyncClient()
-        self._cache = ttl_cache.TTLDatabaseCache(
-            database=database,
-            ttl_seconds=ttl_days * 60 * 60 * 24,
-            table_name=table_name,
-        )
         super().__init__(source)
 
     async def get_project_page(
@@ -68,43 +59,42 @@ class MetadataInjectorRepository(RepositoryContainer):
         # The resource doesn't exist upstream, and looks like a metadata file has been
         # requested. Let's try to fetch the underlying resource and compute the metadata.
 
-        # First, let's attempt to get the metadata out of the cache.
-        metadata = await self._cache.get(project_name + "/" + resource_name)
-        if not metadata:
-            # Get hold of the actual artefact from which we want to extract
-            # the metadata.
-            resource = await request_context.repository.get_resource(
-                project_name, resource_name.removesuffix(".metadata"),
-                request_context=request_context,
-            )
-            if isinstance(resource, model.HttpResource):
-                try:
-                    metadata = await self._download_metadata(
-                        package_name=resource_name.removesuffix(".metadata"),
-                        download_url=resource.url,
-                        http_client=self._http_client,
-                    )
-                except ValueError as e:
-                    # If we can't get hold of the metadata from the file then raise
-                    # a resource unavailable.
-                    raise errors.ResourceUnavailable(resource_name) from e
-            elif isinstance(resource, model.LocalResource):
-                try:
-                    metadata = self._get_metadata_from_package(resource.path)
-                except ValueError as e:
-                    raise errors.ResourceUnavailable(resource_name) from e
-            else:
-                raise errors.ResourceUnavailable(
-                    resource_name.removesuffix(".metadata"),
-                    "Unable to fetch the resource needed to extract the metadata.",
+        # Get hold of the actual artefact from which we want to extract
+        # the metadata.
+        resource = await request_context.repository.get_resource(
+            project_name, resource_name.removesuffix(".metadata"),
+            request_context=request_context,
+        )
+        if isinstance(resource, model.HttpResource):
+            try:
+                metadata = await self._download_metadata(
+                    package_name=resource_name.removesuffix(".metadata"),
+                    download_url=resource.url,
+                    http_client=self._http_client,
                 )
+            except ValueError as e:
+                # If we can't get hold of the metadata from the file then raise
+                # a resource unavailable.
+                raise errors.ResourceUnavailable(resource_name) from e
+        elif isinstance(resource, model.LocalResource):
+            try:
+                metadata = self._get_metadata_from_package(resource.path)
+            except ValueError as e:
+                raise errors.ResourceUnavailable(resource_name) from e
+        else:
+            raise errors.ResourceUnavailable(
+                resource_name.removesuffix(".metadata"),
+                "Unable to fetch the resource needed to extract the metadata.",
+            )
 
-            # Cache the result for a faster response in the future.
-            await self._cache.set(project_name + "/" + resource_name, metadata)
-
-        return model.TextResource(
+        metadata_resource = model.TextResource(
             text=metadata,
         )
+        if etag := resource.context.get("etag"):
+            # Use the same etag as the one that identifies the package.
+            # In this way, if that package changes, also the metadata will be invalidated.
+            metadata_resource.context["etag"] = etag
+        return metadata_resource
 
     def _get_metadata_from_wheel(self, package_path: pathlib.Path) -> str:
         package_tokens = package_path.name.split('-')
