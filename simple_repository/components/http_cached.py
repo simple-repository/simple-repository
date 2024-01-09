@@ -1,10 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
+import pathlib
+from urllib.parse import quote_plus
+import uuid
 
-import aiosqlite
 import httpx
 
-from ..ttl_cache import TTLDatabaseCache
 from .http import HttpRepository
 
 error_logger = logging.getLogger("gunicorn.error")
@@ -16,26 +17,31 @@ class CachedHttpRepository(HttpRepository):
     manages cache invalidation using ETAGS.
     If the source is unavailable, will return, if available,
     cached elements (even if stale).
-    The TTL is used to clear the cache of unused records.
-    The TTL for a cached item is updated after each
-    access to that element. Expired items are removed from the
-    from the cache. Items within their TTL are still validated using
-    etags, and replaced if upstream has updated.
     """
 
     def __init__(
         self,
         url: str,
-        database: aiosqlite.Connection,
+        cache_path: pathlib.Path,
         http_client: httpx.AsyncClient | None = None,
-        table_name: str = "simple_repository_cache",
-        # Cached pages (even if still valid) will
-        # be deleted after 7 days if not accessed
-        ttl_seconds: int = 60 * 60 * 24 * 7,
         connection_timeout: timedelta = timedelta(seconds=15),
     ):
         super().__init__(url, http_client, connection_timeout)
-        self._cache = TTLDatabaseCache(database, ttl_seconds, table_name)
+        self._cache_path = cache_path.resolve()
+        self._tmp_dir = cache_path / ".incomplete"
+        self._tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get(self, page_url: str) -> str | None:
+        cached_resource_path = self._cache_path / quote_plus(page_url)
+        return cached_resource_path.read_text() if cached_resource_path.is_file() else None
+
+    def _set(self, page_url: str, content: str) -> None:
+        cached_resource_path = self._cache_path / quote_plus(page_url)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        dest_file = self._tmp_dir / f"{timestamp}_{uuid.uuid4().hex}"
+        dest_file.write_text(content)
+        # Use rename atomicity to avoid set/get race conditions
+        dest_file.rename(cached_resource_path)
 
     async def _fetch_simple_page(
         self,
@@ -47,7 +53,7 @@ class CachedHttpRepository(HttpRepository):
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if cached_content := await self._cache.get(page_url):
+        if cached_content := self._get(page_url):
             etag, cached_content_type, cached_page = cached_content.split(",", 2)
             headers.update({"If-None-Match": etag})
 
@@ -57,7 +63,7 @@ class CachedHttpRepository(HttpRepository):
                 headers=headers,
                 timeout=self._connection_timeout.total_seconds(),
             )
-        except (httpx.TimeoutException, httpx.RequestError) as e:
+        except httpx.HTTPError as e:
             # If the connection to the source fails, and there is a cached page for
             # the requested URL, return the cached content, otherwise raise the error.
             error_logger.error(
@@ -78,5 +84,5 @@ class CachedHttpRepository(HttpRepository):
         content_type = response.headers.get("Content-Type", "")
         if new_etag := response.headers.get("ETag", ""):
             # If the ETag is set, cache the response for future use.
-            await self._cache.set(page_url, ",".join([new_etag, content_type, body]))
+            self._set(page_url, ",".join([new_etag, content_type, body]))
         return body, content_type
