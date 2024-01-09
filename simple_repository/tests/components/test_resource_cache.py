@@ -1,11 +1,13 @@
 from datetime import datetime
+import logging
 import os
 import pathlib
 from unittest import mock
 
 import pytest
 
-from ... import model
+from ... import errors, model
+from ...components.core import SimpleRepository
 from ...components.resource_cache import ResourceCacheRepository
 from .fake_repository import FakeRepository
 
@@ -145,6 +147,104 @@ async def test_get_resource__path_traversal(
             resource_name="../../../etc/passwords",
             request_context=context,
         )
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_unavailable_cache_hit(
+    tmp_path: pathlib.Path,
+) -> None:
+    source = mock.AsyncMock(
+        spec=SimpleRepository,
+        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    )
+
+    (tmp_path / "project-name").mkdir()
+
+    (tmp_path / "project-name" / "resource-name.info").write_text("etag")
+    (tmp_path / "project-name" / "resource-name").write_text("content")
+
+    repository = ResourceCacheRepository(
+        source=source,
+        cache_path=tmp_path,
+        http_client=mock.MagicMock(),
+    )
+
+    resource = await repository.get_resource("project-name", "resource-name")
+    assert isinstance(resource, model.LocalResource)
+    assert resource.path == tmp_path / "project-name" / "resource-name"
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_unavailable_cache_hit__falback_disabled(
+    tmp_path: pathlib.Path,
+) -> None:
+    source = mock.AsyncMock(
+        spec=SimpleRepository,
+        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    )
+
+    (tmp_path / "project-name").mkdir()
+
+    (tmp_path / "project-name" / "resource-name.info").write_text("etag")
+    (tmp_path / "project-name" / "resource-name").write_text("content")
+
+    repository = ResourceCacheRepository(
+        source=source,
+        cache_path=tmp_path,
+        http_client=mock.MagicMock(),
+        fallback_to_cache=False,
+    )
+
+    with pytest.raises(errors.SourceRepositoryUnavailable):
+        await repository.get_resource("project-name", "resource-name")
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_unavailable_cache_hit__log(
+    tmp_path: pathlib.Path,
+) -> None:
+    source = mock.AsyncMock(
+        spec=SimpleRepository,
+        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    )
+
+    (tmp_path / "project-name").mkdir()
+
+    (tmp_path / "project-name" / "resource-name.info").write_text("etag")
+    (tmp_path / "project-name" / "resource-name").write_text("content")
+
+    mock_logger = mock.Mock(spec=logging.Logger)
+
+    repository = ResourceCacheRepository(
+        source=source,
+        cache_path=tmp_path,
+        http_client=mock.MagicMock(),
+        logger=mock_logger,
+    )
+
+    await repository.get_resource("project-name", "resource-name")
+    mock_logger.error.assert_called_once_with(
+        "Upstream unavailable, served cached project-name:resource-name",
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_resource__source_unavailable_cache_miss(
+    tmp_path: pathlib.Path,
+) -> None:
+    source = mock.AsyncMock(
+        spec=SimpleRepository,
+        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    )
+
+    repository = ResourceCacheRepository(
+        source=source,
+        cache_path=tmp_path,
+        http_client=mock.MagicMock(),
+    )
+
+    with pytest.raises(errors.SourceRepositoryUnavailable):
+        await repository.get_resource("project-name", "resource-name")
 
 
 @pytest.mark.asyncio
