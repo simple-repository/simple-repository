@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import logging
+import os
 import pathlib
 from urllib.parse import quote_plus
 import uuid
@@ -31,11 +32,17 @@ class CachedHttpRepository(HttpRepository):
         self._tmp_dir = cache_path / ".incomplete"
         self._tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get(self, page_url: str) -> str | None:
+    def _get_from_cache(self, page_url: str) -> str | None:
         cached_resource_path = self._cache_path / quote_plus(page_url)
-        return cached_resource_path.read_text() if cached_resource_path.is_file() else None
+        if not cached_resource_path.is_file():
+            return None
+        now = datetime.now().timestamp()
+        # Depending on the OS configuration, atime modification
+        # on read may be disabled, so we set it explicitly.
+        os.utime(cached_resource_path, (now, now))
+        return cached_resource_path.read_text()
 
-    def _set(self, page_url: str, content: str) -> None:
+    def _save_to_cache(self, page_url: str, content: str) -> None:
         cached_resource_path = self._cache_path / quote_plus(page_url)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         dest_file = self._tmp_dir / f"{timestamp}_{uuid.uuid4().hex}"
@@ -53,7 +60,7 @@ class CachedHttpRepository(HttpRepository):
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if cached_content := self._get(page_url):
+        if cached_content := self._get_from_cache(page_url):
             etag, cached_content_type, cached_page = cached_content.split(",", 2)
             headers.update({"If-None-Match": etag})
 
@@ -84,5 +91,5 @@ class CachedHttpRepository(HttpRepository):
         content_type = response.headers.get("Content-Type", "")
         if new_etag := response.headers.get("ETag", ""):
             # If the ETag is set, cache the response for future use.
-            self._set(page_url, ",".join([new_etag, content_type, body]))
+            self._save_to_cache(page_url, ",".join([new_etag, content_type, body]))
         return body, content_type
