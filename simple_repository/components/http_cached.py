@@ -1,3 +1,4 @@
+from datetime import timedelta
 import logging
 
 import aiosqlite
@@ -31,11 +32,10 @@ class CachedHttpRepository(HttpRepository):
         # Cached pages (even if still valid) will
         # be deleted after 7 days if not accessed
         ttl_seconds: int = 60 * 60 * 24 * 7,
-        connection_timeout_seconds: int = 15,
+        connection_timeout: timedelta = timedelta(seconds=15),
     ):
-        super().__init__(url, http_client)
+        super().__init__(url, http_client, connection_timeout)
         self._cache = TTLDatabaseCache(database, ttl_seconds, table_name)
-        self._connection_timeout_seconds = connection_timeout_seconds
 
     async def _fetch_simple_page(
         self,
@@ -55,7 +55,7 @@ class CachedHttpRepository(HttpRepository):
             response = await self._http_client.get(
                 url=page_url,
                 headers=headers,
-                timeout=self._connection_timeout_seconds,
+                timeout=self._connection_timeout.total_seconds(),
             )
         except (httpx.TimeoutException, httpx.RequestError) as e:
             # If the connection to the source fails, and there is a cached page for
