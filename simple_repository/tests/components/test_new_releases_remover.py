@@ -8,10 +8,13 @@ from ...components.new_releases_remover import NewReleasesRemover
 from .fake_repository import FakeRepository
 
 
-def create_project_detail(*dates: datetime | None) -> model.ProjectDetail:
+def create_project_detail(
+    *dates: datetime | None,
+    project_name: str = "project",
+) -> model.ProjectDetail:
     files = tuple(
         model.File(
-            filename=f"project-{i}.whl",
+            filename=f"{project_name}-{i}.whl",
             url="url",
             hashes={},
             upload_time=date,
@@ -20,7 +23,7 @@ def create_project_detail(*dates: datetime | None) -> model.ProjectDetail:
 
     return model.ProjectDetail(
         meta=model.Meta("1.0"),
-        name="project",
+        name=project_name,
         files=files,
     )
 
@@ -52,26 +55,67 @@ def test_exclude_recent_distributions__new_files() -> None:
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
+    source = FakeRepository(
+        project_pages=[
+            create_project_detail(
+                datetime.now(),
+                datetime(1926, 1, 1),
+                None,
+            ),
+        ],
+    )
     repository = NewReleasesRemover(
-        source=FakeRepository(
-            project_pages=[
-                create_project_detail(
-                    datetime.now(),
-                    datetime(1926, 1, 1),
-                    None,
-                ),
-            ],
-        ),
+        source=source,
         quarantine_time=timedelta(days=10),
     )
 
     mock_project_detail = mock.Mock(spec=model.ProjectDetail)
-
-    with mock.patch(
-        "simple_repository.components.new_releases_remover.NewReleasesRemover._exclude_recent_distributions",
-        return_value=mock_project_detail,
-    ) as mock_exclude_recent_distributions:
+    mock_datetime = mock.Mock(spec=datetime)
+    mock_datetime.now.return_value = datetime(2000, 1, 4)
+    with (
+        mock.patch(
+            "simple_repository.components.new_releases_remover.NewReleasesRemover._exclude_recent_distributions",
+            return_value=mock_project_detail,
+        ) as mock_exclude_recent_distributions,
+        mock.patch(
+            "simple_repository.components.new_releases_remover.datetime",
+            mock_datetime,
+        ),
+    ):
         project_page = await repository.get_project_page("project")
 
-    mock_exclude_recent_distributions.assert_called_once()
+    source_project_page = await source.get_project_page("project")
+    mock_exclude_recent_distributions.assert_called_once_with(project_page=source_project_page, now=datetime(2000, 1, 4))
     assert project_page == mock_project_detail
+
+
+@pytest.mark.asyncio
+async def test_whitelist() -> None:
+    whitelisted_project_list = create_project_detail(
+        datetime.now(),
+        project_name="project1",
+    )
+
+    regular_project_list = create_project_detail(
+        datetime.now(),
+        datetime(1926, 1, 1),
+        datetime(2000, 1, 4),
+        project_name="project2",
+    )
+
+    repository = NewReleasesRemover(
+        source=FakeRepository(
+            project_pages=[
+                whitelisted_project_list,
+                regular_project_list,
+            ],
+        ),
+        whitelist=("project1", "another-project"),
+    )
+
+    project_list = await repository.get_project_page("project2")
+    assert project_list != regular_project_list
+    assert len(project_list.files) == 2
+
+    project_list = await repository.get_project_page("project1")
+    assert project_list == whitelisted_project_list

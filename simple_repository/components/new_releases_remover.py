@@ -15,8 +15,10 @@ class NewReleasesRemover(RepositoryContainer):
         self,
         source: SimpleRepository,
         quarantine_time: timedelta = timedelta(days=2),
+        whitelist: tuple[str, ...] = tuple(),
     ) -> None:
         self._quarantine_time = quarantine_time
+        self._whitelist = whitelist
         super().__init__(source)
 
     async def get_project_page(
@@ -29,6 +31,9 @@ class NewReleasesRemover(RepositoryContainer):
             project_name,
             request_context=request_context,
         )
+
+        if project_name in self._whitelist:
+            return project_page
 
         return self._exclude_recent_distributions(
             project_page=project_page,
