@@ -54,10 +54,20 @@ async def test_get_resource(simple_dir: Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
+
+    resource_path = simple_dir / "numpy" / "numpy-1.0-any.whl"
+    resource_path.touch()
+    time = 946940400.0
+    os.utime(resource_path, (time, time))
+    # Expected etag given the mtime and size
+    etag = "fc4e65c49baf52fa6e8fa52d539a153e"
+
     resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
 
     assert resource == model.LocalResource(
-        path=simple_dir / "numpy" / "numpy-1.0-any.whl",
+        path=resource_path,
+        to_cache=False,
+        context=model.Context(etag=etag),
     )
 
 
