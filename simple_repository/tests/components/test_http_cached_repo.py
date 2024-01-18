@@ -1,7 +1,9 @@
+from datetime import datetime
+import os
 import pathlib
 import typing
+from unittest import mock
 
-import aiosqlite
 import httpx
 import pytest
 import pytest_asyncio
@@ -15,14 +17,11 @@ from ...components.http_cached import CachedHttpRepository
 async def repository(
     tmp_path: pathlib.Path,
 ) -> typing.AsyncGenerator[CachedHttpRepository, None]:
-    async with (
-        aiosqlite.connect(tmp_path / "tmp.db") as db,
-        httpx.AsyncClient() as client,
-    ):
+    async with httpx.AsyncClient() as client:
         yield CachedHttpRepository(
             url="https://example.com/simple/",
             http_client=client,
-            database=db,
+            cache_path=tmp_path,
         )
 
 
@@ -43,7 +42,7 @@ async def test_fetch_simple_page__cache_miss(
     assert body == "new-body"
     assert content_type == "new-type"
 
-    cached = await repository._cache.get("http://url")
+    cached = repository._get_from_cache("http://url")
     assert cached == "new-etag,new-type,new-body"
 
 
@@ -54,7 +53,7 @@ async def test_fetch_simple_page__cache_hit_not_modified(
 ) -> None:
     httpx_mock.add_response(status_code=304)
 
-    await repository._cache.set("http://url", "stored-etag,stored-type,stored-body")
+    repository._save_to_cache("http://url", "stored-etag,stored-type,stored-body")
     body, content_type = await repository._fetch_simple_page("http://url")
     assert body == "stored-body"
     assert content_type == "stored-type"
@@ -72,11 +71,11 @@ async def test_fetch_simple_page__cache_hit_modified(
             "ETag": "new-etag",
         },
     )
-    await repository._cache.set("http://url", "stored-etag,stored-type,stored-body")
+    repository._save_to_cache("http://url", "stored-etag,stored-type,stored-body")
     body, content_type = await repository._fetch_simple_page("http://url")
     assert body == "new-body"
     assert content_type == "new-type"
-    assert await repository._cache.get("http://url") == "new-etag,new-type,new-body"
+    assert repository._get_from_cache("http://url") == "new-etag,new-type,new-body"
 
 
 @pytest.mark.asyncio
@@ -84,12 +83,12 @@ async def test_fetch_simple_page__cache_hit_source_unreachable(
     repository: CachedHttpRepository,
     httpx_mock: HTTPXMock,
 ) -> None:
-    await repository._cache.set("url", "stored-etag,stored-type,stored-body")
+    repository._save_to_cache("url", "stored-etag,stored-type,stored-body")
     httpx_mock.add_exception(httpx.RequestError("error"))
     body, content_type = await repository._fetch_simple_page("url")
     assert body == "stored-body"
     assert content_type == "stored-type"
-    assert await repository._cache.get("url") == "stored-etag,stored-type,stored-body"
+    assert repository._get_from_cache("url") == "stored-etag,stored-type,stored-body"
 
 
 @pytest.mark.asyncio
@@ -107,7 +106,7 @@ async def test_get_project_page__cached(
     repository: CachedHttpRepository,
     httpx_mock: HTTPXMock,
 ) -> None:
-    await repository._cache.set(
+    repository._save_to_cache(
         "https://example.com/simple/project/", "stored-etag,text/html," + """
         <a href="test1.whl#hash=test_hash">test1.whl</a>
         <a href="http://test2.whl">test2.whl</a>
@@ -141,7 +140,7 @@ async def test_get_project_list__cached(
     repository: CachedHttpRepository,
     httpx_mock: HTTPXMock,
 ) -> None:
-    await repository._cache.set(
+    repository._save_to_cache(
         "https://example.com/simple/", "stored-etag,text/html," + """
         <a href="/p1/">p1</a>
         <a href="/p2/">p2</a>
@@ -159,3 +158,18 @@ async def test_get_project_list__cached(
             model.ProjectListElement(name="p2"),
         ]),
     )
+
+
+def test_update_access_time(repository: CachedHttpRepository) -> None:
+    repository._save_to_cache("url", "content")
+    with mock.patch(
+        "simple_repository.components.http_cached.datetime",
+        mock.Mock(
+            now=mock.Mock(return_value=datetime.fromisoformat("2006-07-09")),
+            fromisoformat=datetime.fromisoformat,
+            spec=datetime,
+        ),
+    ):
+        repository._get_from_cache("url")
+
+    assert os.path.getmtime(repository._cache_path / "url") == datetime.fromisoformat("2006-07-09").timestamp()
