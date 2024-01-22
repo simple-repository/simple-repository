@@ -1,4 +1,5 @@
 import datetime
+from logging import Logger, getLogger
 import os
 import pathlib
 import shutil
@@ -6,27 +7,34 @@ import uuid
 
 import httpx
 
-from .. import model, utils
+from .. import errors, model, utils
 from .core import RepositoryContainer, SimpleRepository
 
 
 class ResourceCacheRepository(RepositoryContainer):
     """
     A cache for resources based on etags. It stores temporarily
-    resources with an asigned etag on the local disk, allowing
-    faster access and mitigating the effects of source repository downtime.
+    resources with an asigned etag on the local disk.
+    When fallback_to_cache is enabled (default), then a cached resource
+    will be returned if the source repository is unavailable. Used in
+    the right context, this can be used for example to maintain a functional
+    repository for previously seen responses when PyPI.org is down.
     """
     def __init__(
         self,
         source: SimpleRepository,
         cache_path: pathlib.Path,
         http_client: httpx.AsyncClient | None = None,
+        logger: Logger = getLogger(__name__),
+        fallback_to_cache: bool = True,
     ) -> None:
         super().__init__(source)
         self._cache_path = cache_path.resolve()
         self._tmp_path = self._cache_path / ".incomplete"
         self._tmp_path.mkdir(parents=True, exist_ok=True)
         self._http_client = http_client or httpx.AsyncClient()
+        self._logger = logger
+        self._fallback_to_cache = fallback_to_cache
 
     async def get_resource(
         self,
@@ -81,6 +89,22 @@ class ResourceCacheRepository(RepositoryContainer):
                 resource_info_path=resource_info_path,
                 context=model.Context(etag=cache_etag) if cache_etag else model.Context(),
             )
+        except errors.SourceRepositoryUnavailable:
+            if not self._fallback_to_cache:
+                raise
+            # If the source repository behaves incorrectly and we
+            # have a cached artifact, return it to the client.
+            self._logger.error(
+                f"Upstream unavailable, served cached {project_name}:{resource_name}",
+            )
+            if cache_etag:
+                return self._cached_resource(
+                    resource_path=resource_path,
+                    resource_info_path=resource_info_path,
+                    context=model.Context(etag=cache_etag),
+                )
+            else:
+                raise
 
         upstream_etag = resource.context.get("etag")
         if not upstream_etag or resource.to_cache is False:
