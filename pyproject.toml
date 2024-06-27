@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "simple-repository"
 dynamic = ["version"]
 description = "The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers"
-requires-python = "~=3.11"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
@@ -15,7 +15,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 authors = [
-    {name = "Francesco Iannaccone", email = "francesco.iannaccone@cern.ch"},
+    {name = "Phil Elson"},
+    {name = "Ivan Sinkarenko"},
+    {name = "Francesco Iannaccone"},
+    {name = "Wouter Koorn"},
 ]
 maintainers = [
     {name = "Acc-Py team", email = "acc-python-support@cern.ch"},
