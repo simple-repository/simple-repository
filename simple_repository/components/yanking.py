@@ -44,6 +44,12 @@ class SqliteYankProvider(YankProvider):
             " date TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
             ", CONSTRAINT pk PRIMARY KEY (project_name, version))",
         )
+        await self._database.execute(
+            "CREATE TABLE IF NOT EXISTS yanked_releases"
+            "(project_name TEXT, file_name TEXT, reason TEXT,"
+            " date TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            ", CONSTRAINT pk PRIMARY KEY (project_name, file_name))",
+        )
         self._initialise_db = False
 
     async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
@@ -57,8 +63,14 @@ class SqliteYankProvider(YankProvider):
         }
 
     async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
-        # TODO: Manage yanked_files in this component
-        return {}
+        await self._init_db()
+
+        query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
+        async with self._database.execute(query, {"project_name": project_page.name}) as cur:
+            result = await cur.fetchall()
+        return {
+            filename: reason for filename, reason in result
+        }
 
 
 class GlobYankProvider(YankProvider):

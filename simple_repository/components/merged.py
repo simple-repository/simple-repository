@@ -37,7 +37,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
-        results: list[Exception | model.ProjectDetail] = await asyncio.gather(
+        results: list[BaseException | model.ProjectDetail] = await asyncio.gather(
             *(
                 source.get_project_page(
                     project_name,
@@ -50,7 +50,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
 
         project_pages: list[model.ProjectDetail] = []
         for result in results:
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 if not isinstance(result, errors.PackageNotFoundError):
                     raise result
             else:

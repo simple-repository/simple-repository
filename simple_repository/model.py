@@ -166,7 +166,9 @@ class Context(TypedDict, total=False):
 
 @dataclass(frozen=True)
 class Resource:
-    context: Context = field(default_factory=lambda: Context(), init=False)
+    context: Context = field(default_factory=lambda: Context(), kw_only=True)
+    # If this attribute is set to False, cache components will ignore this resource
+    to_cache: bool = field(default=True, kw_only=True)
 
 
 @dataclass(frozen=True)
@@ -198,3 +200,10 @@ class HttpResource(Resource):
 @dataclass(frozen=True)
 class TextResource(Resource):
     text: str
+
+
+class NotModified(Exception):
+    """
+    Exception to be used if the requested resource
+    is not changed with respect to the request ETag.
+    """

@@ -6,6 +6,7 @@
 # or submit itself to any jurisdiction.
 
 from dataclasses import replace
+from datetime import timedelta
 from urllib.parse import urljoin
 
 import httpx
@@ -17,7 +18,12 @@ from .core import SimpleRepository
 class HttpRepository(SimpleRepository):
     """Proxy of a remote simple repository"""
 
-    def __init__(self, url: str, http_client: httpx.AsyncClient | None = None):
+    def __init__(
+        self,
+        url: str,
+        http_client: httpx.AsyncClient | None = None,
+        connection_timeout: timedelta = timedelta(seconds=15),
+    ):
         self.source_url = url
         self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([
@@ -25,6 +31,7 @@ class HttpRepository(SimpleRepository):
             "application/vnd.pypi.simple.v1+html;q=0.2",
             "text/html;q=0.01",
         ])
+        self._connection_timeout = connection_timeout
 
     async def _fetch_simple_page(
         self,
@@ -34,7 +41,11 @@ class HttpRepository(SimpleRepository):
         Returns the body and the content type received.
         """
         headers = {"Accept": self.downstream_content_types}
-        response = await self._http_client.get(page_url, headers=headers)
+        response = await self._http_client.get(
+            url=page_url,
+            headers=headers,
+            timeout=self._connection_timeout.total_seconds(),
+        )
         response.raise_for_status()
         body = response.text
         content_type: str = response.headers.get("content-type", "")
@@ -49,12 +60,16 @@ class HttpRepository(SimpleRepository):
         page_url = urljoin(self.source_url, f"{project_name}/")
         try:
             body, content_type = await self._fetch_simple_page(page_url)
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
+        except httpx.HTTPError as e:
+            # If the status_code is 404, the source repository is working correctly, but
+            # the requested resource is not available. Any other 4xx or 5xx error code is
+            # treated as a source repository misbehaviour
+            if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 404:
                 raise errors.PackageNotFoundError(
                     package_name=project_name,
                 ) from e
-            raise e
+            # This code path also includes connection failures or timeouts.
+            raise errors.SourceRepositoryUnavailable() from e
 
         if (
             "application/vnd.pypi.simple.v1+html" in content_type or
@@ -82,7 +97,7 @@ class HttpRepository(SimpleRepository):
     ) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self.source_url)
-        except httpx.HTTPStatusError as e:
+        except httpx.HTTPError as e:
             raise errors.SourceRepositoryUnavailable() from e
 
         if (
@@ -122,8 +137,19 @@ class HttpRepository(SimpleRepository):
         if not resource:
             raise errors.ResourceUnavailable(resource_name)
 
-        resp = await self._http_client.head(resource.url)
+        try:
+            resp = await self._http_client.head(
+                url=resource.url,
+                timeout=self._connection_timeout.total_seconds(),
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as e:
+            raise errors.SourceRepositoryUnavailable() from e
         if etag := resp.headers.get("ETag"):
+            if etag == request_context.context.get("etag"):
+                # If the etag served from the source repository
+                # matches the one in the request raise NotModified
+                raise model.NotModified()
             resource.context["etag"] = etag
 
         return resource

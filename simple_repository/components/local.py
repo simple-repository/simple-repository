@@ -6,6 +6,7 @@
 # or submit itself to any jurisdiction.
 
 from datetime import datetime
+import hashlib
 import os
 import pathlib
 
@@ -99,6 +100,13 @@ class LocalRepository(SimpleRepository):
         if not resource_uri.is_file():
             raise errors.ResourceUnavailable(resource_name)
 
+        # Calculating on the fly the hash of the whole package can be too slow.
+        # "mtime + size" provide a good approximation to detect if the package has been changed.
+        etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
+        etag = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+
         return model.LocalResource(
             path=resource_uri,
+            to_cache=False,  # Prevent caching of locally stored resources.
+            context=model.Context(etag=etag),
         )
