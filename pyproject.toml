@@ -1,6 +1,44 @@
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 
+[project]
+name = "simple-repository"
+dynamic = ["version"]
+description = "The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers"
+requires-python = "~=3.11"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Framework :: FastAPI",
+  "Operating System :: OS Independent",
+  "Typing :: Typed",
+]
+authors = [
+    {name = "Francesco Iannaccone", email = "francesco.iannaccone@cern.ch"},
+]
+maintainers = [
+    {name = "Acc-Py team", email = "acc-python-support@cern.ch"},
+]
+dependencies = [
+  "httpx",
+  "aiosqlite",
+  "packaging",
+]
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://gitlab.cern.ch/acc-co/devops/python/package-index/simple-repository"
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest_asyncio",
+  "pytest_httpx",
+]
+dev = [
+  "simple-repository[test]",
+]
+
 [tool.setuptools_scm]
 write_to = "simple_repository/_version.py"
 
