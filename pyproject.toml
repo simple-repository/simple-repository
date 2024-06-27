@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "simple-repository"
@@ -40,7 +41,7 @@ dev = [
 ]
 
 [tool.setuptools_scm]
-write_to = "simple_repository/_version.py"
+version_file = "simple_repository/_version.py"
 
 [tool.isort]
 py_version = 39
