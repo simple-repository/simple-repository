@@ -14,7 +14,7 @@ from .core import RepositoryContainer, SimpleRepository
 class ResourceCacheRepository(RepositoryContainer):
     """
     A cache for resources based on etags. It stores temporarily
-    resources with an asigned etag on the local disk.
+    resources with an assigned etag on the local disk.
     When fallback_to_cache is enabled (default), then a cached resource
     will be returned if the source repository is unavailable. Used in
     the right context, this can be used for example to maintain a functional
