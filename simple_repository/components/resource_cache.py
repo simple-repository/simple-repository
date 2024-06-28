@@ -81,7 +81,7 @@ class ResourceCacheRepository(RepositoryContainer):
         except model.NotModified:
             # The upstream repository serves the same content that has been cached.
             # If the request also provides the same etag, raise NotModified,
-            # otherwhise return the locally cached resource.
+            # otherwise return the locally cached resource.
             if cache_etag == request_context.context.get("etag"):
                 raise
             return self._cached_resource(
