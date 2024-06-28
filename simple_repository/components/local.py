@@ -96,7 +96,8 @@ class LocalRepository(SimpleRepository):
         # Calculating on the fly the hash of the whole package can be too slow.
         # "mtime + size" provide a good approximation to detect if the package has been changed.
         etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
-        etag = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        digest = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        etag = f'"{digest}"'
 
         return model.LocalResource(
             path=resource_uri,
