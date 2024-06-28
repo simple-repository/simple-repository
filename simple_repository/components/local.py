@@ -6,6 +6,7 @@ import pathlib
 from packaging.utils import canonicalize_name
 
 from .. import errors, model
+from .._typing_compat import override
 from .core import SimpleRepository
 
 
@@ -26,6 +27,7 @@ class LocalRepository(SimpleRepository):
             raise ValueError("index_path must be a directory")
         self._index_path = index_path.resolve()
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -40,6 +42,7 @@ class LocalRepository(SimpleRepository):
             ),
         )
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -73,6 +76,7 @@ class LocalRepository(SimpleRepository):
             files=tuple(files),
         )
 
+    @override
     async def get_resource(
         self,
         project_name: str,
