@@ -17,9 +17,9 @@ class DenyListRepository(RepositoryContainer):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> ProjectList:
         project_list = await super().get_project_list(request_context=request_context)
-        projects = frozenset([
+        projects = frozenset(
             elem for elem in project_list.projects if elem.normalized_name not in self._deny_list
-        ])
+        )
         return replace(project_list, projects=projects)
 
     async def get_project_page(
