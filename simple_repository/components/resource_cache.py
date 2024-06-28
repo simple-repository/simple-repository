@@ -8,6 +8,7 @@ import uuid
 import httpx
 
 from .. import errors, model, utils
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -36,6 +37,7 @@ class ResourceCacheRepository(RepositoryContainer):
         self._logger = logger
         self._fallback_to_cache = fallback_to_cache
 
+    @override
     async def get_resource(
         self,
         project_name: str,

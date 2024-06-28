@@ -2,6 +2,7 @@ import functools
 import typing
 
 from .. import model
+from .._typing_compat import override
 
 
 class SimpleRepositoryMeta(type):
@@ -72,6 +73,7 @@ class RepositoryContainer(SimpleRepository):
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -80,6 +82,7 @@ class RepositoryContainer(SimpleRepository):
     ) -> model.ProjectDetail:
         return await self.source.get_project_page(project_name, request_context=request_context)
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -87,6 +90,7 @@ class RepositoryContainer(SimpleRepository):
     ) -> model.ProjectList:
         return await self.source.get_project_list(request_context=request_context)
 
+    @override
     async def get_resource(
         self,
         project_name: str,

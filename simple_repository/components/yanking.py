@@ -10,6 +10,7 @@ from packaging.utils import canonicalize_name
 from .. import errors, model
 from .. import packaging as _packaging
 from .. import utils
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -144,6 +145,7 @@ class YankRepository(RepositoryContainer):
         self._yank_provider = yank_provider
         super().__init__(source)
 
+    @override
     async def get_project_page(
         self,
         project_name: str,

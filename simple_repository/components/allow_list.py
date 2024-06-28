@@ -3,6 +3,7 @@ from dataclasses import replace
 from simple_repository.model import ProjectDetail, ProjectList, RequestContext, Resource
 
 from .. import errors, model
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 
@@ -11,6 +12,7 @@ class AllowListRepository(RepositoryContainer):
         super().__init__(source)
         self._allow_list = allow_list
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -22,6 +24,7 @@ class AllowListRepository(RepositoryContainer):
         )
         return replace(project_list, projects=projects)
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -32,6 +35,7 @@ class AllowListRepository(RepositoryContainer):
             raise errors.PackageNotFoundError(project_name)
         return await super().get_project_page(project_name, request_context=request_context)
 
+    @override
     async def get_resource(
         self,
         project_name: str,

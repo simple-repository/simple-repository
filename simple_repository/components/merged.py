@@ -4,6 +4,7 @@ import typing
 from packaging.version import Version
 
 from .. import errors, model
+from .._typing_compat import override
 from .priority_selected import PrioritySelectedProjectsRepository
 
 
@@ -18,6 +19,8 @@ class MergedRepository(PrioritySelectedProjectsRepository):
             hence its existence, but if you are unsure of those reasons, consider
             using the :class:`PrioritySelectedProjectsRepository` instead.
     """
+
+    @override
     async def get_project_page(
         self,
         project_name: str,
