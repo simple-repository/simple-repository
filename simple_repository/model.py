@@ -118,7 +118,7 @@ class ProjectDetail:
     files: tuple[File, ...]
     # PEP-700: An additional key, versions MUST be present at the top level, in addition to the
     #          keys name, files and meta defined in PEP 691. This key MUST contain a list of version
-    #          strings specifying all of the project versions uploaded for this project.
+    #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
     versions: Optional[set[str]] = field(init=False)

@@ -17,6 +17,7 @@ class Format(Enum):
 
 
 def select_response_format(content_type: str) -> Format:
+    # TODO: Does this belong in simple-repository-server?
     if not content_type:
         return Format.HTML_LEGACY
 

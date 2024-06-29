@@ -15,13 +15,14 @@ import uuid
 import httpx
 
 from .. import errors, model, utils
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 
 class ResourceCacheRepository(RepositoryContainer):
     """
     A cache for resources based on etags. It stores temporarily
-    resources with an asigned etag on the local disk.
+    resources with an assigned etag on the local disk.
     When fallback_to_cache is enabled (default), then a cached resource
     will be returned if the source repository is unavailable. Used in
     the right context, this can be used for example to maintain a functional
@@ -43,6 +44,7 @@ class ResourceCacheRepository(RepositoryContainer):
         self._logger = logger
         self._fallback_to_cache = fallback_to_cache
 
+    @override
     async def get_resource(
         self,
         project_name: str,
@@ -88,7 +90,7 @@ class ResourceCacheRepository(RepositoryContainer):
         except model.NotModified:
             # The upstream repository serves the same content that has been cached.
             # If the request also provides the same etag, raise NotModified,
-            # otherwhise return the locally cached resource.
+            # otherwise return the locally cached resource.
             if cache_etag == request_context.context.get("etag"):
                 raise
             return self._cached_resource(

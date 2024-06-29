@@ -15,6 +15,7 @@ import httpx
 from packaging.utils import canonicalize_name
 
 from .. import errors, model, utils
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
@@ -33,6 +34,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         self._http_client = http_client or httpx.AsyncClient()
         super().__init__(source)
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -43,6 +45,7 @@ class MetadataInjectorRepository(RepositoryContainer):
             await super().get_project_page(project_name, request_context=request_context),
         )
 
+    @override
     async def get_resource(
         self,
         project_name: str,

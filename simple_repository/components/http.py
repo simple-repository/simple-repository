@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 import httpx
 
 from .. import errors, model, parser, utils
+from .._typing_compat import override
 from .core import SimpleRepository
 
 
@@ -51,6 +52,7 @@ class HttpRepository(SimpleRepository):
         content_type: str = response.headers.get("content-type", "")
         return body, content_type
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -90,6 +92,7 @@ class HttpRepository(SimpleRepository):
         project_page = replace(project_page, files=files)
         return project_page
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -110,6 +113,7 @@ class HttpRepository(SimpleRepository):
 
         raise errors.UnsupportedSerialization(content_type)
 
+    @override
     async def get_resource(
         self,
         project_name: str,

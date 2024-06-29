@@ -67,7 +67,7 @@ async def test_get_resource(simple_dir: Path) -> None:
     time = 946940400.0
     os.utime(resource_path, (time, time))
     # Expected etag given the mtime and size
-    etag = "fc4e65c49baf52fa6e8fa52d539a153e"
+    etag = '"fc4e65c49baf52fa6e8fa52d539a153e"'
 
     resource = await repo.get_resource("numpy", "numpy-1.0-any.whl")
 

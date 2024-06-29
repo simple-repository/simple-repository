@@ -13,6 +13,7 @@ import pathlib
 from packaging.utils import canonicalize_name
 
 from .. import errors, model
+from .._typing_compat import override
 from .core import SimpleRepository
 
 
@@ -33,6 +34,7 @@ class LocalRepository(SimpleRepository):
             raise ValueError("index_path must be a directory")
         self._index_path = index_path.resolve()
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -47,6 +49,7 @@ class LocalRepository(SimpleRepository):
             ),
         )
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -80,6 +83,7 @@ class LocalRepository(SimpleRepository):
             files=tuple(files),
         )
 
+    @override
     async def get_resource(
         self,
         project_name: str,
@@ -103,7 +107,8 @@ class LocalRepository(SimpleRepository):
         # Calculating on the fly the hash of the whole package can be too slow.
         # "mtime + size" provide a good approximation to detect if the package has been changed.
         etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
-        etag = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        digest = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        etag = f'"{digest}"'
 
         return model.LocalResource(
             path=resource_uri,

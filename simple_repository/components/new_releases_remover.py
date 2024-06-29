@@ -9,12 +9,14 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 
 from .. import model
+from .._typing_compat import override
 from .core import RepositoryContainer, SimpleRepository
 
 
 class NewReleasesRemover(RepositoryContainer):
     """
-    A component used to remove newly released projects from the source repository.
+    A component used to remove newly released projects from the source
+    repository until they have existed for the given quarantine time.
     This component can be used only if the source repository exposes the upload
     date according to PEP-700: https://peps.python.org/pep-0700/.
     """
@@ -28,6 +30,7 @@ class NewReleasesRemover(RepositoryContainer):
         self._whitelist = whitelist
         super().__init__(source)
 
+    @override
     async def get_project_page(
         self,
         project_name: str,

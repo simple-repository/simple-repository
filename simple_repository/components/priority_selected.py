@@ -12,6 +12,7 @@ from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 from .. import errors, model
+from .._typing_compat import override
 from .core import SimpleRepository
 
 
@@ -33,6 +34,7 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             )
         self.sources = sources
 
+    @override
     async def get_project_page(
         self,
         project_name: str,
@@ -56,6 +58,7 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             package_name=project_name,
         )
 
+    @override
     async def get_project_list(
         self,
         *,
@@ -96,6 +99,7 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
             ),
         )
 
+    @override
     async def get_resource(
         self,
         project_name: str,
