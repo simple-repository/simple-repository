@@ -13,6 +13,8 @@ class SourceRepositoryUnavailable(Exception):
 
 
 class NotNormalizedProjectName(Exception):
+    # NOTE: This is not used, and is pending removal.
+    #       Potential to move to simple-repository-server.
     pass
 
 
