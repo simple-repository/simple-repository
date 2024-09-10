@@ -7,7 +7,7 @@
 
 from dataclasses import replace
 from datetime import timedelta
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
 
@@ -25,6 +25,13 @@ class HttpRepository(SimpleRepository):
         http_client: httpx.AsyncClient | None = None,
         connection_timeout: timedelta = timedelta(seconds=15),
     ):
+        parsed_url = urlsplit(url)
+        if not parsed_url.path.endswith('/'):
+            new_url = list(parsed_url)
+            # Add a trailing slash to the path.
+            new_url[2] += '/'
+            url = urlunsplit(new_url)
+
         self.source_url = url
         self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([

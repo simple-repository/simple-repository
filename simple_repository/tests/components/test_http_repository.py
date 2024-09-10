@@ -16,6 +16,26 @@ from ...components.http import HttpRepository
 
 
 @pytest.mark.parametrize(
+    ("base_url", "target"), [
+        ["https://example.com/simple", "https://example.com/simple/my_project/"],
+        ["https://example.com/what/", "https://example.com/what/my_project/"],
+        ["http://example.com/what/", "http://example.com/what/my_project/"],
+        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/"],
+    ],
+)
+@pytest.mark.asyncio
+async def test_http_repository__no_trailing_slash(base_url: str, target: str) -> None:
+    repo = HttpRepository(url=base_url)
+    with mock.patch.object(repo, '_fetch_simple_page') as _fetch_simple_page:
+        _fetch_simple_page.side_effect = ValueError('some unhandled exception')
+
+        with pytest.raises(ValueError, match='some unhandled exception'):
+            await repo.get_project_page('my_project')
+
+        _fetch_simple_page.assert_called_once_with(target)
+
+
+@pytest.mark.parametrize(
     ("text", "header"), [
         (
             '''

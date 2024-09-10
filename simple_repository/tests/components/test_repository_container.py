@@ -1,4 +1,3 @@
-
 # Copyright (C) 2023, CERN
 # This software is distributed under the terms of the MIT
 # licence, copied verbatim in the file "LICENSE".
