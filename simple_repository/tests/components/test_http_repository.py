@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
         ["https://example.com/simple", "https://example.com/simple/my_project/"],
         ["https://example.com/what/", "https://example.com/what/my_project/"],
         ["http://example.com/what/", "http://example.com/what/my_project/"],
-        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/"],
+        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/?foo=bar"],
     ],
 )
 @pytest.mark.asyncio

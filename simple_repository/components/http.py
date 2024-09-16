@@ -62,7 +62,9 @@ class HttpRepository(core.SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        page_url = urljoin(self.source_url, f"{project_name}/")
+        parsed_url = list(urlsplit(self.source_url))
+        parsed_url[2] += f'{project_name}/'
+        page_url = typing.cast(str, urlunsplit(parsed_url))
         try:
             body, content_type = await self._fetch_simple_page(page_url)
         except httpx.HTTPError as e:
