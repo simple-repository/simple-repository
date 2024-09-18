@@ -32,7 +32,7 @@ import typing
 import packaging.utils
 import packaging.version
 
-from ._typing_compat import TypedDict
+from ._typing_compat import Protocol, TypedDict
 from .packaging import safe_version
 
 if typing.TYPE_CHECKING:
@@ -160,11 +160,10 @@ class Context(TypedDict, total=False):
     etag: str
 
 
-@dataclasses.dataclass(frozen=True)
-class Resource:
-    context: Context = dataclasses.field(default_factory=lambda: Context(), kw_only=True)
+class Resource(Protocol):
+    context: Context
     # If this attribute is set to False, cache components will ignore this resource
-    to_cache: bool = dataclasses.field(default=True, kw_only=True)
+    to_cache: bool
 
 
 @dataclasses.dataclass(frozen=True)
@@ -186,16 +185,22 @@ class RequestContext:
 @dataclasses.dataclass(frozen=True)
 class LocalResource(Resource):
     path: pathlib.Path
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
 @dataclasses.dataclass(frozen=True)
 class HttpResource(Resource):
     url: str
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
 @dataclasses.dataclass(frozen=True)
 class TextResource(Resource):
     text: str
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
 class NotModified(Exception):
