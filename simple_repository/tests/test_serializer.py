@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import json
+import typing
 
 import pytest
 
@@ -47,7 +48,7 @@ def test_serialize_file_html() -> None:
 )
 def test_serialize_file_html_yank(
     yank_attr: str,
-    yank_value: bool | str | None,
+    yank_value: typing.Union[bool, str, None],
 ) -> None:
     serializer = SerializerHtmlV1(
 
@@ -77,7 +78,7 @@ def test_serialize_file_html_yank(
 )
 def test_serialize_file_html_metadata(
     metadata_attr: str,
-    metadata_value: bool | dict[str, str] | None,
+    metadata_value: typing.Union[bool, typing.Dict[str, str], None],
 ) -> None:
     serializer = SerializerHtmlV1()
 
@@ -103,7 +104,7 @@ def test_serialize_file_html_metadata(
         ('', None),
     ],
 )
-def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: bool | None) -> None:
+def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
     serializer = SerializerHtmlV1()
 
     file = model.File(

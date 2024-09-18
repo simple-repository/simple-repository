@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 from ... import errors, model
 from ...components import core
 
@@ -9,8 +11,8 @@ class FakeRepository(core.SimpleRepository):
     def __init__(
         self,
         project_list: model.ProjectList = model.ProjectList(model.Meta('1.0'), frozenset()),
-        project_pages: list[model.ProjectDetail] | None = None,
-        resources: dict[str, model.Resource] | None = None,
+        project_pages: typing.Optional[typing.List[model.ProjectDetail]] = None,
+        resources: typing.Optional[typing.Dict[str, model.Resource]] = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import packaging.version
 import pytest
 
@@ -13,7 +15,7 @@ from .. import packaging as packaging_private
             ("my-package1-0.10.zip", "0.10"),
         ],
 )
-def test_extract_package_version(filename: str, package_version: str | None) -> None:
+def test_extract_package_version(filename: str, package_version: typing.Optional[str]) -> None:
     assert packaging_private.extract_package_version(filename, "my-package1") == package_version
 
 

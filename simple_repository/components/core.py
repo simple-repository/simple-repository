@@ -7,7 +7,8 @@ from .. import model
 from .._typing_compat import override
 
 if typing.TYPE_CHECKING:
-    WrappedFunction: typing.TypeAlias = typing.Callable[..., typing.Any]
+    from .._typing_compat import TypeAlias
+    WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
 class SimpleRepositoryMeta(type):
@@ -16,8 +17,8 @@ class SimpleRepositoryMeta(type):
     def __new__(
             cls: typing.Type[type],
             name: str,
-            bases: tuple[typing.Type[type]],
-            namespace: dict[str, typing.Any],
+            bases: typing.Tuple[typing.Type[type]],
+            namespace: typing.Dict[str, typing.Any],
     ) -> typing.Type[type]:
 
         def dec(fn: WrappedFunction) -> WrappedFunction:

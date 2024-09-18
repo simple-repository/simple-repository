@@ -60,7 +60,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
-        results: list[model.ProjectList | BaseException] = await asyncio.gather(
+        results: typing.List[typing.Union[model.ProjectList, BaseException]] = await asyncio.gather(
             *(
                 source.get_project_list(request_context=request_context)
                 for source in self.sources

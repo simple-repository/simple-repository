@@ -254,7 +254,7 @@ def project_detail() -> model.ProjectDetail:
 )
 async def test_get_resource(
     project_detail: model.ProjectDetail,
-    source_etag: str | None,
+    source_etag: typing.Optional[str],
     httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
@@ -322,7 +322,7 @@ async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, proj
 )
 async def test_get_resource_metadata(
     project_detail: model.ProjectDetail,
-    source_etag: str | None,
+    source_etag: typing.Optional[str],
     httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")

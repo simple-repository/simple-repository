@@ -99,7 +99,7 @@ def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
         ),
     ],
 )
-def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: list[str], metadata_name: str) -> None:
+def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: typing.List[str], metadata_name: str) -> None:
     ziparchive = mock.MagicMock(spec=zipfile.ZipFile)
     ziparchive_ctx = ziparchive.__enter__.return_value
     read_method = ziparchive_ctx.read
@@ -132,7 +132,7 @@ def test_get_metadata_from_package__not_wheel(repository: MetadataInjectorReposi
         ],
     ],
 )
-def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: list[str]) -> None:
+def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: typing.List[str]) -> None:
     m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
     m_zipfile_cls.return_value.__enter__.return_value.namelist.return_value = [
         "not_my_package-0.0.1.dist-info/METADATA",

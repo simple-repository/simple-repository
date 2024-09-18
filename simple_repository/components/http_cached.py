@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 import pathlib
+import typing
 import urllib.parse
 import uuid
 
@@ -26,7 +27,7 @@ class CachedHttpRepository(http.HttpRepository):
         self,
         url: str,
         cache_path: pathlib.Path,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
         connection_timeout: timedelta = timedelta(seconds=15),
     ) -> None:
         super().__init__(url, http_client, connection_timeout)
@@ -34,7 +35,7 @@ class CachedHttpRepository(http.HttpRepository):
         self._tmp_dir = cache_path / ".incomplete"
         self._tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_from_cache(self, page_url: str) -> str | None:
+    def _get_from_cache(self, page_url: str) -> typing.Optional[str]:
         cached_resource_path = self._cache_path / urllib.parse.quote_plus(page_url)
         if not cached_resource_path.is_file():
             return None
@@ -55,7 +56,7 @@ class CachedHttpRepository(http.HttpRepository):
     async def _fetch_simple_page(
         self,
         page_url: str,
-    ) -> tuple[str, str]:
+    ) -> typing.Tuple[str, str]:
         """Retrieves a simple page from the given URL. The retrieved page,
         content type and etag are cached. If the cached content is
         unchanged or the source is unavailable, the cached data is returned.

@@ -4,6 +4,7 @@ import dataclasses
 import pathlib
 import re
 import tempfile
+import typing
 import zipfile
 
 import httpx
@@ -24,7 +25,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
     def __init__(
         self,
         source: core.SimpleRepository,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
     ) -> None:
         self._http_client = http_client or httpx.AsyncClient()
         super().__init__(source)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import typing
 
 from . import core
 from .. import errors, model
@@ -8,7 +9,7 @@ from .._typing_compat import override
 
 
 class DenyListRepository(core.RepositoryContainer):
-    def __init__(self, source: core.SimpleRepository, deny_list: tuple[str, ...]) -> None:
+    def __init__(self, source: core.SimpleRepository, deny_list: typing.Tuple[str, ...]) -> None:
         super().__init__(source)
         self._deny_list = deny_list
 

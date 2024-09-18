@@ -52,8 +52,8 @@ class File:
     # PEP-592: A dictionary mapping a hash name to a hex encoded digest of the file.
     # PEP-592: Limited to a len() of 1 in HTML
     # Additional hashes are not included in the HTML serialization.
-    hashes: dict[str, str]
-    requires_python: str | None = None
+    hashes: typing.Dict[str, str]
+    requires_python: typing.Optional[str] = None
 
     # PEP-691: An optional key that indicates that metadata for this file is available
     # PEP-691: Where this is present, it MUST be either a boolean to indicate
@@ -65,13 +65,13 @@ class File:
     # PEP-691: Limited to a len() of 1 in HTML
     # If the key is not "present", it will be None.
     # A maximum of one hash will be included the HTML serialization.
-    dist_info_metadata: bool | dict[str, str] | None = None  # PEP-658
+    dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = None  # PEP-658
 
     # PEP-691: An optional key that acts a boolean to indicate if the file has an
     #          associated GPG signature or not.
     # PEP-691: If this key does not exist, then the signature may or may not exist.
     # A None value indicates the key does not exist (i.e. there may or may not be a sig file).
-    gpg_sig: bool | None = None
+    gpg_sig: typing.Optional[bool] = None
 
     # PEP-691: either a boolean to indicate if the file has been yanked, or a non empty,
     #          but otherwise arbitrary, string to indicate that a file
@@ -82,16 +82,16 @@ class File:
     #          arbitrary string [including falsy ones such as "false"] that represents
     #          the reason for why the file has been yanked.
     # Note that the string "false" is a valid yank reason in both JSON and HTML.
-    yanked: bool | str | None = None
+    yanked: typing.Union[bool, str, None] = None
 
     # PEP-700: This field is mandatory. It MUST contain an integer which is the file size in bytes.
-    size: int | None = None
+    size: typing.Optional[int] = None
 
     # PEP-700: This field is optional. If present, it MUST contain a valid ISO 8601 date/time
     #          string, in the format yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the
     #          file was uploaded to the index. As indicated by the Z suffix, the upload time
     #          MUST use the UTC timezone.
-    upload_time: datetime | None = None
+    upload_time: typing.Optional[datetime] = None
 
     def __post_init__(self) -> None:
         if self.yanked == "":
@@ -111,13 +111,13 @@ class ProjectDetail:
     """Model of a project page as described in PEP-691"""
     meta: Meta
     name: str
-    files: tuple[File, ...]
+    files: typing.Tuple[File, ...]
     # PEP-700: An additional key, versions MUST be present at the top level, in addition to the
     #          keys name, files and meta defined in PEP 691. This key MUST contain a list of version
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: set[str] | None = dataclasses.field(init=False)
+    versions: typing.Optional[typing.Set[str]] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -153,7 +153,7 @@ class ProjectListElement:
 class ProjectList:
     """Model of the project list as described in PEP-691"""
     meta: Meta
-    projects: frozenset[ProjectListElement]
+    projects: typing.FrozenSet[ProjectListElement]
 
 
 class Context(TypedDict, total=False):
@@ -171,7 +171,7 @@ class Resource:
 class RequestContext:
     repository: "SimpleRepository"
     # TODO: Worry that context is mutable.
-    context: dict[str, str] = dataclasses.field(default_factory=dict)
+    context: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
 
     # Provider a default context which can be used in all signatures using RequestContext.
     # By default, if not specified, the default request context will be the one containing the

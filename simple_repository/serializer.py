@@ -51,7 +51,7 @@ class SerializerJsonV1(Serializer):
         self,
         file: model.File,
         version: packaging.version.Version,
-    ) -> dict[str, typing.Any]:
+    ) -> typing.Dict[str, typing.Any]:
         file_dict: dict[str, typing.Any] = {
             "filename": file.filename,
             "url": file.url,
@@ -190,7 +190,7 @@ class SerializerHtmlV1(Serializer):
         )
 
 
-serializers: dict[content_negotiation.Format, Serializer] = {
+serializers: typing.Dict[content_negotiation.Format, Serializer] = {
     content_negotiation.Format.JSON_V1: SerializerJsonV1(),
     content_negotiation.Format.HTML_V1: SerializerHtmlV1(),
     content_negotiation.Format.HTML_LEGACY: SerializerHtmlV1(),
@@ -198,7 +198,7 @@ serializers: dict[content_negotiation.Format, Serializer] = {
 
 
 def serialize(
-    page: model.ProjectDetail | model.ProjectList,
+    page: typing.Union[model.ProjectDetail, model.ProjectList],
     format: content_negotiation.Format,
 ) -> str:
     serializer = serializers.get(format)

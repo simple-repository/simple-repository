@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import timedelta
+import typing
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
@@ -17,7 +18,7 @@ class HttpRepository(core.SimpleRepository):
     def __init__(
         self,
         url: str,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
         connection_timeout: timedelta = timedelta(seconds=15),
     ) -> None:
         parsed_url = urlsplit(url)
@@ -39,7 +40,7 @@ class HttpRepository(core.SimpleRepository):
     async def _fetch_simple_page(
         self,
         page_url: str,
-    ) -> tuple[str, str]:
+    ) -> typing.Tuple[str, str]:
         """Retrieves a simple page from the given url.
         Returns the body and the content type received.
         """
@@ -131,7 +132,7 @@ class HttpRepository(core.SimpleRepository):
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
 
-        resource: model.HttpResource | None = None
+        resource: typing.Optional[model.HttpResource] = None
         if resource_name.endswith(".metadata"):
             resource = await self.get_metadata(project_page, resource_name)
         else:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import datetime, timedelta
+import typing
 
 from . import core
 from .. import model
@@ -19,7 +20,7 @@ class NewReleasesRemover(core.RepositoryContainer):
         self,
         source: core.SimpleRepository,
         quarantine_time: timedelta = timedelta(days=2),
-        whitelist: tuple[str, ...] = (),
+        whitelist: typing.Tuple[str, ...] = (),
     ) -> None:
         self._quarantine_time = quarantine_time
         self._whitelist = whitelist

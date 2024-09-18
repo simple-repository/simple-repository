@@ -17,7 +17,7 @@ def url_absolutizer(url: str, url_base: str) -> str:
     return url
 
 
-def load_config_json(json_file: pathlib.Path) -> dict[typing.Any, typing.Any]:
+def load_config_json(json_file: pathlib.Path) -> typing.Dict[typing.Any, typing.Any]:
     try:
         json_config = json.loads(json_file.read_text())
     except json.JSONDecodeError as e:

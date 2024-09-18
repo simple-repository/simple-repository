@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import typing
 
 import packaging.version
 
@@ -32,9 +33,14 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
         by searching through the grouped list of sources and blending them together.
         """
         # Keep track of unique filenames for the merged files.
-        files: dict[str, model.File] = {}
+        files: typing.Dict[str, model.File] = {}
 
-        results: list[BaseException | model.ProjectDetail] = await asyncio.gather(
+        results: typing.List[
+            typing.Union[
+                BaseException,
+                model.ProjectDetail,
+            ]
+        ] = await asyncio.gather(
             *(
                 source.get_project_page(
                     project_name,
@@ -45,7 +51,7 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
             return_exceptions=True,
         )
 
-        project_pages: list[model.ProjectDetail] = []
+        project_pages: typing.List[model.ProjectDetail] = []
         for result in results:
             if isinstance(result, BaseException):
                 if not isinstance(result, errors.PackageNotFoundError):

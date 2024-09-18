@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import shutil
+import typing
 import uuid
 
 import httpx
@@ -27,7 +28,7 @@ class ResourceCacheRepository(core.RepositoryContainer):
         self,
         source: core.SimpleRepository,
         cache_path: pathlib.Path,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
         logger: logging.Logger = logging.getLogger(__name__),
         fallback_to_cache: bool = True,
     ) -> None:

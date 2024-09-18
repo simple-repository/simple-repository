@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import enum
 import posixpath
+import typing
 
 import packaging.utils
 import packaging.version
 
 
-def split_sdist_filename(path: str) -> tuple[str, str]:
+def split_sdist_filename(path: str) -> typing.Tuple[str, str]:
     """
     Like os.path.splitext, but take off .tar too.
     Standard functions like splitext or pathlib suffixes

@@ -4,6 +4,7 @@ import dataclasses
 import fnmatch
 import html
 import pathlib
+import typing
 
 import aiosqlite
 import packaging.utils
@@ -16,10 +17,10 @@ from .._typing_compat import Protocol, override
 
 
 class YankProvider(Protocol):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         ...
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         ...
 
 
@@ -47,7 +48,7 @@ class SqliteYankProvider(YankProvider):
         )
         self._initialise_db = False
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT version, reason FROM yanked_versions WHERE project_name = :project_name"
@@ -57,7 +58,7 @@ class SqliteYankProvider(YankProvider):
             version: reason for version, reason in result
         }
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
@@ -85,13 +86,16 @@ class GlobYankProvider(YankProvider):
         self,
         yank_config_file: pathlib.Path,
     ) -> None:
-        self._yank_config: dict[str, tuple[str, str]] = self._load_config_json(yank_config_file)
+        self._yank_config: typing.Dict[
+            str,
+            typing.Tuple[str, str],
+        ] = self._load_config_json(yank_config_file)
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         # TODO: Manage yanked_versions in this component
         return {}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         yanked_files = {}
         value = self._yank_config.get(project_page.name)
         if value:
@@ -103,10 +107,13 @@ class GlobYankProvider(YankProvider):
 
         return yanked_files
 
-    def _load_config_json(self, json_file: pathlib.Path) -> dict[str, tuple[str, str]]:
+    def _load_config_json(
+        self,
+        json_file: pathlib.Path,
+    ) -> typing.Dict[str, typing.Tuple[str, str]]:
         json_config = utils.load_config_json(json_file)
 
-        config_dict: dict[str, tuple[str, str]] = {}
+        config_dict: typing.Dict[str, typing.Tuple[str, str]] = {}
         for key, value in json_config.items():
             if (
                 not isinstance(key, str) or
@@ -126,7 +133,7 @@ class GlobYankProvider(YankProvider):
 
 def update_yanked_attribute(file: model.File, reason: str) -> model.File:
     if reason == '':
-        yanked: bool | str = True
+        yanked: typing.Union[bool, str] = True
     else:
         yanked = html.escape(reason)
     return dataclasses.replace(file, yanked=yanked)
@@ -174,8 +181,8 @@ class YankRepository(core.RepositoryContainer):
     def _add_yanked_attribute(
         self,
         project_page: model.ProjectDetail,
-        yanked_versions: dict[str, str],
-        yanked_files: dict[str, str],
+        yanked_versions: typing.Dict[str, str],
+        yanked_files: typing.Dict[str, str],
     ) -> model.ProjectDetail:
         files = []
         for file in project_page.files:

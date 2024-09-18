@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import typing
 from unittest import mock
 
 import pytest
@@ -11,7 +12,7 @@ from .fake_repository import FakeRepository
 
 
 def create_project_detail(
-    *dates: datetime | None,
+    *dates: typing.Optional[datetime],
     project_name: str = "project",
 ) -> model.ProjectDetail:
     files = tuple(

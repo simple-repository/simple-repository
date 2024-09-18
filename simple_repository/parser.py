@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import html
 import json
+import typing
 import urllib.parse
 
 from . import html_parser, model
@@ -122,7 +123,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
                 hash_name, hash_value = str(fragment).split('=', 1)
                 hashes[hash_name] = hash_value
 
-        yanked: bool | str | None = None
+        yanked: typing.Union[bool, str, None] = None
         if "data-yanked" in a_tag.attrs:
             reason = a_tag.attrs.get("data-yanked")
             if reason:
@@ -133,7 +134,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
                 # The data-yanked value is not set or is an empty string, replace it with True.
                 yanked = True
 
-        dist_info_metadata: bool | dict[str, str] | None = None
+        dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = None
         # PEP-714: Clients consuming any of the HTML representations of the Simple API MUST
         #          read the PEP 658 metadata from the key data-core-metadata if it is present.
         if "data-core-metadata" in a_tag.attrs:
@@ -155,7 +156,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
                     # metadata exists.
                     dist_info_metadata = True
 
-        gpg_sig: bool | None = None
+        gpg_sig: typing.Optional[bool] = None
         gpg_sig_value = a_tag.attrs.get("data-gpg-sig")
         if gpg_sig_value:
             # PEP-503: A repository MAY include a data-gpg-sig attribute on a file link with
@@ -166,7 +167,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
             elif gpg_sig_value == "false":
                 gpg_sig = False
 
-        requires_python: str | None = None
+        requires_python: typing.Optional[str] = None
         requires_python_attr = a_tag.attrs.get("data-requires-python")
         if requires_python_attr is not None:
             # PEP-503: A repository MAY include a data-requires-python attribute on a file link.
