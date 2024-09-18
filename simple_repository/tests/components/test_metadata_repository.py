@@ -218,14 +218,12 @@ async def test_get_resource__not_metadata(
 async def test_download_metadata(
     repository: MetadataInjectorRepository,
 ) -> None:
-    with (
-        mock.patch.object(
-            repository,
-            "_get_metadata_from_package",
-        ) as get_metadata_from_package_mock,
-        mock.patch("simple_repository.utils.download_file") as download_file_mock,
-    ):
-        await repository._download_metadata("name", "url", httpx.AsyncClient())
+    with mock.patch.object(
+        repository,
+        "_get_metadata_from_package",
+    ) as get_metadata_from_package_mock:
+        with mock.patch("simple_repository.utils.download_file") as download_file_mock:
+            await repository._download_metadata("name", "url", httpx.AsyncClient())
 
     get_metadata_from_package_mock.assert_called_once()
     download_file_mock.assert_awaited_once()

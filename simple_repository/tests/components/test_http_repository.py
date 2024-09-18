@@ -276,15 +276,13 @@ async def test_get_resource__not_modified(
     etag = "my_etag"
     httpx_mock.add_response(headers={"ETag": etag})
 
-    with (
-        mock.patch.object(repository, "get_project_page", return_value=project_detail),
-        pytest.raises(model.NotModified),
-    ):
-        await repository.get_resource(
-            project_name="numpy",
-            resource_name="numpy-2.0.whl",
-            request_context=model.RequestContext(repository, {"etag": etag}),
-        )
+    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+        with pytest.raises(model.NotModified):
+            await repository.get_resource(
+                project_name="numpy",
+                resource_name="numpy-2.0.whl",
+                request_context=model.RequestContext(repository, {"etag": etag}),
+            )
 
 
 @pytest.mark.asyncio
@@ -308,11 +306,9 @@ async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, proj
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("error"), method="HEAD")
 
-    with (
-        pytest.raises(errors.SourceRepositoryUnavailable) as exc,
-        mock.patch.object(repository, "get_project_page", return_value=project_detail),
-    ):
-        await repository.get_resource("numpy", "numpy-2.0.whl")
+    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+        with pytest.raises(errors.SourceRepositoryUnavailable) as exc:
+            await repository.get_resource("numpy", "numpy-2.0.whl")
     exc.value.__context__ == httpx.HTTPError
 
 
@@ -343,8 +339,6 @@ async def test_get_resource_metadata__unavailable(
     project_detail: model.ProjectDetail,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
-    with (
-        mock.patch.object(repository, "get_project_page", return_value=project_detail),
-        pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"),
-    ):
-        await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
+    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+        with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
+            await repository.get_resource("numpy", "numpy-2.0.whl.metadata")

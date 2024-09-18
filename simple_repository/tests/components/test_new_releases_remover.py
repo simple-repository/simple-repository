@@ -75,17 +75,15 @@ async def test_get_project_page() -> None:
     mock_project_detail = mock.Mock(spec=model.ProjectDetail)
     mock_datetime = mock.Mock(spec=datetime)
     mock_datetime.now.return_value = datetime(2000, 1, 4)
-    with (
-        mock.patch(
-            "simple_repository.components.new_releases_remover.NewReleasesRemover._exclude_recent_distributions",
-            return_value=mock_project_detail,
-        ) as mock_exclude_recent_distributions,
-        mock.patch(
+    with mock.patch(
+        "simple_repository.components.new_releases_remover.NewReleasesRemover._exclude_recent_distributions",
+        return_value=mock_project_detail,
+    ) as mock_exclude_recent_distributions:
+        with mock.patch(
             "simple_repository.components.new_releases_remover.datetime",
             mock_datetime,
-        ),
-    ):
-        project_page = await repository.get_project_page("project")
+        ):
+            project_page = await repository.get_project_page("project")
 
     source_project_page = await source.get_project_page("project")
     mock_exclude_recent_distributions.assert_called_once_with(project_page=source_project_page, now=datetime(2000, 1, 4))
