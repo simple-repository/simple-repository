@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 import typing
 from unittest import mock
@@ -7,7 +9,7 @@ import httpx
 import pytest
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 from ...components.metadata_injector import MetadataInjectorRepository
 from .fake_repository import FakeRepository
 
@@ -186,13 +188,13 @@ async def test_get_resource__local_resource(
 
 @pytest.mark.asyncio
 async def test_get_resource__not_valid_resource() -> None:
-    source_repo = mock.Mock(spec=SimpleRepository)
+    source_repo = mock.Mock(spec=core.SimpleRepository)
     source_repo.get_resource.side_effect = [
         errors.ResourceUnavailable('name'),
         model.TextResource(text='/etc/passwd'),
     ]
     repo = MetadataInjectorRepository(
-        source=typing.cast(SimpleRepository, source_repo),
+        source=typing.cast(core.SimpleRepository, source_repo),
         http_client=mock.AsyncMock(),
     )
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):

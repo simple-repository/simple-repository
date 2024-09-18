@@ -1,14 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import replace
 
-from simple_repository.model import ProjectDetail, ProjectList, RequestContext, Resource
-
+from . import core
 from .. import errors, model
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 
-class DenyListRepository(RepositoryContainer):
-    def __init__(self, source: SimpleRepository, deny_list: tuple[str, ...]) -> None:
+class DenyListRepository(core.RepositoryContainer):
+    def __init__(self, source: core.SimpleRepository, deny_list: tuple[str, ...]) -> None:
         super().__init__(source)
         self._deny_list = deny_list
 
@@ -17,7 +17,7 @@ class DenyListRepository(RepositoryContainer):
         self,
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
-    ) -> ProjectList:
+    ) -> model.ProjectList:
         project_list = await super().get_project_list(request_context=request_context)
         projects = frozenset(
             elem for elem in project_list.projects if elem.normalized_name not in self._deny_list
@@ -29,8 +29,8 @@ class DenyListRepository(RepositoryContainer):
         self,
         project_name: str,
         *,
-        request_context: RequestContext = model.RequestContext.DEFAULT,
-    ) -> ProjectDetail:
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectDetail:
         if project_name in self._deny_list:
             raise errors.PackageNotFoundError(project_name)
         return await super().get_project_page(project_name, request_context=request_context)
@@ -41,8 +41,8 @@ class DenyListRepository(RepositoryContainer):
         project_name: str,
         resource_name: str,
         *,
-        request_context: RequestContext = model.RequestContext.DEFAULT,
-    ) -> Resource:
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.Resource:
         if project_name in self._deny_list:
             raise errors.ResourceUnavailable(resource_name)
         return await super().get_resource(

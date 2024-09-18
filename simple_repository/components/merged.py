@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 import asyncio
-import typing
 
-from packaging.version import Version
+import packaging.version
 
+from . import priority_selected
 from .. import errors, model
 from .._typing_compat import override
-from .priority_selected import PrioritySelectedProjectsRepository
 
 
-class MergedRepository(PrioritySelectedProjectsRepository):
+class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
     """
     Represents a merged view of all the given (unsorted) repositories
 
@@ -31,7 +32,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         by searching through the grouped list of sources and blending them together.
         """
         # Keep track of unique filenames for the merged files.
-        files: typing.Dict[str, model.File] = {}
+        files: dict[str, model.File] = {}
 
         results: list[BaseException | model.ProjectDetail] = await asyncio.gather(
             *(
@@ -64,7 +65,8 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         # possible to calculate the missing files to perform a version upgrade.
         api_version = str(
             min((
-                Version(result.meta.api_version) for result in project_pages
+                packaging.version.Version(result.meta.api_version)
+                for result in project_pages
             )),
         )
 

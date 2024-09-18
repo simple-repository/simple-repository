@@ -1,11 +1,16 @@
+from __future__ import annotations
+
+import typing
 from unittest import mock
 
 import httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from ... import errors, model
 from ...components.http import HttpRepository
+
+if typing.TYPE_CHECKING:
+    import pytest_httpx
 
 
 @pytest.mark.parametrize(
@@ -88,7 +93,7 @@ async def test_http_repository__no_trailing_slash(base_url: str, target: str) ->
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page(text: str, header: str, httpx_mock: HTTPXMock) -> None:
+async def test_get_project_page(text: str, header: str, httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(content=text, headers={"content-type": header})
 
@@ -114,7 +119,7 @@ async def test_get_project_page(text: str, header: str, httpx_mock: HTTPXMock) -
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_unsupported_serialization(httpx_mock: HTTPXMock) -> None:
+async def test_get_project_page_unsupported_serialization(httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(content="abc", headers={"content-type": "multipart/form-data"})
 
@@ -123,7 +128,7 @@ async def test_get_project_page_unsupported_serialization(httpx_mock: HTTPXMock)
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__package_not_found(httpx_mock: HTTPXMock) -> None:
+async def test_get_project_page__package_not_found(httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=404)
 
@@ -135,7 +140,7 @@ async def test_get_project_page__package_not_found(httpx_mock: HTTPXMock) -> Non
     "status_code", [400, 401, 403, 500, 501],
 )
 @pytest.mark.asyncio
-async def test_get_project_page__bad_status_code(httpx_mock: HTTPXMock, status_code: int) -> None:
+async def test_get_project_page__bad_status_code(httpx_mock: pytest_httpx.HTTPXMock, status_code: int) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=status_code)
 
@@ -145,7 +150,7 @@ async def test_get_project_page__bad_status_code(httpx_mock: HTTPXMock, status_c
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__http_error(httpx_mock: HTTPXMock) -> None:
+async def test_get_project_page__http_error(httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("Error"))
 
@@ -183,7 +188,7 @@ async def test_get_project_page__http_error(httpx_mock: HTTPXMock) -> None:
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_list(text: str, header: str, httpx_mock: HTTPXMock) -> None:
+async def test_get_project_list(text: str, header: str, httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(content=text, headers={"content-type": header})
 
@@ -203,7 +208,7 @@ async def test_get_project_list(text: str, header: str, httpx_mock: HTTPXMock) -
     "status_code", [400, 401, 403, 404, 500, 501],
 )
 @pytest.mark.asyncio
-async def test_get_project_list__bad_status_code(httpx_mock: HTTPXMock, status_code: int) -> None:
+async def test_get_project_list__bad_status_code(httpx_mock: pytest_httpx.HTTPXMock, status_code: int) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=status_code)
 
@@ -213,7 +218,7 @@ async def test_get_project_list__bad_status_code(httpx_mock: HTTPXMock, status_c
 
 
 @pytest.mark.asyncio
-async def test_get_project_list__http_error(httpx_mock: HTTPXMock) -> None:
+async def test_get_project_list__http_error(httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("Error"))
 
@@ -250,7 +255,7 @@ def project_detail() -> model.ProjectDetail:
 async def test_get_resource(
     project_detail: model.ProjectDetail,
     source_etag: str | None,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})
@@ -265,7 +270,7 @@ async def test_get_resource(
 @pytest.mark.asyncio
 async def test_get_resource__not_modified(
     project_detail: model.ProjectDetail,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     etag = "my_etag"
@@ -283,7 +288,7 @@ async def test_get_resource__not_modified(
 
 
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(project_detail: model.ProjectDetail, httpx_mock: HTTPXMock) -> None:
+async def test_get_resource_unavailable(project_detail: model.ProjectDetail, httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     with mock.patch.object(repository, "get_project_page", return_value=project_detail):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
@@ -291,7 +296,7 @@ async def test_get_resource_unavailable(project_detail: model.ProjectDetail, htt
 
 
 @pytest.mark.asyncio
-async def test_get_resource_project_unavailable(httpx_mock: HTTPXMock) -> None:
+async def test_get_resource_project_unavailable(httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     with mock.patch.object(repository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
@@ -299,7 +304,7 @@ async def test_get_resource_project_unavailable(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource__http_error(httpx_mock: HTTPXMock, project_detail: model.ProjectDetail) -> None:
+async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, project_detail: model.ProjectDetail) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("error"), method="HEAD")
 
@@ -318,7 +323,7 @@ async def test_get_resource__http_error(httpx_mock: HTTPXMock, project_detail: m
 async def test_get_resource_metadata(
     project_detail: model.ProjectDetail,
     source_etag: str | None,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})

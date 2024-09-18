@@ -1,15 +1,16 @@
-from typing import Optional
+from __future__ import annotations
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 
 
-class FakeRepository(SimpleRepository):
+class FakeRepository(core.SimpleRepository):
+
     def __init__(
         self,
         project_list: model.ProjectList = model.ProjectList(model.Meta('1.0'), frozenset()),
-        project_pages: Optional[list[model.ProjectDetail]] = None,
-        resources: Optional[dict[str, model.Resource]] = None,
+        project_pages: list[model.ProjectDetail] | None = None,
+        resources: dict[str, model.Resource] | None = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:

@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Sequence
+import typing
 
-from packaging.utils import canonicalize_name
-from packaging.version import Version
+import packaging.utils
+import packaging.version
 
+from . import core
 from .. import errors, model
 from .._typing_compat import override
-from .core import SimpleRepository
 
 
-class PrioritySelectedProjectsRepository(SimpleRepository):
+class PrioritySelectedProjectsRepository(core.SimpleRepository):
     """Group together multiple repositories, using a first-seen policy
 
     When the list of all projects is requested, returns the union of all
@@ -19,7 +21,7 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
     requested is normalized, to absolutely prevent against dependency
     confusion attacks from sources later in the sequence.
     """
-    def __init__(self, sources: Sequence[SimpleRepository]) -> None:
+    def __init__(self, sources: typing.Sequence[core.SimpleRepository]) -> None:
         if len(sources) < 2:
             raise ValueError(
                 "A priority selected repository must have two or more "
@@ -82,12 +84,15 @@ class PrioritySelectedProjectsRepository(SimpleRepository):
 
         # Downgrade the API version to the lowest available, as it will not be
         # possible to calculate the missing files to perform a version upgrade.
-        api_version = min(Version(project.meta.api_version) for project in project_lists)
+        api_version = min(
+            packaging.version.Version(project.meta.api_version)
+            for project in project_lists
+        )
         return model.ProjectList(
             meta=model.Meta(str(api_version)),
             projects=frozenset(
                 model.ProjectListElement(
-                    name=canonicalize_name(p.name),
+                    name=packaging.utils.canonicalize_name(p.name),
                 ) for p in projects
             ),
         )

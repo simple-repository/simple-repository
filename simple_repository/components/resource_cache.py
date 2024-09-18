@@ -1,5 +1,7 @@
-import datetime
-from logging import Logger, getLogger
+from __future__ import annotations
+
+from datetime import datetime
+import logging
 import os
 import pathlib
 import shutil
@@ -7,12 +9,12 @@ import uuid
 
 import httpx
 
+from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 
-class ResourceCacheRepository(RepositoryContainer):
+class ResourceCacheRepository(core.RepositoryContainer):
     """
     A cache for resources based on etags. It stores temporarily
     resources with an assigned etag on the local disk.
@@ -23,10 +25,10 @@ class ResourceCacheRepository(RepositoryContainer):
     """
     def __init__(
         self,
-        source: SimpleRepository,
+        source: core.SimpleRepository,
         cache_path: pathlib.Path,
         http_client: httpx.AsyncClient | None = None,
-        logger: Logger = getLogger(__name__),
+        logger: logging.Logger = logging.getLogger(__name__),
         fallback_to_cache: bool = True,
     ) -> None:
         super().__init__(source)
@@ -137,7 +139,7 @@ class ResourceCacheRepository(RepositoryContainer):
         if isinstance(resource, model.HttpResource):
             # The upstream resource changed or no cached version is available.
             # Fetch the resource and cache it and its etag.
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             dest_file = self._tmp_path / f"{timestamp}_{uuid.uuid4().hex}"
             await utils.download_file(
                 download_url=resource.url,
@@ -150,7 +152,7 @@ class ResourceCacheRepository(RepositoryContainer):
         elif isinstance(resource, model.LocalResource):
             shutil.copy(resource.path, resource_path)
         else:
-            raise ValueError(f"Unknow resource type: {type(resource)}.")
+            raise ValueError(f"Unknown resource type: {type(resource)}.")
         resource_info_path.write_text(upstream_etag)
 
     def _cached_resource(
@@ -172,6 +174,6 @@ class ResourceCacheRepository(RepositoryContainer):
         Store the last access as the access and modified times of the file.
         That information will be used to delete unused files in the cache.
         """
-        now = datetime.datetime.now().timestamp()
+        now = datetime.now().timestamp()
 
         os.utime(resource_info_path, (now, now))

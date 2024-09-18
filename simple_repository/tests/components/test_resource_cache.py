@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 import logging
 import os
@@ -7,7 +9,7 @@ from unittest import mock
 import pytest
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 from ...components.resource_cache import ResourceCacheRepository
 from .fake_repository import FakeRepository
 
@@ -154,7 +156,7 @@ async def test_get_resource__source_unavailable_cache_hit(
     tmp_path: pathlib.Path,
 ) -> None:
     source = mock.AsyncMock(
-        spec=SimpleRepository,
+        spec=core.SimpleRepository,
         get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
@@ -179,7 +181,7 @@ async def test_get_resource__source_unavailable_cache_hit__falback_disabled(
     tmp_path: pathlib.Path,
 ) -> None:
     source = mock.AsyncMock(
-        spec=SimpleRepository,
+        spec=core.SimpleRepository,
         get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
@@ -204,7 +206,7 @@ async def test_get_resource__source_unavailable_cache_hit__log(
     tmp_path: pathlib.Path,
 ) -> None:
     source = mock.AsyncMock(
-        spec=SimpleRepository,
+        spec=core.SimpleRepository,
         get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
@@ -233,7 +235,7 @@ async def test_get_resource__source_unavailable_cache_miss(
     tmp_path: pathlib.Path,
 ) -> None:
     source = mock.AsyncMock(
-        spec=SimpleRepository,
+        spec=core.SimpleRepository,
         get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
@@ -373,7 +375,7 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     cached_info.touch()
 
     with mock.patch(
-        "datetime.datetime",
+        "simple_repository.components.resource_cache.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2006-07-09")),
             fromisoformat=datetime.fromisoformat,
@@ -385,7 +387,7 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     assert os.path.getatime(cached_info) == datetime.fromisoformat("2006-07-09").timestamp()
 
     with mock.patch(
-        "datetime.datetime",
+        "simple_repository.components.resource_cache.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2025-07-09")),
             fromisoformat=datetime.fromisoformat,

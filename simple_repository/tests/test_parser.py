@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional, Union
 
 import pytest
 
@@ -163,7 +164,7 @@ def test_parse_html_project_page_URL_fragment(
 )
 def test_parse_html_project_page_yank(
     yank_attr: str,
-    yank_value: Optional[Union[bool, str]],
+    yank_value: bool | str | None,
 ) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
@@ -204,7 +205,7 @@ def test_parse_html_project_page_yank(
 )
 def test_parse_html_project_page_metadata(
     metadata_attr: str,
-    metadata_value: Optional[Union[bool, dict[str, str]]],
+    metadata_value: bool | dict[str, str] | None,
 ) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
@@ -237,7 +238,7 @@ def test_parse_html_project_page_metadata(
         ('data-gpg-sig="invalid"', None),
     ],
 )
-def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: Optional[bool]) -> None:
+def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: bool | None) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
             {gpg_attr}

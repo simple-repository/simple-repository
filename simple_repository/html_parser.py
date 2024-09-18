@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import html.parser
 import typing
 
@@ -10,7 +12,7 @@ class HTMLElement:
             tag: str,
             attrs: dict[str, str | None],
             content: str | None = None,
-    ):
+    ) -> None:
         self.tag = tag
         self.attrs = attrs
         self.content = content
@@ -42,7 +44,7 @@ class SimpleHTMLParser(html.parser.HTMLParser):
         The only time when this parser seems to error is with decoding issues.
     """
 
-    def __init__(self, *, convert_charrefs: bool = True):
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
         super().__init__(convert_charrefs=convert_charrefs)
         self.declaration: str | None = None
         self.elements: list[HTMLElement] = []

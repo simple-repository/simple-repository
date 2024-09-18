@@ -1,9 +1,11 @@
-from enum import Enum
+from __future__ import annotations
+
+import enum
 
 from . import errors
 
 
-class Format(Enum):
+class Format(enum.Enum):
     JSON_V1: str = "application/vnd.pypi.simple.v1+json"
     HTML_V1: str = "application/vnd.pypi.simple.v1+html"
     HTML_LEGACY: str = "text/html"

@@ -1,27 +1,29 @@
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 import pathlib
 import re
 import tempfile
 import zipfile
 
 import httpx
-from packaging.utils import canonicalize_name
+import packaging.utils
 
+from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
 
 
-class MetadataInjectorRepository(RepositoryContainer):
+class MetadataInjectorRepository(core.RepositoryContainer):
     """Adds PEP-658 support to a simple repository. If not already specified,
     sets the dist-info metadata for all wheels packages in a project page.
     Metadata is extracted from the wheels on the fly and cached for later use.
     """
     def __init__(
         self,
-        source: SimpleRepository,
+        source: core.SimpleRepository,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self._http_client = http_client or httpx.AsyncClient()
@@ -105,7 +107,7 @@ class MetadataInjectorRepository(RepositoryContainer):
             raise ValueError(
                 f"Filename {package_path.name} is not normalized according to PEP-427",
             )
-        distribution = canonicalize_name(package_tokens[0])
+        distribution = packaging.utils.canonicalize_name(package_tokens[0])
         # Package consumer, when extracting metadata, should tolerate small differences
         # respecting what is strictly described in PEP-427, for reference see:
         # https://packaging.python.org/en/latest/specifications/binary-distribution-format/
@@ -114,7 +116,7 @@ class MetadataInjectorRepository(RepositoryContainer):
                 for file in ziparchive.namelist():
                     if not (match := metadata_regex.match(file)):
                         continue
-                    if canonicalize_name(match.group(1)) == distribution:
+                    if packaging.utils.canonicalize_name(match.group(1)) == distribution:
                         return ziparchive.read(file).decode()
                 raise errors.InvalidPackageError(
                     "Provided wheel doesn't contain a metadata file.",
@@ -148,7 +150,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         files = []
         for file in project_page.files:
             if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
-                file = replace(file, dist_info_metadata=True)
+                file = dataclasses.replace(file, dist_info_metadata=True)
             files.append(file)
-        project_page = replace(project_page, files=tuple(files))
+        project_page = dataclasses.replace(project_page, files=tuple(files))
         return project_page

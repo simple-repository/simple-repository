@@ -1,17 +1,19 @@
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 import fnmatch
 import html
 import pathlib
 import typing
 
 import aiosqlite
-from packaging.utils import canonicalize_name
+import packaging.utils
 
+from . import core
 from .. import errors, model
 from .. import packaging as _packaging
 from .. import utils
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 
 class YankProvider(typing.Protocol):
@@ -117,7 +119,7 @@ class GlobYankProvider(YankProvider):
                     ' contain a dictionary mapping a project name to a tuple'
                     ' containing a glob pattern and a yank reason.',
                 )
-            config_dict[canonicalize_name(key)] = (value[0], value[1])
+            config_dict[packaging.utils.canonicalize_name(key)] = (value[0], value[1])
 
         return config_dict
 
@@ -127,10 +129,10 @@ def update_yanked_attribute(file: model.File, reason: str) -> model.File:
         yanked: bool | str = True
     else:
         yanked = html.escape(reason)
-    return replace(file, yanked=yanked)
+    return dataclasses.replace(file, yanked=yanked)
 
 
-class YankRepository(RepositoryContainer):
+class YankRepository(core.RepositoryContainer):
     """
     A class that adds support for PEP-592 yank to a SimpleRepository.
 
@@ -139,7 +141,7 @@ class YankRepository(RepositoryContainer):
     """
     def __init__(
         self,
-        source: SimpleRepository,
+        source: core.SimpleRepository,
         yank_provider: YankProvider,
     ) -> None:
         self._yank_provider = yank_provider
@@ -186,7 +188,7 @@ class YankRepository(RepositoryContainer):
                 try:
                     version = _packaging.extract_package_version(
                         filename=file.filename,
-                        project_name=canonicalize_name(project_page.name),
+                        project_name=packaging.utils.canonicalize_name(project_page.name),
                     )
                 except ValueError:
                     pass
@@ -196,4 +198,4 @@ class YankRepository(RepositoryContainer):
 
             files.append(file)
 
-        return replace(project_page, files=tuple(files))
+        return dataclasses.replace(project_page, files=tuple(files))

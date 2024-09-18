@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 from datetime import datetime
 import hashlib
 import os
 import pathlib
 
-from packaging.utils import canonicalize_name
+import packaging.utils
 
+from . import core
 from .. import errors, model
 from .._typing_compat import override
-from .core import SimpleRepository
 
 
-class LocalRepository(SimpleRepository):
+class LocalRepository(core.SimpleRepository):
     """
     Creates a simple repository from a local directory.
     The directory must contain a subdirectory for each project,
@@ -38,7 +40,7 @@ class LocalRepository(SimpleRepository):
             projects=frozenset(
                 model.ProjectListElement(x.name)
                 for x in self._index_path.iterdir()
-                if x.is_dir() and x.name == canonicalize_name(x.name)
+                if x.is_dir() and x.name == packaging.utils.canonicalize_name(x.name)
             ),
         )
 

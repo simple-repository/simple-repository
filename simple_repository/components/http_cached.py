@@ -1,18 +1,20 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 import logging
 import os
 import pathlib
-from urllib.parse import quote_plus
+import urllib.parse
 import uuid
 
 import httpx
 
-from .http import HttpRepository
+from . import http
 
 error_logger = logging.getLogger("gunicorn.error")
 
 
-class CachedHttpRepository(HttpRepository):
+class CachedHttpRepository(http.HttpRepository):
     """
     Caches the http responses received from the source,
     manages cache invalidation using ETAGS.
@@ -26,14 +28,14 @@ class CachedHttpRepository(HttpRepository):
         cache_path: pathlib.Path,
         http_client: httpx.AsyncClient | None = None,
         connection_timeout: timedelta = timedelta(seconds=15),
-    ):
+    ) -> None:
         super().__init__(url, http_client, connection_timeout)
         self._cache_path = cache_path.resolve()
         self._tmp_dir = cache_path / ".incomplete"
         self._tmp_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_from_cache(self, page_url: str) -> str | None:
-        cached_resource_path = self._cache_path / quote_plus(page_url)
+        cached_resource_path = self._cache_path / urllib.parse.quote_plus(page_url)
         if not cached_resource_path.is_file():
             return None
         now = datetime.now().timestamp()
@@ -43,7 +45,7 @@ class CachedHttpRepository(HttpRepository):
         return cached_resource_path.read_text()
 
     def _save_to_cache(self, page_url: str, content: str) -> None:
-        cached_resource_path = self._cache_path / quote_plus(page_url)
+        cached_resource_path = self._cache_path / urllib.parse.quote_plus(page_url)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         dest_file = self._tmp_dir / f"{timestamp}_{uuid.uuid4().hex}"
         dest_file.write_text(content)

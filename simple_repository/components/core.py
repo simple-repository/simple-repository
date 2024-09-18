@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import functools
 import typing
 
 from .. import model
 from .._typing_compat import override
+
+if typing.TYPE_CHECKING:
+    WrappedFunction: typing.TypeAlias = typing.Callable[..., typing.Any]
 
 
 class SimpleRepositoryMeta(type):
@@ -14,9 +19,8 @@ class SimpleRepositoryMeta(type):
             bases: tuple[typing.Type[type]],
             namespace: dict[str, typing.Any],
     ) -> typing.Type[type]:
-        wrapped_fn: typing.TypeAlias = typing.Callable[[typing.Any], typing.Any]
 
-        def dec(fn: wrapped_fn) -> wrapped_fn:
+        def dec(fn: WrappedFunction) -> WrappedFunction:
             @functools.wraps(fn)
             async def wrapper(
                     self: typing.Any, *args: typing.Any, **kwargs: typing.Any,

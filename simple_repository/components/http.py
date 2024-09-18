@@ -1,15 +1,17 @@
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 from datetime import timedelta
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
 
+from . import core
 from .. import errors, model, parser, utils
 from .._typing_compat import override
-from .core import SimpleRepository
 
 
-class HttpRepository(SimpleRepository):
+class HttpRepository(core.SimpleRepository):
     """Proxy of a remote simple repository"""
 
     def __init__(
@@ -17,7 +19,7 @@ class HttpRepository(SimpleRepository):
         url: str,
         http_client: httpx.AsyncClient | None = None,
         connection_timeout: timedelta = timedelta(seconds=15),
-    ):
+    ) -> None:
         parsed_url = urlsplit(url)
         if not parsed_url.path.endswith('/'):
             new_url = list(parsed_url)
@@ -86,10 +88,10 @@ class HttpRepository(SimpleRepository):
         # Make the URLs in the project page absolute, such that they can be
         # resolved upstream without knowing the original source URLs.
         files = tuple(
-            replace(file, url=utils.url_absolutizer(file.url, page_url))
+            dataclasses.replace(file, url=utils.url_absolutizer(file.url, page_url))
             for file in project_page.files
         )
-        project_page = replace(project_page, files=files)
+        project_page = dataclasses.replace(project_page, files=files)
         return project_page
 
     @override

@@ -3,6 +3,7 @@
 Currently, there are no tests written for parsing invalid HTML.
 This is because it (html.parser.HTMLParser) does not throw errors, but gives strange results instead
 """
+from __future__ import annotations
 
 from ..html_parser import HTMLElement, SimpleHTMLParser
 
