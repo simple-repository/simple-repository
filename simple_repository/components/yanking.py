@@ -4,7 +4,6 @@ import dataclasses
 import fnmatch
 import html
 import pathlib
-import typing
 
 import aiosqlite
 import packaging.utils
@@ -13,10 +12,10 @@ from . import core
 from .. import errors, model
 from .. import packaging as _packaging
 from .. import utils
-from .._typing_compat import override
+from .._typing_compat import Protocol, override
 
 
-class YankProvider(typing.Protocol):
+class YankProvider(Protocol):
     async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
         ...
 

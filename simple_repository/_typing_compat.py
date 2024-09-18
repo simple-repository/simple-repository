@@ -5,4 +5,19 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-__all__ = ['override']
+if sys.version_info >= (3, 8):
+    from typing import Protocol, TypedDict
+else:
+    from typing_extensions import Protocol, TypedDict
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
+
+__all__ = [
+    'override',
+    'TypedDict',
+    'TypeAlias',
+    'Protocol',
+]

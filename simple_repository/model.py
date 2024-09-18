@@ -32,6 +32,7 @@ import typing
 import packaging.utils
 import packaging.version
 
+from ._typing_compat import TypedDict
 from .packaging import safe_version
 
 if typing.TYPE_CHECKING:
@@ -155,7 +156,7 @@ class ProjectList:
     projects: frozenset[ProjectListElement]
 
 
-class Context(typing.TypedDict, total=False):
+class Context(TypedDict, total=False):
     etag: str
 
 

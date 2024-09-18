@@ -8,9 +8,10 @@ import packaging.utils
 import packaging.version
 
 from . import content_negotiation, model
+from ._typing_compat import Protocol
 
 
-class Serializer(typing.Protocol):
+class Serializer(Protocol):
     def serialize_project_page(self, page: model.ProjectDetail) -> str:
         ...
 
