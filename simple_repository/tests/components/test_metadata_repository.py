@@ -12,6 +12,7 @@ from ... import errors, model
 from ...components import core
 from ...components.metadata_injector import MetadataInjectorRepository
 from .fake_repository import FakeRepository
+from .mock_compat import AsyncMock
 
 
 @pytest.fixture
@@ -38,7 +39,7 @@ def repository() -> MetadataInjectorRepository:
                 ),
             },
         ),
-        http_client=mock.AsyncMock(),
+        http_client=AsyncMock(),
     )
 
 
@@ -163,7 +164,7 @@ async def test_get_resource(
     with mock.patch.object(
         repository,
         "_download_metadata",
-        return_value="downloaded_meta",
+        AsyncMock(return_value="downloaded_meta"),
     ):
         response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
@@ -189,13 +190,15 @@ async def test_get_resource__local_resource(
 @pytest.mark.asyncio
 async def test_get_resource__not_valid_resource() -> None:
     source_repo = mock.Mock(spec=core.SimpleRepository)
-    source_repo.get_resource.side_effect = [
-        errors.ResourceUnavailable('name'),
-        model.TextResource(text='/etc/passwd'),
-    ]
+    source_repo.get_resource = AsyncMock(
+        side_effect=[
+            errors.ResourceUnavailable('name'),
+            model.TextResource(text='/etc/passwd'),
+        ],
+    )
     repo = MetadataInjectorRepository(
         source=typing.cast(core.SimpleRepository, source_repo),
-        http_client=mock.AsyncMock(),
+        http_client=AsyncMock(),
     )
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
         await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
@@ -222,7 +225,7 @@ async def test_download_metadata(
         repository,
         "_get_metadata_from_package",
     ) as get_metadata_from_package_mock:
-        with mock.patch("simple_repository.utils.download_file") as download_file_mock:
+        with mock.patch("simple_repository.utils.download_file", new_callable=AsyncMock) as download_file_mock:
             await repository._download_metadata("name", "url", httpx.AsyncClient())
 
     get_metadata_from_package_mock.assert_called_once()

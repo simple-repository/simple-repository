@@ -39,6 +39,7 @@ test = [
   "pytest",
   "pytest_asyncio",
   "pytest_httpx",
+  "mock~=5.0.2;python_version<'3.8'",
 ]
 dev = [
   "simple-repository[test]",

@@ -8,6 +8,7 @@ import pytest
 
 from ... import errors, model
 from ...components.http import HttpRepository
+from .mock_compat import AsyncMock
 
 if typing.TYPE_CHECKING:
     import pytest_httpx
@@ -260,7 +261,11 @@ async def test_get_resource(
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})
 
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         resp = await repository.get_resource("numpy", "numpy-2.0.whl")
         assert isinstance(resp, model.HttpResource)
         assert resp.url == "http://my_url/numpy-2.0.whl"
@@ -276,7 +281,11 @@ async def test_get_resource__not_modified(
     etag = "my_etag"
     httpx_mock.add_response(headers={"ETag": etag})
 
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         with pytest.raises(model.NotModified):
             await repository.get_resource(
                 project_name="numpy",
@@ -288,7 +297,11 @@ async def test_get_resource__not_modified(
 @pytest.mark.asyncio
 async def test_get_resource_unavailable(project_detail: model.ProjectDetail, httpx_mock: pytest_httpx.HTTPXMock) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-3.0.whl"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
@@ -306,7 +319,11 @@ async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, proj
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("error"), method="HEAD")
 
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         with pytest.raises(errors.SourceRepositoryUnavailable) as exc:
             await repository.get_resource("numpy", "numpy-2.0.whl")
     exc.value.__context__ == httpx.HTTPError
@@ -324,7 +341,11 @@ async def test_get_resource_metadata(
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(headers={"ETag": source_etag} if source_etag else {})
 
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         resp = await repository.get_resource("numpy", "numpy-1.0.whl.metadata")
         assert isinstance(resp, model.HttpResource)
         assert resp.url == "http://my_url/numpy-1.0.whl.metadata"
@@ -339,6 +360,10 @@ async def test_get_resource_metadata__unavailable(
     project_detail: model.ProjectDetail,
 ) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
-    with mock.patch.object(repository, "get_project_page", return_value=project_detail):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
             await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
