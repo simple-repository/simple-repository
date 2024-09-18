@@ -5,6 +5,12 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: .gitlab-ci.yml
+      - id: check-yaml
+        name: Check Yaml (Gitlab CI)
+        files: .gitlab-ci.yml
+        # Allow custom non-yaml tags, e.g. !reference
+        args: [--unsafe]
       - id: check-toml
 
   - repo: https://github.com/asottile/add-trailing-comma

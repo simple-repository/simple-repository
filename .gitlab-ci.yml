@@ -36,6 +36,17 @@ test_dev:
     - .acc_py_run_on_all_currently_supported
 
 
+static_analysis_wheel:
+  extends:
+    - .acc_py_wheel_test
+    - .acc_py_run_on_all_currently_supported
+  before_script:
+    - !reference [.acc_py_wheel_test, before_script]
+    - python -m pip install $(ls -A ${project_root}/wheel-to-install/*.whl)[dev] mypy
+  script:
+    - python -m mypy -p simple_repository
+
+
 publish_package_to_index:
   stage: publish
   extends: .acc_py_publish
