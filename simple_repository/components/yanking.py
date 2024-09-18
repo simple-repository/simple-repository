@@ -93,7 +93,8 @@ class GlobYankProvider(YankProvider):
 
     async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
         yanked_files = {}
-        if value := self._yank_config.get(project_page.name):
+        value = self._yank_config.get(project_page.name)
+        if value:
             pattern, reason = value
             yanked_files = {
                 file.filename: reason for file in project_page.files
@@ -181,19 +182,22 @@ class YankRepository(core.RepositoryContainer):
             if file.yanked:
                 # Skip already yanked files
                 pass
-            elif reason := yanked_files.get(file.filename):
-                file = update_yanked_attribute(file, reason)
             else:
-                try:
-                    version = _packaging.extract_package_version(
-                        filename=file.filename,
-                        project_name=packaging.utils.canonicalize_name(project_page.name),
-                    )
-                except ValueError:
-                    pass
+                reason = yanked_files.get(file.filename)
+                if reason:
+                    file = update_yanked_attribute(file, reason)
                 else:
-                    if reason := yanked_versions.get(version):
-                        file = update_yanked_attribute(file, reason)
+                    try:
+                        version = _packaging.extract_package_version(
+                            filename=file.filename,
+                            project_name=packaging.utils.canonicalize_name(project_page.name),
+                        )
+                    except ValueError:
+                        pass
+                    else:
+                        reason = yanked_versions.get(version)
+                        if reason:
+                            file = update_yanked_attribute(file, reason)
 
             files.append(file)
 

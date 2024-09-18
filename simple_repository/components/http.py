@@ -151,7 +151,8 @@ class HttpRepository(core.SimpleRepository):
             resp.raise_for_status()
         except httpx.HTTPError as e:
             raise errors.SourceRepositoryUnavailable() from e
-        if etag := resp.headers.get("ETag"):
+        etag = resp.headers.get("ETag")
+        if etag:
             if etag == request_context.context.get("etag"):
                 # If the etag served from the source repository
                 # matches the one in the request raise NotModified

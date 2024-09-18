@@ -62,7 +62,8 @@ class CachedHttpRepository(http.HttpRepository):
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if cached_content := self._get_from_cache(page_url):
+        cached_content = self._get_from_cache(page_url)
+        if cached_content:
             etag, cached_content_type, cached_page = cached_content.split(",", 2)
             headers.update({"If-None-Match": etag})
 
@@ -91,7 +92,8 @@ class CachedHttpRepository(http.HttpRepository):
 
         body = response.text
         content_type = response.headers.get("Content-Type", "")
-        if new_etag := response.headers.get("ETag", ""):
+        new_etag = response.headers.get("ETag", "")
+        if new_etag:
             # If the ETag is set, cache the response for future use.
             self._save_to_cache(page_url, ",".join([new_etag, content_type, body]))
         return body, content_type

@@ -95,7 +95,8 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         metadata_resource = model.TextResource(
             text=metadata,
         )
-        if etag := resource.context.get("etag"):
+        etag = resource.context.get("etag")
+        if etag:
             # Use the same etag as the one that identifies the package.
             # In this way, if that package changes, also the metadata will be invalidated.
             metadata_resource.context["etag"] = etag
@@ -114,7 +115,8 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         try:
             with zipfile.ZipFile(package_path, 'r') as ziparchive:
                 for file in ziparchive.namelist():
-                    if not (match := metadata_regex.match(file)):
+                    match = metadata_regex.match(file)
+                    if not match:
                         continue
                     if packaging.utils.canonicalize_name(match.group(1)) == distribution:
                         return ziparchive.read(file).decode()

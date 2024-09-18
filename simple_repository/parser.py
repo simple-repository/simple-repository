@@ -56,7 +56,8 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
 
     files = []
     for file in page_dict["files"]:
-        if date_string := file.get("upload-time"):
+        date_string = file.get("upload-time")
+        if date_string:
             # PEP-700: upload-time MUST contain a valid ISO 8601 date/time string, in the format
             # yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the file was uploaded to
             # the index. The fractional seconds part of the timestamp is optional.
@@ -123,7 +124,8 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
 
         yanked: bool | str | None = None
         if "data-yanked" in a_tag.attrs:
-            if reason := a_tag.attrs.get("data-yanked"):
+            reason = a_tag.attrs.get("data-yanked")
+            if reason:
                 # Note that the reason can equally be the string "false" and it is
                 # still considered yanked.
                 yanked = reason
@@ -154,7 +156,8 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
                     dist_info_metadata = True
 
         gpg_sig: bool | None = None
-        if gpg_sig_value := a_tag.attrs.get("data-gpg-sig"):
+        gpg_sig_value = a_tag.attrs.get("data-gpg-sig")
+        if gpg_sig_value:
             # PEP-503: A repository MAY include a data-gpg-sig attribute on a file link with
             #          a value of either true or false to indicate whether or not there is a
             #          GPG signature. Repositories that do this SHOULD include it on every link.

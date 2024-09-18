@@ -45,6 +45,7 @@ class FakeRepository(core.SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
-        if resource := self.resources.get(resource_name):
+        resource = self.resources.get(resource_name)
+        if resource:
             return resource
         raise errors.ResourceUnavailable(resource_name)

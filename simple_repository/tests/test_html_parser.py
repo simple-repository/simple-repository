@@ -26,6 +26,7 @@ def test_parser() -> None:
 """
     parser.feed(data)
     assert parser.declaration == "DOCTYPE html"
+    emtpy_attr = HTMLElement("a", {"href": "../../shovel/shovel-1.0.whl", "extra-attr": None}, "shovel-1.0.whl")
     assert parser.elements == [
         HTMLElement("html", {}),
         HTMLElement("head", {}),
@@ -35,7 +36,7 @@ def test_parser() -> None:
         HTMLElement("h1", {}, "Header"),
         HTMLElement("a", {"href": "../../hammer/hammer-1.0.tar.gz"}, "hammer-1.0.tar.gz"),
         HTMLElement("br", {}),
-        emtpy_attr := HTMLElement("a", {"href": "../../shovel/shovel-1.0.whl", "extra-attr": None}, "shovel-1.0.whl"),
+        emtpy_attr,
         HTMLElement("br", {}),
         HTMLElement("a", {"href": "../../drill/drill-1.0.whl", "extra-attr": "true"}, "drill-1.0.whl"),
         HTMLElement("br", {}),
