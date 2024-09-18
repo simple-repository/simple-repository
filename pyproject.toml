@@ -8,10 +8,9 @@ dynamic = ["version"]
 description = "The core simple repository (PEP-503) interface, including powerful component implementations suitable for use in repository clients and servers"
 requires-python = ">=3.7"
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3",
-  "Framework :: FastAPI",
-  "Operating System :: OS Independent",
+  "Operating System :: POSIX",
   "Typing :: Typed",
 ]
 authors = [
