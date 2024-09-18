@@ -12,8 +12,6 @@ include:
 variables:
   project_name: simple_repository
   project_root: .
-  PY_VERSION: '3.11'
-  ACC_PY_BASE_IMAGE_TAG: '2023.06'
 
 
 pre-commit:
@@ -26,12 +24,16 @@ build_wheel:
 
 # A full installation of simple-repository, tested with pytest.
 wheel_test:
-  extends: .acc_py_wheel_test
+  extends:
+    - .acc_py_wheel_test
+    - .acc_py_run_on_all_currently_supported
 
 
 # A development installation of simple-repository, tested with pytest.
 test_dev:
-  extends: .acc_py_dev_test
+  extends:
+    - .acc_py_dev_test
+    - .acc_py_run_on_all_currently_supported
 
 
 publish_package_to_index:
