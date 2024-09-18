@@ -68,13 +68,13 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         # Get hold of the actual artefact from which we want to extract
         # the metadata.
         resource = await request_context.repository.get_resource(
-            project_name, resource_name.removesuffix(".metadata"),
+            project_name, utils.remove_suffix(resource_name, ".metadata"),
             request_context=request_context,
         )
         if isinstance(resource, model.HttpResource):
             try:
                 metadata = await self._download_metadata(
-                    package_name=resource_name.removesuffix(".metadata"),
+                    package_name=utils.remove_suffix(resource_name, ".metadata"),
                     download_url=resource.url,
                     http_client=self._http_client,
                 )
@@ -89,7 +89,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
                 raise errors.ResourceUnavailable(resource_name) from e
         else:
             raise errors.ResourceUnavailable(
-                resource_name.removesuffix(".metadata"),
+                utils.remove_suffix(resource_name, ".metadata"),
                 "Unable to fetch the resource needed to extract the metadata.",
             )
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 
-from . import errors
+from . import errors, utils
 
 
 class Format(enum.Enum):
@@ -23,7 +23,7 @@ def select_response_format(content_type: str) -> Format:
         token_pieces = token.replace(" ", "").split(";")
         q = 1.0
         if len(token_pieces) == 2:
-            q = float(token_pieces[1].removeprefix("q="))
+            q = float(utils.remove_prefix(token_pieces[1], "q="))
         requested_formats.append(
             (token_pieces[0], q),
         )

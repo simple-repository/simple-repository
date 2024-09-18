@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-from .. import model
+from .. import model, utils
 from ..serializer import SerializerHtmlV1, SerializerJsonV1
 
 
@@ -169,7 +169,10 @@ def test_serialize_project_list_html() -> None:
     serialized_page = serializer.serialize_project_list(project_list)
     assert serialized_page.startswith(expected_header)
     assert serialized_page.endswith(expected_footer)
-    a_tags = serialized_page.removeprefix(expected_header).removesuffix(expected_footer)
+    a_tags = utils.remove_suffix(
+        utils.remove_prefix(serialized_page, expected_header),
+        expected_footer,
+    )
     assert '<a href="test-project-1/">test-project-1</a><br/>' in a_tags
     assert '<a href="test-project-2/">test-project-2</a><br/>' in a_tags
 

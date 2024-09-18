@@ -167,7 +167,7 @@ class HttpRepository(core.SimpleRepository):
         project_page: model.ProjectDetail,
         resource_name: str,
     ) -> model.HttpResource:
-        distribution_name = resource_name.removesuffix(".metadata")
+        distribution_name = utils.remove_suffix(resource_name, ".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
                 return model.HttpResource(url=file.url + ".metadata")
