@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from ... import errors, model
-from ...components.http import HttpRepository
+from ...components.http import HttpRepository, _url_path_append
 from .mock_compat import AsyncMock
 
 if typing.TYPE_CHECKING:
@@ -15,11 +15,27 @@ if typing.TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
+    ("base_url", "append_with", "target"), [
+        ["https://example.com/simple", "my_project", "https://example.com/simple/my_project"],
+        ["https://example.com/what/", "my_project", "https://example.com/what/my_project"],
+        ["http://example.com/what/", "my_project", "http://example.com/what/my_project"],
+        ["http://example.com/what/", "my_project/", "http://example.com/what/my_project/"],
+        ["http://example.com/what/", "/my_project/", "http://example.com/what/my_project/"],
+        ["http://example.com/what/", "/my_project", "http://example.com/what/my_project"],
+        ["https://example.com/simple?foo=bar", "my_project", "https://example.com/simple/my_project?foo=bar"],
+        ["https://example.com/simple?foo=bar", "my_project/", "https://example.com/simple/my_project/?foo=bar"],
+    ],
+)
+def test___url_path_append(base_url: str, append_with: str, target: str):
+    assert _url_path_append(base_url, append_with) == target
+
+
+@pytest.mark.parametrize(
     ("base_url", "target"), [
         ["https://example.com/simple", "https://example.com/simple/my_project/"],
         ["https://example.com/what/", "https://example.com/what/my_project/"],
         ["http://example.com/what/", "http://example.com/what/my_project/"],
-        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/"],
+        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/?foo=bar"],
     ],
 )
 @pytest.mark.asyncio
