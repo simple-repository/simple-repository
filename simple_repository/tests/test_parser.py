@@ -5,8 +5,10 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional, Union
+import typing
 
 import pytest
 
@@ -139,7 +141,7 @@ def test_parse_html_project_page() -> None:
 )
 def test_parse_html_project_page_URL_fragment(
     fragment_attr: str,
-    hashes: dict[str, str],
+    hashes: typing.Dict[str, str],
 ) -> None:
     page = f'''<a href="holygrail-1.0.tar.gz{fragment_attr}">holygrail-1.0.tar.gz</a>'''
 
@@ -170,7 +172,7 @@ def test_parse_html_project_page_URL_fragment(
 )
 def test_parse_html_project_page_yank(
     yank_attr: str,
-    yank_value: Optional[Union[bool, str]],
+    yank_value: typing.Union[bool, str, None],
 ) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
@@ -211,7 +213,7 @@ def test_parse_html_project_page_yank(
 )
 def test_parse_html_project_page_metadata(
     metadata_attr: str,
-    metadata_value: Optional[Union[bool, dict[str, str]]],
+    metadata_value: typing.Union[bool, typing.Dict[str, str], None],
 ) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
@@ -244,7 +246,7 @@ def test_parse_html_project_page_metadata(
         ('data-gpg-sig="invalid"', None),
     ],
 )
-def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: Optional[bool]) -> None:
+def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
     page = f'''
         <a href="holygrail-1.0.tar.gz"
             {gpg_attr}

@@ -5,6 +5,10 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
+import typing
+
 import pytest
 
 from ... import model
@@ -13,10 +17,10 @@ from .fake_repository import FakeRepository
 
 
 class FakeYankProvider(YankProvider):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         return {"1.0": "reason"}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         return {"project-1.0-any.whl": "reason"}
 
 

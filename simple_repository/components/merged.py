@@ -5,17 +5,19 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import asyncio
 import typing
 
-from packaging.version import Version
+import packaging.version
 
+from . import priority_selected
 from .. import errors, model
 from .._typing_compat import override
-from .priority_selected import PrioritySelectedProjectsRepository
 
 
-class MergedRepository(PrioritySelectedProjectsRepository):
+class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
     """
     Represents a merged view of all the given (unsorted) repositories
 
@@ -40,7 +42,12 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         # Keep track of unique filenames for the merged files.
         files: typing.Dict[str, model.File] = {}
 
-        results: list[BaseException | model.ProjectDetail] = await asyncio.gather(
+        results: typing.List[
+            typing.Union[
+                BaseException,
+                model.ProjectDetail,
+            ]
+        ] = await asyncio.gather(
             *(
                 source.get_project_page(
                     project_name,
@@ -51,7 +58,7 @@ class MergedRepository(PrioritySelectedProjectsRepository):
             return_exceptions=True,
         )
 
-        project_pages: list[model.ProjectDetail] = []
+        project_pages: typing.List[model.ProjectDetail] = []
         for result in results:
             if isinstance(result, BaseException):
                 if not isinstance(result, errors.PackageNotFoundError):
@@ -71,7 +78,8 @@ class MergedRepository(PrioritySelectedProjectsRepository):
         # possible to calculate the missing files to perform a version upgrade.
         api_version = str(
             min((
-                Version(result.meta.api_version) for result in project_pages
+                packaging.version.Version(result.meta.api_version)
+                for result in project_pages
             )),
         )
 

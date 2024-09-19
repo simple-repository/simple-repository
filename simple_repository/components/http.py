@@ -5,34 +5,53 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 from datetime import timedelta
-from urllib.parse import urljoin, urlsplit, urlunsplit
+import typing
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
+from . import core
 from .. import errors, model, parser, utils
 from .._typing_compat import override
-from .core import SimpleRepository
 
 
-class HttpRepository(SimpleRepository):
+def _url_path_append(url: str, append_with: str) -> str:
+    """
+    Append to the path part of the URL, taking care of trailing slashes on
+    the root_url. `append_with` may contain sub-paths, and may end with a
+    slash if desired.
+
+    """
+    PATH_IDX = 2
+
+    split_url = list(urlsplit(url))
+
+    if not split_url[PATH_IDX].endswith('/'):
+        # Add a trailing slash to the path.
+        split_url[PATH_IDX] += '/'
+
+    if append_with.startswith('/'):
+        append_with = append_with[1:]
+
+    split_url[PATH_IDX] += append_with
+    new_url = urlunsplit(split_url)
+    return new_url
+
+
+class HttpRepository(core.SimpleRepository):
     """Proxy of a remote simple repository"""
 
     def __init__(
         self,
         url: str,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
         connection_timeout: timedelta = timedelta(seconds=15),
-    ):
-        parsed_url = urlsplit(url)
-        if not parsed_url.path.endswith('/'):
-            new_url = list(parsed_url)
-            # Add a trailing slash to the path.
-            new_url[2] += '/'
-            url = urlunsplit(new_url)
-
-        self.source_url = url
+    ) -> None:
+        self._source_url = url
         self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([
             "application/vnd.pypi.simple.v1+json",
@@ -44,7 +63,7 @@ class HttpRepository(SimpleRepository):
     async def _fetch_simple_page(
         self,
         page_url: str,
-    ) -> tuple[str, str]:
+    ) -> typing.Tuple[str, str]:
         """Retrieves a simple page from the given url.
         Returns the body and the content type received.
         """
@@ -66,7 +85,7 @@ class HttpRepository(SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        page_url = urljoin(self.source_url, f"{project_name}/")
+        page_url = _url_path_append(self._source_url, f'{project_name}/')
         try:
             body, content_type = await self._fetch_simple_page(page_url)
         except httpx.HTTPError as e:
@@ -93,10 +112,10 @@ class HttpRepository(SimpleRepository):
         # Make the URLs in the project page absolute, such that they can be
         # resolved upstream without knowing the original source URLs.
         files = tuple(
-            replace(file, url=utils.url_absolutizer(file.url, page_url))
+            dataclasses.replace(file, url=utils.url_absolutizer(file.url, page_url))
             for file in project_page.files
         )
-        project_page = replace(project_page, files=files)
+        project_page = dataclasses.replace(project_page, files=files)
         return project_page
 
     @override
@@ -106,7 +125,7 @@ class HttpRepository(SimpleRepository):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectList:
         try:
-            body, content_type = await self._fetch_simple_page(self.source_url)
+            body, content_type = await self._fetch_simple_page(self._source_url)
         except httpx.HTTPError as e:
             raise errors.SourceRepositoryUnavailable() from e
 
@@ -136,7 +155,7 @@ class HttpRepository(SimpleRepository):
         except errors.PackageNotFoundError:
             raise errors.ResourceUnavailable(resource_name)
 
-        resource: model.HttpResource | None = None
+        resource: typing.Optional[model.HttpResource] = None
         if resource_name.endswith(".metadata"):
             resource = await self.get_metadata(project_page, resource_name)
         else:
@@ -156,7 +175,8 @@ class HttpRepository(SimpleRepository):
             resp.raise_for_status()
         except httpx.HTTPError as e:
             raise errors.SourceRepositoryUnavailable() from e
-        if etag := resp.headers.get("ETag"):
+        etag = resp.headers.get("ETag")
+        if etag:
             if etag == request_context.context.get("etag"):
                 # If the etag served from the source repository
                 # matches the one in the request raise NotModified
@@ -170,7 +190,7 @@ class HttpRepository(SimpleRepository):
         project_page: model.ProjectDetail,
         resource_name: str,
     ) -> model.HttpResource:
-        distribution_name = resource_name.removesuffix(".metadata")
+        distribution_name = utils.remove_suffix(resource_name, ".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
                 return model.HttpResource(url=file.url + ".metadata")

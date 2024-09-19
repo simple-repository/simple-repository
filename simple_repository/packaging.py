@@ -5,14 +5,17 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import enum
 import posixpath
+import typing
 
 import packaging.utils
-from packaging.version import InvalidVersion, Version
+import packaging.version
 
 
-def split_sdist_filename(path: str) -> tuple[str, str]:
+def split_sdist_filename(path: str) -> typing.Tuple[str, str]:
     """
     Like os.path.splitext, but take off .tar too.
     Standard functions like splitext or pathlib suffixes
@@ -60,13 +63,13 @@ def extract_package_version(filename: str, project_name: str) -> str:
         return extract_version_from_fragment(fragment, project_name)
 
 
-def safe_version(filename: str, project_name: str) -> Version:
+def safe_version(filename: str, project_name: str) -> packaging.version.Version:
     try:
-        return Version(
+        return packaging.version.Version(
             version=extract_package_version(
                 filename=filename,
                 project_name=project_name,
             ),
         )
-    except (ValueError, InvalidVersion):
-        return Version('0.0rc0')
+    except (ValueError, packaging.version.InvalidVersion):
+        return packaging.version.Version('0.0rc0')

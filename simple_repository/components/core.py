@@ -5,11 +5,17 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import functools
 import typing
 
 from .. import model
 from .._typing_compat import override
+
+if typing.TYPE_CHECKING:
+    from .._typing_compat import TypeAlias
+    WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
 class SimpleRepositoryMeta(type):
@@ -18,12 +24,11 @@ class SimpleRepositoryMeta(type):
     def __new__(
             cls: typing.Type[type],
             name: str,
-            bases: tuple[typing.Type[type]],
-            namespace: dict[str, typing.Any],
+            bases: typing.Tuple[typing.Type[type]],
+            namespace: typing.Dict[str, typing.Any],
     ) -> typing.Type[type]:
-        wrapped_fn: typing.TypeAlias = typing.Callable[[typing.Any], typing.Any]
 
-        def dec(fn: wrapped_fn) -> wrapped_fn:
+        def dec(fn: WrappedFunction) -> WrappedFunction:
             @functools.wraps(fn)
             async def wrapper(
                     self: typing.Any, *args: typing.Any, **kwargs: typing.Any,

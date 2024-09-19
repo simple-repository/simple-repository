@@ -5,19 +5,21 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import pytest
 
-from .. import model as m
+from .. import model
 
 
 def test_ProjectListElement__normalized_name() -> None:
-    prj = m.ProjectListElement('some-.name')
+    prj = model.ProjectListElement('some-.name')
     assert prj.normalized_name == 'some-name'
 
 
 def test_ProjectDetail__normalized_name() -> None:
-    project_detail = m.ProjectDetail(
-        meta=m.Meta("1.0"),
+    project_detail = model.ProjectDetail(
+        meta=model.Meta("1.0"),
         name="Project",
         files=(),
     )
@@ -29,11 +31,11 @@ def test_ProjectDetail__failed_post_init() -> None:
         ValueError,
         match="SimpleAPI>=1.1 requires the size field to be set for all the files.",
     ):
-        m.ProjectDetail(
-            meta=m.Meta("1.1"),
+        model.ProjectDetail(
+            meta=model.Meta("1.1"),
             name="pippo",
             files=(
-                m.File(
+                model.File(
                     filename="pippozzo",
                     url="url",
                     hashes={},
@@ -43,11 +45,11 @@ def test_ProjectDetail__failed_post_init() -> None:
 
 
 def test_ProjectDetail__post_init_v1() -> None:
-    project_detail = m.ProjectDetail(
-        meta=m.Meta("1.0"),
+    project_detail = model.ProjectDetail(
+        meta=model.Meta("1.0"),
         name="pippo",
         files=(
-            m.File(
+            model.File(
                 filename="pippozzo",
                 url="url",
                 hashes={},
@@ -58,17 +60,17 @@ def test_ProjectDetail__post_init_v1() -> None:
 
 
 def test_ProjectDetail__post_init_v1_1() -> None:
-    project_detail = m.ProjectDetail(
-        meta=m.Meta("1.1"),
+    project_detail = model.ProjectDetail(
+        meta=model.Meta("1.1"),
         name="pippo",
         files=(
-            m.File(
+            model.File(
                 filename="pippo-1.0.tar.gz",
                 url="url",
                 hashes={},
                 size=1,
             ),
-            m.File(
+            model.File(
                 filename="pippo-2.0-anylinux-py3.whl",
                 url="url",
                 hashes={},

@@ -5,6 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import pathlib
 import typing
 from unittest import mock
@@ -14,9 +16,10 @@ import httpx
 import pytest
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 from ...components.metadata_injector import MetadataInjectorRepository
 from .fake_repository import FakeRepository
+from .mock_compat import AsyncMock
 
 
 @pytest.fixture
@@ -43,7 +46,7 @@ def repository() -> MetadataInjectorRepository:
                 ),
             },
         ),
-        http_client=mock.AsyncMock(),
+        http_client=AsyncMock(),
     )
 
 
@@ -104,7 +107,7 @@ def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
         ),
     ],
 )
-def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: list[str], metadata_name: str) -> None:
+def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: typing.List[str], metadata_name: str) -> None:
     ziparchive = mock.MagicMock(spec=zipfile.ZipFile)
     ziparchive_ctx = ziparchive.__enter__.return_value
     read_method = ziparchive_ctx.read
@@ -137,7 +140,7 @@ def test_get_metadata_from_package__not_wheel(repository: MetadataInjectorReposi
         ],
     ],
 )
-def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: list[str]) -> None:
+def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: typing.List[str]) -> None:
     m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
     m_zipfile_cls.return_value.__enter__.return_value.namelist.return_value = [
         "not_my_package-0.0.1.dist-info/METADATA",
@@ -168,7 +171,7 @@ async def test_get_resource(
     with mock.patch.object(
         repository,
         "_download_metadata",
-        return_value="downloaded_meta",
+        AsyncMock(return_value="downloaded_meta"),
     ):
         response = await repository.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
@@ -193,14 +196,16 @@ async def test_get_resource__local_resource(
 
 @pytest.mark.asyncio
 async def test_get_resource__not_valid_resource() -> None:
-    source_repo = mock.Mock(spec=SimpleRepository)
-    source_repo.get_resource.side_effect = [
-        errors.ResourceUnavailable('name'),
-        model.TextResource(text='/etc/passwd'),
-    ]
+    source_repo = mock.Mock(spec=core.SimpleRepository)
+    source_repo.get_resource = AsyncMock(
+        side_effect=[
+            errors.ResourceUnavailable('name'),
+            model.TextResource(text='/etc/passwd'),
+        ],
+    )
     repo = MetadataInjectorRepository(
-        source=typing.cast(SimpleRepository, source_repo),
-        http_client=mock.AsyncMock(),
+        source=typing.cast(core.SimpleRepository, source_repo),
+        http_client=AsyncMock(),
     )
     with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
         await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
@@ -223,14 +228,12 @@ async def test_get_resource__not_metadata(
 async def test_download_metadata(
     repository: MetadataInjectorRepository,
 ) -> None:
-    with (
-        mock.patch.object(
-            repository,
-            "_get_metadata_from_package",
-        ) as get_metadata_from_package_mock,
-        mock.patch("simple_repository.utils.download_file") as download_file_mock,
-    ):
-        await repository._download_metadata("name", "url", httpx.AsyncClient())
+    with mock.patch.object(
+        repository,
+        "_get_metadata_from_package",
+    ) as get_metadata_from_package_mock:
+        with mock.patch("simple_repository.utils.download_file", new_callable=AsyncMock) as download_file_mock:
+            await repository._download_metadata("name", "url", httpx.AsyncClient())
 
     get_metadata_from_package_mock.assert_called_once()
     download_file_mock.assert_awaited_once()

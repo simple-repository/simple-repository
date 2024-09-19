@@ -5,20 +5,22 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime
 import json
-from typing import Optional, Union
+import typing
 
 import pytest
 
-from ..model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
+from .. import model, utils
 from ..serializer import SerializerHtmlV1, SerializerJsonV1
 
 
 def test_serialize_file_html() -> None:
     serializer = SerializerHtmlV1()
 
-    file = File(
+    file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={"test": "123", "sha256": "abc123"},
@@ -30,7 +32,7 @@ def test_serialize_file_html() -> None:
     )
     assert serializer._serialize_file(file) == expected
 
-    file = File(
+    file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -53,12 +55,12 @@ def test_serialize_file_html() -> None:
 )
 def test_serialize_file_html_yank(
     yank_attr: str,
-    yank_value: Optional[Union[bool, str]],
+    yank_value: typing.Union[bool, str, None],
 ) -> None:
     serializer = SerializerHtmlV1(
 
     )
-    file = File(
+    file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -83,11 +85,11 @@ def test_serialize_file_html_yank(
 )
 def test_serialize_file_html_metadata(
     metadata_attr: str,
-    metadata_value: Optional[Union[bool, dict[str, str]]],
+    metadata_value: typing.Union[bool, typing.Dict[str, str], None],
 ) -> None:
     serializer = SerializerHtmlV1()
 
-    file = File(
+    file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -109,10 +111,10 @@ def test_serialize_file_html_metadata(
         ('', None),
     ],
 )
-def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: Optional[bool]) -> None:
+def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
     serializer = SerializerHtmlV1()
 
-    file = File(
+    file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -127,12 +129,12 @@ def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: Optional[bool]) -> No
 
 
 def test_serialize_project_page_html() -> None:
-    project_page = ProjectDetail(
-        meta=Meta(api_version="1.0"),
+    project_page = model.ProjectDetail(
+        meta=model.Meta(api_version="1.0"),
         name="test-project",
         files=(
-            File(filename="test.html", url="https://example.com/test.html", hashes={}),
-            File(filename="test.txt", url="test.txt", hashes={}),
+            model.File(filename="test.html", url="https://example.com/test.html", hashes={}),
+            model.File(filename="test.txt", url="test.txt", hashes={}),
         ),
     )
     expected = """<!DOCTYPE html>
@@ -152,11 +154,11 @@ def test_serialize_project_page_html() -> None:
 
 
 def test_serialize_project_list_html() -> None:
-    project_list = ProjectList(
-        meta=Meta(api_version="1.0"),
+    project_list = model.ProjectList(
+        meta=model.Meta(api_version="1.0"),
         projects=frozenset([
-            ProjectListElement(name="test-project-1"),
-            ProjectListElement(name="test-project-2"),
+            model.ProjectListElement(name="test-project-1"),
+            model.ProjectListElement(name="test-project-2"),
         ]),
     )
     expected_header = """<!DOCTYPE html>
@@ -174,22 +176,25 @@ def test_serialize_project_list_html() -> None:
     serialized_page = serializer.serialize_project_list(project_list)
     assert serialized_page.startswith(expected_header)
     assert serialized_page.endswith(expected_footer)
-    a_tags = serialized_page.removeprefix(expected_header).removesuffix(expected_footer)
+    a_tags = utils.remove_suffix(
+        utils.remove_prefix(serialized_page, expected_header),
+        expected_footer,
+    )
     assert '<a href="test-project-1/">test-project-1</a><br/>' in a_tags
     assert '<a href="test-project-2/">test-project-2</a><br/>' in a_tags
 
 
 def test_serialize_project_page_json() -> None:
-    page = ProjectDetail(
-        Meta("1.0"),
+    page = model.ProjectDetail(
+        model.Meta("1.0"),
         "project",
         files=(
-            File(
+            model.File(
                 filename="test1.whl",
                 url="test1.whl",
                 hashes={},
             ),
-            File(
+            model.File(
                 filename="test2.whl",
                 url="test2.whl",
                 hashes={"hash": "test_hash"},
@@ -198,7 +203,7 @@ def test_serialize_project_page_json() -> None:
                 yanked="yanked",
                 gpg_sig=True,
             ),
-            File(
+            model.File(
                 filename="test3.whl",
                 url="test3.whl",
                 hashes={},
@@ -269,11 +274,11 @@ def test_serialize_project_page_json__v1_1_attrs(
     version: str,
     serialization: str,
 ) -> None:
-    page = ProjectDetail(
-        Meta(version),
+    page = model.ProjectDetail(
+        model.Meta(version),
         "project",
         files=(
-            File(
+            model.File(
                 filename="test1-1.0.whl",
                 url="test1.whl",
                 hashes={},
@@ -288,10 +293,10 @@ def test_serialize_project_page_json__v1_1_attrs(
 
 
 def test_serialize_project_list_json() -> None:
-    page = ProjectList(
-        Meta("1.0"),
+    page = model.ProjectList(
+        model.Meta("1.0"),
         projects=frozenset([
-            ProjectListElement("a"),
+            model.ProjectListElement("a"),
         ]),
     )
     serializer = SerializerJsonV1()

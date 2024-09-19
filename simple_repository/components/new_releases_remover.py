@@ -5,15 +5,18 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from dataclasses import replace
-from datetime import datetime, timedelta
+from __future__ import annotations
 
+import dataclasses
+from datetime import datetime, timedelta
+import typing
+
+from . import core
 from .. import model
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 
-class NewReleasesRemover(RepositoryContainer):
+class NewReleasesRemover(core.RepositoryContainer):
     """
     A component used to remove newly released projects from the source
     repository until they have existed for the given quarantine time.
@@ -22,9 +25,9 @@ class NewReleasesRemover(RepositoryContainer):
     """
     def __init__(
         self,
-        source: SimpleRepository,
+        source: core.SimpleRepository,
         quarantine_time: timedelta = timedelta(days=2),
-        whitelist: tuple[str, ...] = tuple(),
+        whitelist: typing.Tuple[str, ...] = (),
     ) -> None:
         self._quarantine_time = quarantine_time
         self._whitelist = whitelist
@@ -60,4 +63,4 @@ class NewReleasesRemover(RepositoryContainer):
             if not file.upload_time or
             (now - file.upload_time).total_seconds() >= self._quarantine_time.total_seconds()
         )
-        return replace(project_page, files=filtered_files)
+        return dataclasses.replace(project_page, files=filtered_files)

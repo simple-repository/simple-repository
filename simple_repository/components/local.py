@@ -5,19 +5,20 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime
-import hashlib
 import os
 import pathlib
 
-from packaging.utils import canonicalize_name
+import packaging.utils
 
-from .. import errors, model
+from . import core
+from .. import errors, model, utils
 from .._typing_compat import override
-from .core import SimpleRepository
 
 
-class LocalRepository(SimpleRepository):
+class LocalRepository(core.SimpleRepository):
     """
     Creates a simple repository from a local directory.
     The directory must contain a subdirectory for each project,
@@ -45,7 +46,7 @@ class LocalRepository(SimpleRepository):
             projects=frozenset(
                 model.ProjectListElement(x.name)
                 for x in self._index_path.iterdir()
-                if x.is_dir() and x.name == canonicalize_name(x.name)
+                if x.is_dir() and x.name == packaging.utils.canonicalize_name(x.name)
             ),
         )
 
@@ -95,8 +96,8 @@ class LocalRepository(SimpleRepository):
         resource_uri = (repository_uri / resource_name).resolve()
 
         if (
-            not repository_uri.is_relative_to(self._index_path) or
-            not resource_uri.is_relative_to(repository_uri)
+            not utils.is_relative_to(repository_uri, self._index_path) or
+            not utils.is_relative_to(resource_uri, repository_uri)
         ):
             raise ValueError(
                 f"{resource_uri} is not contained in {repository_uri}",
@@ -107,7 +108,7 @@ class LocalRepository(SimpleRepository):
         # Calculating on the fly the hash of the whole package can be too slow.
         # "mtime + size" provide a good approximation to detect if the package has been changed.
         etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
-        digest = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        digest = utils.hash_md5(etag_base.encode())
         etag = f'"{digest}"'
 
         return model.LocalResource(

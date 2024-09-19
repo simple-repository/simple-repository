@@ -5,6 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import pytest
 
 from ... import errors, model
@@ -60,7 +62,9 @@ async def test_get_project_page() -> None:
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
     repo = MergedRepository([
-        FakeRepository() for _ in range(3)
+        FakeRepository(),
+        FakeRepository(),
+        FakeRepository(),
     ])
 
     with pytest.raises(

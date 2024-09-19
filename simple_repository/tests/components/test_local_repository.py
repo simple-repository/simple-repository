@@ -5,9 +5,11 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime
 import os
-from pathlib import Path
+import pathlib
 
 import pytest
 
@@ -15,17 +17,17 @@ from ... import errors, model
 from ...components.local import LocalRepository
 
 
-def test_path_resolution(tmp_path: Path) -> None:
+def test_path_resolution(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "my-path" / "simple"
     path.mkdir(parents=True)
-    symlink = Path(tmp_path / "symlink")
+    symlink = pathlib.Path(tmp_path / "symlink")
     symlink.symlink_to(path)
     repo = LocalRepository(symlink)
     assert repo._index_path == tmp_path / "my-path" / "simple"
 
 
 @pytest.fixture
-def simple_dir(tmp_path: Path) -> Path:
+def simple_dir(tmp_path: pathlib.Path) -> pathlib.Path:
     for project in ("numpy", "tensorflow", "pandas", ".not_normalized"):
         (tmp_path / project).mkdir()
     for file in ("numpy-1.0-any.whl", "numpy-1.1.tar.gz"):
@@ -35,12 +37,12 @@ def simple_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def repository(simple_dir: Path) -> LocalRepository:
+def repository(simple_dir: pathlib.Path) -> LocalRepository:
     return LocalRepository(simple_dir)
 
 
 @pytest.mark.asyncio
-async def test_get_project_list(simple_dir: Path) -> None:
+async def test_get_project_list(simple_dir: pathlib.Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
@@ -57,7 +59,7 @@ async def test_get_project_list(simple_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource(simple_dir: Path) -> None:
+async def test_get_resource(simple_dir: pathlib.Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
@@ -86,7 +88,7 @@ async def test_get_resource(simple_dir: Path) -> None:
 )
 @pytest.mark.asyncio
 async def test_get_resource__unavailable(
-    simple_dir: Path,
+    simple_dir: pathlib.Path,
     project: str,
     resource: str,
 ) -> None:
@@ -109,7 +111,7 @@ async def test_get_resource__unavailable(
 )
 @pytest.mark.asyncio
 async def test_get_resource__path_traversal(
-    simple_dir: Path,
+    simple_dir: pathlib.Path,
     project: str,
     resource: str,
 ) -> None:
@@ -124,7 +126,7 @@ async def test_get_resource__path_traversal(
 
 
 @pytest.mark.asyncio
-async def test_get_project_page(simple_dir: Path) -> None:
+async def test_get_project_page(simple_dir: pathlib.Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )
@@ -161,7 +163,7 @@ async def test_get_project_page(simple_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__not_found(simple_dir: Path) -> None:
+async def test_get_project_page__not_found(simple_dir: pathlib.Path) -> None:
     repo = LocalRepository(
         index_path=simple_dir,
     )

@@ -29,21 +29,24 @@ Where additional context is added to a quote, it will be inline within square
 brackets, for example ``[additional context]``.
 
 """
-from dataclasses import dataclass, field
+from __future__ import annotations
+
+import dataclasses
 from datetime import datetime
 import pathlib
-from typing import TYPE_CHECKING, Optional, TypedDict, Union
+import typing
 
 import packaging.utils
 import packaging.version
 
+from ._typing_compat import Protocol, TypedDict
 from .packaging import safe_version
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from . import SimpleRepository
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class File:
     """
     Simple representation of a distribution file.
@@ -56,8 +59,8 @@ class File:
     # PEP-592: A dictionary mapping a hash name to a hex encoded digest of the file.
     # PEP-592: Limited to a len() of 1 in HTML
     # Additional hashes are not included in the HTML serialization.
-    hashes: dict[str, str]
-    requires_python: Optional[str] = None
+    hashes: typing.Dict[str, str]
+    requires_python: typing.Optional[str] = None
 
     # PEP-691: An optional key that indicates that metadata for this file is available
     # PEP-691: Where this is present, it MUST be either a boolean to indicate
@@ -69,13 +72,13 @@ class File:
     # PEP-691: Limited to a len() of 1 in HTML
     # If the key is not "present", it will be None.
     # A maximum of one hash will be included the HTML serialization.
-    dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None  # PEP-658
+    dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = None  # PEP-658
 
     # PEP-691: An optional key that acts a boolean to indicate if the file has an
     #          associated GPG signature or not.
     # PEP-691: If this key does not exist, then the signature may or may not exist.
     # A None value indicates the key does not exist (i.e. there may or may not be a sig file).
-    gpg_sig: Optional[bool] = None
+    gpg_sig: typing.Optional[bool] = None
 
     # PEP-691: either a boolean to indicate if the file has been yanked, or a non empty,
     #          but otherwise arbitrary, string to indicate that a file
@@ -86,23 +89,23 @@ class File:
     #          arbitrary string [including falsy ones such as "false"] that represents
     #          the reason for why the file has been yanked.
     # Note that the string "false" is a valid yank reason in both JSON and HTML.
-    yanked: Optional[Union[bool, str]] = None
+    yanked: typing.Union[bool, str, None] = None
 
     # PEP-700: This field is mandatory. It MUST contain an integer which is the file size in bytes.
-    size: Optional[int] = None
+    size: typing.Optional[int] = None
 
     # PEP-700: This field is optional. If present, it MUST contain a valid ISO 8601 date/time
     #          string, in the format yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the
     #          file was uploaded to the index. As indicated by the Z suffix, the upload time
     #          MUST use the UTC timezone.
-    upload_time: Optional[datetime] = None
+    upload_time: typing.Optional[datetime] = None
 
     def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Meta:
     """Responses metadata defined in PEP-629:
     https://peps.python.org/pep-0629/
@@ -110,18 +113,18 @@ class Meta:
     api_version: str
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ProjectDetail:
     """Model of a project page as described in PEP-691"""
     meta: Meta
     name: str
-    files: tuple[File, ...]
+    files: typing.Tuple[File, ...]
     # PEP-700: An additional key, versions MUST be present at the top level, in addition to the
     #          keys name, files and meta defined in PEP 691. This key MUST contain a list of version
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: Optional[set[str]] = field(init=False)
+    versions: typing.Optional[typing.Set[str]] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -144,7 +147,7 @@ class ProjectDetail:
         return packaging.utils.canonicalize_name(self.name)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ProjectListElement:
     name: str  # not necessarily normalized.
 
@@ -153,29 +156,28 @@ class ProjectListElement:
         return packaging.utils.canonicalize_name(self.name)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ProjectList:
     """Model of the project list as described in PEP-691"""
     meta: Meta
-    projects: frozenset[ProjectListElement]
+    projects: typing.FrozenSet[ProjectListElement]
 
 
 class Context(TypedDict, total=False):
     etag: str
 
 
-@dataclass(frozen=True)
-class Resource:
-    context: Context = field(default_factory=lambda: Context(), kw_only=True)
+class Resource(Protocol):
+    context: Context
     # If this attribute is set to False, cache components will ignore this resource
-    to_cache: bool = field(default=True, kw_only=True)
+    to_cache: bool
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class RequestContext:
     repository: "SimpleRepository"
     # TODO: Worry that context is mutable.
-    context: dict[str, str] = field(default_factory=dict)
+    context: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
 
     # Provider a default context which can be used in all signatures using RequestContext.
     # By default, if not specified, the default request context will be the one containing the
@@ -187,19 +189,25 @@ class RequestContext:
     DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class LocalResource(Resource):
     path: pathlib.Path
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class HttpResource(Resource):
     url: str
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TextResource(Resource):
     text: str
+    context: Context = dataclasses.field(default_factory=lambda: Context())
+    to_cache: bool = dataclasses.field(default=True)
 
 
 class NotModified(Exception):

@@ -5,8 +5,12 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
+import hashlib
 import json
 import pathlib
+import sys
 import typing
 from urllib.parse import urljoin, urlparse
 
@@ -22,7 +26,7 @@ def url_absolutizer(url: str, url_base: str) -> str:
     return url
 
 
-def load_config_json(json_file: pathlib.Path) -> dict[typing.Any, typing.Any]:
+def load_config_json(json_file: pathlib.Path) -> typing.Dict[typing.Any, typing.Any]:
     try:
         json_config = json.loads(json_file.read_text())
     except json.JSONDecodeError as e:
@@ -47,3 +51,39 @@ async def download_file(
         async with http_client.stream("GET", download_url) as data:
             async for chunk in data.aiter_bytes(chunk_size):
                 file.write(chunk)
+
+
+def remove_prefix(source: str, prefix: str) -> str:
+    """Compatibility for pre-3.9 implementations that do not have str.removeprefix"""
+    if sys.version_info >= (3, 9):
+        return source.removeprefix(prefix)
+    if source.startswith(prefix):
+        return source[len(prefix):]
+
+
+def remove_suffix(source: str, suffix: str) -> str:
+    """Compatibility for pre-3.9 implementations that do not have str.removesuffix"""
+    if sys.version_info >= (3, 9):
+        return source.removesuffix(suffix)
+    if source.endswith(suffix):
+        return source[:-len(suffix)]
+
+
+def is_relative_to(target: pathlib.Path, match: typing.Union[str, pathlib.Path]) -> bool:
+    """Compatibility for pre-3.9 implementations that do not have Path.is_relative_to"""
+    if sys.version_info >= (3, 9):
+        return target.is_relative_to(match)
+    try:
+        _ = target.relative_to(match)
+        return True
+    except ValueError:
+        return False
+
+
+def hash_md5(data: bytes) -> str:
+    """Compatibility for pre-3.9 implementations that do not allow md5() call with arguments"""
+    if sys.version_info >= (3, 9):
+        return hashlib.md5(data, usedforsecurity=False).hexdigest()
+    h = hashlib.md5()
+    h.update(data)
+    return h.hexdigest()

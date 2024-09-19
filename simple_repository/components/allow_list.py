@@ -5,17 +5,18 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from dataclasses import replace
+from __future__ import annotations
 
-from simple_repository.model import ProjectDetail, ProjectList, RequestContext, Resource
+import dataclasses
+import typing
 
+from . import core
 from .. import errors, model
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 
-class AllowListRepository(RepositoryContainer):
-    def __init__(self, source: SimpleRepository, allow_list: tuple[str, ...]) -> None:
+class AllowListRepository(core.RepositoryContainer):
+    def __init__(self, source: core.SimpleRepository, allow_list: typing.Tuple[str, ...]) -> None:
         super().__init__(source)
         self._allow_list = allow_list
 
@@ -24,20 +25,20 @@ class AllowListRepository(RepositoryContainer):
         self,
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
-    ) -> ProjectList:
+    ) -> model.ProjectList:
         project_list = await super().get_project_list(request_context=request_context)
         projects = frozenset(
             elem for elem in project_list.projects if elem.normalized_name in self._allow_list
         )
-        return replace(project_list, projects=projects)
+        return dataclasses.replace(project_list, projects=projects)
 
     @override
     async def get_project_page(
         self,
         project_name: str,
         *,
-        request_context: RequestContext = model.RequestContext.DEFAULT,
-    ) -> ProjectDetail:
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.ProjectDetail:
         if project_name not in self._allow_list:
             raise errors.PackageNotFoundError(project_name)
         return await super().get_project_page(project_name, request_context=request_context)
@@ -48,8 +49,8 @@ class AllowListRepository(RepositoryContainer):
         project_name: str,
         resource_name: str,
         *,
-        request_context: RequestContext = model.RequestContext.DEFAULT,
-    ) -> Resource:
+        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+    ) -> model.Resource:
         if project_name not in self._allow_list:
             raise errors.ResourceUnavailable(resource_name)
         return await super().get_resource(

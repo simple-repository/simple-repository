@@ -5,6 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime
 import os
 import pathlib
@@ -14,10 +16,12 @@ from unittest import mock
 import httpx
 import pytest
 import pytest_asyncio
-from pytest_httpx import HTTPXMock
 
 from ... import model
 from ...components.http_cached import CachedHttpRepository
+
+if typing.TYPE_CHECKING:
+    import pytest_httpx
 
 
 @pytest_asyncio.fixture
@@ -35,7 +39,7 @@ async def repository(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_miss(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     httpx_mock.add_response(
         content="new-body",
@@ -56,7 +60,7 @@ async def test_fetch_simple_page__cache_miss(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_not_modified(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     httpx_mock.add_response(status_code=304)
 
@@ -69,7 +73,7 @@ async def test_fetch_simple_page__cache_hit_not_modified(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_modified(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     httpx_mock.add_response(
         content="new-body",
@@ -88,7 +92,7 @@ async def test_fetch_simple_page__cache_hit_modified(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_hit_source_unreachable(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository._save_to_cache("url", "stored-etag,stored-type,stored-body")
     httpx_mock.add_exception(httpx.RequestError("error"))
@@ -101,7 +105,7 @@ async def test_fetch_simple_page__cache_hit_source_unreachable(
 @pytest.mark.asyncio
 async def test_fetch_simple_page__cache_miss_source_unreachable(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     httpx_mock.add_exception(httpx.RequestError("error"))
     with pytest.raises(httpx.RequestError, match="error"):
@@ -111,7 +115,7 @@ async def test_fetch_simple_page__cache_miss_source_unreachable(
 @pytest.mark.asyncio
 async def test_get_project_page__cached(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository._save_to_cache(
         "https://example.com/simple/project/", "stored-etag,text/html," + """
@@ -145,7 +149,7 @@ async def test_get_project_page__cached(
 @pytest.mark.asyncio
 async def test_get_project_list__cached(
     repository: CachedHttpRepository,
-    httpx_mock: HTTPXMock,
+    httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository._save_to_cache(
         "https://example.com/simple/", "stored-etag,text/html," + """

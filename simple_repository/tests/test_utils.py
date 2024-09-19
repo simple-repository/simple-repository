@@ -5,12 +5,17 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import json
-import pathlib
+import typing
 
 import httpx
 import pytest
-from pytest_httpx import HTTPXMock
+
+if typing.TYPE_CHECKING:
+    import pathlib
+    import pytest_httpx
 
 from .. import errors, utils
 
@@ -85,7 +90,7 @@ async def test_load_config_file_not_found(
 
 
 @pytest.mark.asyncio
-async def test_download_file(tmp_path: pathlib.PosixPath, httpx_mock: HTTPXMock) -> None:
+async def test_download_file(tmp_path: pathlib.PosixPath, httpx_mock: pytest_httpx.HTTPXMock) -> None:
     download_url = "https://example.com/package.tar.gz"
     dest_file = tmp_path / "package.tar.gz"
 

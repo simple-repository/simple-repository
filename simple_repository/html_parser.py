@@ -5,6 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 import html.parser
 import typing
 
@@ -15,9 +17,9 @@ class HTMLElement:
     def __init__(
             self,
             tag: str,
-            attrs: dict[str, str | None],
-            content: str | None = None,
-    ):
+            attrs: typing.Dict[str, typing.Optional[str]],
+            content: typing.Optional[str] = None,
+    ) -> None:
         self.tag = tag
         self.attrs = attrs
         self.content = content
@@ -49,17 +51,21 @@ class SimpleHTMLParser(html.parser.HTMLParser):
         The only time when this parser seems to error is with decoding issues.
     """
 
-    def __init__(self, *, convert_charrefs: bool = True):
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
         super().__init__(convert_charrefs=convert_charrefs)
-        self.declaration: str | None = None
-        self.elements: list[HTMLElement] = []
-        self._current_tag: str | None = None
-        self._current_data: str | None = None
+        self.declaration: typing.Optional[str] = None
+        self.elements: typing.List[HTMLElement] = []
+        self._current_tag: typing.Optional[str] = None
+        self._current_data: typing.Optional[str] = None
 
     def handle_decl(self, decl: str) -> None:
         self.declaration = decl
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: typing.List[typing.Tuple[str, typing.Optional[str]]],
+    ) -> None:
         self.elements.append(HTMLElement(tag, dict(attrs)))
         self._current_tag = tag
         self._current_data = None

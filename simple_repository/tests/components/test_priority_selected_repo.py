@@ -5,13 +5,14 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from unittest import mock
+from __future__ import annotations
 
 import pytest
 
 from ... import errors, model
 from ...components.priority_selected import PrioritySelectedProjectsRepository
 from .fake_repository import FakeRepository
+from .mock_compat import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -109,10 +110,12 @@ async def test_blended_get_project_list() -> None:
 async def test_blended_get_project_list_failed() -> None:
     repo = PrioritySelectedProjectsRepository(
         sources=[
-            mock.AsyncMock() for _ in range(3)
+            AsyncMock(),
+            AsyncMock(),
+            AsyncMock(),
         ],
     )
-    assert isinstance(repo.sources[2], mock.Mock)
+    assert isinstance(repo.sources[2], AsyncMock)
     repo.sources[2].get_project_list.side_effect = errors.SourceRepositoryUnavailable
     with pytest.raises(errors.SourceRepositoryUnavailable):
         await repo.get_project_list()
@@ -131,10 +134,10 @@ async def test_blended_get_project_page_failed() -> None:
                     ),
                 ],
             ),
-            mock.AsyncMock(),
+            AsyncMock(),
         ],
     )
-    assert isinstance(repo.sources[1], mock.Mock)
+    assert isinstance(repo.sources[1], AsyncMock)
     repo.sources[1].get_project_list.side_effect = Exception
 
     res = await repo.get_project_page("numpy")

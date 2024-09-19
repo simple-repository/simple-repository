@@ -5,31 +5,34 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 import pathlib
 import re
 import tempfile
+import typing
 import zipfile
 
 import httpx
-from packaging.utils import canonicalize_name
+import packaging.utils
 
+from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
 
 metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
 
 
-class MetadataInjectorRepository(RepositoryContainer):
+class MetadataInjectorRepository(core.RepositoryContainer):
     """Adds PEP-658 support to a simple repository. If not already specified,
     sets the dist-info metadata for all wheels packages in a project page.
     Metadata is extracted from the wheels on the fly and cached for later use.
     """
     def __init__(
         self,
-        source: SimpleRepository,
-        http_client: httpx.AsyncClient | None = None,
+        source: core.SimpleRepository,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
     ) -> None:
         self._http_client = http_client or httpx.AsyncClient()
         super().__init__(source)
@@ -72,13 +75,13 @@ class MetadataInjectorRepository(RepositoryContainer):
         # Get hold of the actual artefact from which we want to extract
         # the metadata.
         resource = await request_context.repository.get_resource(
-            project_name, resource_name.removesuffix(".metadata"),
+            project_name, utils.remove_suffix(resource_name, ".metadata"),
             request_context=request_context,
         )
         if isinstance(resource, model.HttpResource):
             try:
                 metadata = await self._download_metadata(
-                    package_name=resource_name.removesuffix(".metadata"),
+                    package_name=utils.remove_suffix(resource_name, ".metadata"),
                     download_url=resource.url,
                     http_client=self._http_client,
                 )
@@ -93,14 +96,15 @@ class MetadataInjectorRepository(RepositoryContainer):
                 raise errors.ResourceUnavailable(resource_name) from e
         else:
             raise errors.ResourceUnavailable(
-                resource_name.removesuffix(".metadata"),
+                utils.remove_suffix(resource_name, ".metadata"),
                 "Unable to fetch the resource needed to extract the metadata.",
             )
 
         metadata_resource = model.TextResource(
             text=metadata,
         )
-        if etag := resource.context.get("etag"):
+        etag = resource.context.get("etag")
+        if etag:
             # Use the same etag as the one that identifies the package.
             # In this way, if that package changes, also the metadata will be invalidated.
             metadata_resource.context["etag"] = etag
@@ -112,16 +116,17 @@ class MetadataInjectorRepository(RepositoryContainer):
             raise ValueError(
                 f"Filename {package_path.name} is not normalized according to PEP-427",
             )
-        distribution = canonicalize_name(package_tokens[0])
+        distribution = packaging.utils.canonicalize_name(package_tokens[0])
         # Package consumer, when extracting metadata, should tolerate small differences
         # respecting what is strictly described in PEP-427, for reference see:
         # https://packaging.python.org/en/latest/specifications/binary-distribution-format/
         try:
             with zipfile.ZipFile(package_path, 'r') as ziparchive:
                 for file in ziparchive.namelist():
-                    if not (match := metadata_regex.match(file)):
+                    match = metadata_regex.match(file)
+                    if not match:
                         continue
-                    if canonicalize_name(match.group(1)) == distribution:
+                    if packaging.utils.canonicalize_name(match.group(1)) == distribution:
                         return ziparchive.read(file).decode()
                 raise errors.InvalidPackageError(
                     "Provided wheel doesn't contain a metadata file.",
@@ -155,7 +160,7 @@ class MetadataInjectorRepository(RepositoryContainer):
         files = []
         for file in project_page.files:
             if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
-                file = replace(file, dist_info_metadata=True)
+                file = dataclasses.replace(file, dist_info_metadata=True)
             files.append(file)
-        project_page = replace(project_page, files=tuple(files))
+        project_page = dataclasses.replace(project_page, files=tuple(files))
         return project_page

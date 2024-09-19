@@ -5,18 +5,21 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from typing import Optional
+from __future__ import annotations
+
+import typing
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 
 
-class FakeRepository(SimpleRepository):
+class FakeRepository(core.SimpleRepository):
+
     def __init__(
         self,
         project_list: model.ProjectList = model.ProjectList(model.Meta('1.0'), frozenset()),
-        project_pages: Optional[list[model.ProjectDetail]] = None,
-        resources: Optional[dict[str, model.Resource]] = None,
+        project_pages: typing.Optional[typing.List[model.ProjectDetail]] = None,
+        resources: typing.Optional[typing.Dict[str, model.Resource]] = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:
@@ -51,6 +54,7 @@ class FakeRepository(SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
-        if resource := self.resources.get(resource_name):
+        resource = self.resources.get(resource_name)
+        if resource:
             return resource
         raise errors.ResourceUnavailable(resource_name)

@@ -5,28 +5,29 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from html import escape
+from __future__ import annotations
+
+import html
 import json
 import typing
-from typing import Union
 
 import packaging.utils
 import packaging.version
 
-from .content_negotiation import Format
-from .model import File, ProjectDetail, ProjectList
+from . import content_negotiation, model
+from ._typing_compat import Protocol
 
 
-class Serializer(typing.Protocol):
-    def serialize_project_page(self, page: ProjectDetail) -> str:
+class Serializer(Protocol):
+    def serialize_project_page(self, page: model.ProjectDetail) -> str:
         ...
 
-    def serialize_project_list(self, page: ProjectList) -> str:
+    def serialize_project_list(self, page: model.ProjectList) -> str:
         ...
 
 
 class SerializerJsonV1(Serializer):
-    def serialize_project_page(self, page: ProjectDetail) -> str:
+    def serialize_project_page(self, page: model.ProjectDetail) -> str:
         project_page_dict = {
             "meta": {
                 "api-version": page.meta.api_version,
@@ -44,7 +45,7 @@ class SerializerJsonV1(Serializer):
             project_page_dict["versions"] = list(page.versions)
         return json.dumps(project_page_dict)
 
-    def serialize_project_list(self, page: ProjectList) -> str:
+    def serialize_project_list(self, page: model.ProjectList) -> str:
         list_dict = {
            "meta": {"api-version": page.meta.api_version},
            "projects": [
@@ -55,9 +56,9 @@ class SerializerJsonV1(Serializer):
 
     def standardize_file(
         self,
-        file: File,
+        file: model.File,
         version: packaging.version.Version,
-    ) -> dict[str, typing.Any]:
+    ) -> typing.Dict[str, typing.Any]:
         file_dict: dict[str, typing.Any] = {
             "filename": file.filename,
             "url": file.url,
@@ -104,7 +105,7 @@ class SerializerHtmlV1(Serializer):
     SIMPLE_INDEX_PROJECT_LINK = '<a href="{href}">{project}</a><br/>\n'
     SIMPLE_INDEX_FOOTER = "</body>\n</html>"
 
-    def serialize_project_page(self, page: ProjectDetail) -> str:
+    def serialize_project_page(self, page: model.ProjectDetail) -> str:
         project_page_html = [
             self.SIMPLE_PROJECT_HEADER.format(
                 api_version=page.meta.api_version,
@@ -118,7 +119,7 @@ class SerializerHtmlV1(Serializer):
         project_page_html.append(self.SIMPLE_PROJECT_FOOTER)
         return "".join(project_page_html)
 
-    def serialize_project_list(self, page: ProjectList) -> str:
+    def serialize_project_list(self, page: model.ProjectList) -> str:
         project_list_html = [
             self.SIMPLE_INDEX_HEADER.format(
                 api_version=page.meta.api_version,
@@ -135,7 +136,7 @@ class SerializerHtmlV1(Serializer):
         project_list_html.append(self.SIMPLE_INDEX_FOOTER)
         return "".join(project_list_html)
 
-    def _serialize_file(self, file: File) -> str:
+    def _serialize_file(self, file: model.File) -> str:
         url = file.url
         attributes = []
         if file.hashes:
@@ -149,7 +150,7 @@ class SerializerHtmlV1(Serializer):
         if file.requires_python:
             # From PEP 503: In the attribute value, < and > have to be HTML
             # encoded as &lt; and &gt;, respectively.
-            attributes.append(f'data-requires-python="{escape(file.requires_python)}"')
+            attributes.append(f'data-requires-python="{html.escape(file.requires_python)}"')
 
         # From PEP 658: The repository SHOULD provide the hash of the Core Metadata file as the
         # data-dist-info-metadata attribute’s value using the syntax <hashname>=<hashvalue>,
@@ -196,21 +197,24 @@ class SerializerHtmlV1(Serializer):
         )
 
 
-serializers: dict[Format, Serializer] = {
-    Format.JSON_V1: SerializerJsonV1(),
-    Format.HTML_V1: SerializerHtmlV1(),
-    Format.HTML_LEGACY: SerializerHtmlV1(),
+serializers: typing.Dict[content_negotiation.Format, Serializer] = {
+    content_negotiation.Format.JSON_V1: SerializerJsonV1(),
+    content_negotiation.Format.HTML_V1: SerializerHtmlV1(),
+    content_negotiation.Format.HTML_LEGACY: SerializerHtmlV1(),
 }
 
 
-def serialize(page: Union[ProjectDetail, ProjectList], format: Format) -> str:
+def serialize(
+    page: typing.Union[model.ProjectDetail, model.ProjectList],
+    format: content_negotiation.Format,
+) -> str:
     serializer = serializers.get(format)
     if serializer is None:
         raise ValueError("Unsupported format")
 
-    if isinstance(page, ProjectList):
+    if isinstance(page, model.ProjectList):
         return serializer.serialize_project_list(page)
-    elif isinstance(page, ProjectDetail):
+    elif isinstance(page, model.ProjectDetail):
         return serializer.serialize_project_page(page)
     else:
         raise ValueError("Unsupported page type")

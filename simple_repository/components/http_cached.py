@@ -5,21 +5,24 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 import logging
 import os
 import pathlib
-from urllib.parse import quote_plus
+import typing
+import urllib.parse
 import uuid
 
 import httpx
 
-from .http import HttpRepository
+from . import http
 
 error_logger = logging.getLogger("gunicorn.error")
 
 
-class CachedHttpRepository(HttpRepository):
+class CachedHttpRepository(http.HttpRepository):
     """
     Caches the http responses received from the source,
     manages cache invalidation using ETAGS.
@@ -31,16 +34,16 @@ class CachedHttpRepository(HttpRepository):
         self,
         url: str,
         cache_path: pathlib.Path,
-        http_client: httpx.AsyncClient | None = None,
+        http_client: typing.Optional[httpx.AsyncClient] = None,
         connection_timeout: timedelta = timedelta(seconds=15),
-    ):
+    ) -> None:
         super().__init__(url, http_client, connection_timeout)
         self._cache_path = cache_path.resolve()
         self._tmp_dir = cache_path / ".incomplete"
         self._tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_from_cache(self, page_url: str) -> str | None:
-        cached_resource_path = self._cache_path / quote_plus(page_url)
+    def _get_from_cache(self, page_url: str) -> typing.Optional[str]:
+        cached_resource_path = self._cache_path / urllib.parse.quote_plus(page_url)
         if not cached_resource_path.is_file():
             return None
         now = datetime.now().timestamp()
@@ -50,7 +53,7 @@ class CachedHttpRepository(HttpRepository):
         return cached_resource_path.read_text()
 
     def _save_to_cache(self, page_url: str, content: str) -> None:
-        cached_resource_path = self._cache_path / quote_plus(page_url)
+        cached_resource_path = self._cache_path / urllib.parse.quote_plus(page_url)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         dest_file = self._tmp_dir / f"{timestamp}_{uuid.uuid4().hex}"
         dest_file.write_text(content)
@@ -60,14 +63,15 @@ class CachedHttpRepository(HttpRepository):
     async def _fetch_simple_page(
         self,
         page_url: str,
-    ) -> tuple[str, str]:
+    ) -> typing.Tuple[str, str]:
         """Retrieves a simple page from the given URL. The retrieved page,
         content type and etag are cached. If the cached content is
         unchanged or the source is unavailable, the cached data is returned.
         """
         headers = {"Accept": self.downstream_content_types}
 
-        if cached_content := self._get_from_cache(page_url):
+        cached_content = self._get_from_cache(page_url)
+        if cached_content:
             etag, cached_content_type, cached_page = cached_content.split(",", 2)
             headers.update({"If-None-Match": etag})
 
@@ -96,7 +100,8 @@ class CachedHttpRepository(HttpRepository):
 
         body = response.text
         content_type = response.headers.get("Content-Type", "")
-        if new_etag := response.headers.get("ETag", ""):
+        new_etag = response.headers.get("ETag", "")
+        if new_etag:
             # If the ETag is set, cache the response for future use.
             self._save_to_cache(page_url, ",".join([new_etag, content_type, body]))
         return body, content_type
