@@ -12,6 +12,29 @@ from .. import errors, model, parser, utils
 from .._typing_compat import override
 
 
+def _url_path_append(url: str, append_with: str) -> str:
+    """
+    Append to the path part of the URL, taking care of trailing slashes on
+    the root_url. `append_with` may contain sub-paths, and may end with a
+    slash if desired.
+
+    """
+    PATH_IDX = 2
+
+    split_url = list(urlsplit(url))
+
+    if not split_url[PATH_IDX].endswith('/'):
+        # Add a trailing slash to the path.
+        split_url[PATH_IDX] += '/'
+
+    if append_with.startswith('/'):
+        append_with = append_with[1:]
+
+    split_url[PATH_IDX] += append_with
+    new_url = urlunsplit(split_url)
+    return new_url
+
+
 class HttpRepository(core.SimpleRepository):
     """Proxy of a remote simple repository"""
 
@@ -21,13 +44,6 @@ class HttpRepository(core.SimpleRepository):
         http_client: typing.Optional[httpx.AsyncClient] = None,
         connection_timeout: timedelta = timedelta(seconds=15),
     ) -> None:
-        parsed_url = urlsplit(url)
-        if not parsed_url.path.endswith('/'):
-            new_url = list(parsed_url)
-            # Add a trailing slash to the path.
-            new_url[2] += '/'
-            url = urlunsplit(new_url)
-
         self._source_url = url
         self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([
@@ -62,9 +78,7 @@ class HttpRepository(core.SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        parsed_url = list(urlsplit(self._source_url))
-        parsed_url[2] += f'{project_name}/'
-        page_url = typing.cast(str, urlunsplit(parsed_url))
+        page_url = _url_path_append(self._source_url, f'{project_name}/')
         try:
             body, content_type = await self._fetch_simple_page(page_url)
         except httpx.HTTPError as e:
