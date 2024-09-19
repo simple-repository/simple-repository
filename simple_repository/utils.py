@@ -59,3 +59,14 @@ def remove_suffix(source: str, suffix: str) -> str:
         return source.removesuffix(suffix)
     if source.endswith(suffix):
         return source[:-len(suffix)]
+
+
+def is_relative_to(target: pathlib.Path, match: typing.Union[str, pathlib.Path]) -> bool:
+    """Compatibility for pre-3.9 implementations that do not have Path.is_relative_to"""
+    if sys.version_info >= (3, 9):
+        return target.is_relative_to(match)
+    try:
+        _ = target.relative_to(match)
+        return True
+    except ValueError:
+        return False

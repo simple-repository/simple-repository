@@ -60,8 +60,8 @@ class ResourceCacheRepository(core.RepositoryContainer):
         # Ensures that the requested resource is contained
         # in the cache directory to avoid path traversal.
         if (
-            not resource_path.is_relative_to(self._cache_path) or
-            not project_dir.is_relative_to(self._cache_path)
+            not utils.is_relative_to(resource_path, self._cache_path) or
+            not utils.is_relative_to(project_dir, self._cache_path)
         ):
             raise ValueError(f"{resource_path} is not contained in {self._cache_path}")
 

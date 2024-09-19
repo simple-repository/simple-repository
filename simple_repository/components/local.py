@@ -8,7 +8,7 @@ import pathlib
 import packaging.utils
 
 from . import core
-from .. import errors, model
+from .. import errors, model, utils
 from .._typing_compat import override
 
 
@@ -90,8 +90,8 @@ class LocalRepository(core.SimpleRepository):
         resource_uri = (repository_uri / resource_name).resolve()
 
         if (
-            not repository_uri.is_relative_to(self._index_path) or
-            not resource_uri.is_relative_to(repository_uri)
+            not utils.is_relative_to(repository_uri, self._index_path) or
+            not utils.is_relative_to(resource_uri, repository_uri)
         ):
             raise ValueError(
                 f"{resource_uri} is not contained in {repository_uri}",
