@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from datetime import timedelta
 import typing
-from urllib.parse import urljoin, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -28,7 +28,7 @@ class HttpRepository(core.SimpleRepository):
             new_url[2] += '/'
             url = urlunsplit(new_url)
 
-        self.source_url = url
+        self._source_url = url
         self._http_client = http_client or httpx.AsyncClient()
         self.downstream_content_types = ", ".join([
             "application/vnd.pypi.simple.v1+json",
@@ -62,7 +62,7 @@ class HttpRepository(core.SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        parsed_url = list(urlsplit(self.source_url))
+        parsed_url = list(urlsplit(self._source_url))
         parsed_url[2] += f'{project_name}/'
         page_url = typing.cast(str, urlunsplit(parsed_url))
         try:
@@ -104,7 +104,7 @@ class HttpRepository(core.SimpleRepository):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectList:
         try:
-            body, content_type = await self._fetch_simple_page(self.source_url)
+            body, content_type = await self._fetch_simple_page(self._source_url)
         except httpx.HTTPError as e:
             raise errors.SourceRepositoryUnavailable() from e
 
