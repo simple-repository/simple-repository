@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-import hashlib
 import os
 import pathlib
 
@@ -102,7 +101,7 @@ class LocalRepository(core.SimpleRepository):
         # Calculating on the fly the hash of the whole package can be too slow.
         # "mtime + size" provide a good approximation to detect if the package has been changed.
         etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
-        digest = hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()
+        digest = utils.hash_md5(etag_base.encode())
         etag = f'"{digest}"'
 
         return model.LocalResource(

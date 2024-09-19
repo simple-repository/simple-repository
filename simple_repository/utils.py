@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import pathlib
 import sys
@@ -70,3 +71,12 @@ def is_relative_to(target: pathlib.Path, match: typing.Union[str, pathlib.Path])
         return True
     except ValueError:
         return False
+
+
+def hash_md5(data: bytes) -> str:
+    """Compatibility for pre-3.9 implementations that do not allow md5() call with arguments"""
+    if sys.version_info >= (3, 9):
+        return hashlib.md5(data, usedforsecurity=False).hexdigest()
+    h = hashlib.md5()
+    h.update(data)
+    return h.hexdigest()
