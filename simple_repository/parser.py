@@ -1,29 +1,30 @@
+from __future__ import annotations
+
 from datetime import datetime
-from html import unescape
+import html
 import json
-from typing import Optional, Union
-from urllib.parse import quote, urldefrag
+import typing
+import urllib.parse
 
-from . import html_parser
-from .model import File, Meta, ProjectDetail, ProjectList, ProjectListElement
+from . import html_parser, model
 
 
-def parse_json_project_list(page: str) -> ProjectList:
+def parse_json_project_list(page: str) -> model.ProjectList:
     project_dict = json.loads(page)
     projects = frozenset(
-        ProjectListElement(
+        model.ProjectListElement(
             name=project.get("name"),
         ) for project in project_dict["projects"]
     )
-    return ProjectList(
-        meta=Meta(
+    return model.ProjectList(
+        meta=model.Meta(
             api_version=project_dict["meta"]["api-version"],
         ),
         projects=projects,
     )
 
 
-def parse_html_project_list(page: str) -> ProjectList:
+def parse_html_project_list(page: str) -> model.ProjectList:
     parser = html_parser.SimpleHTMLParser()
     if not page.lower().lstrip().startswith("<!DOCTYPE html>"):
         # Temporary fix: https://github.com/pypa/pip/issues/10825
@@ -36,27 +37,28 @@ def parse_html_project_list(page: str) -> ProjectList:
     )
 
     projects = frozenset(
-        ProjectListElement(
+        model.ProjectListElement(
             name=element.content,
         )
         for element in a_tags
         if element.content is not None
     )
 
-    return ProjectList(
-        meta=Meta(
+    return model.ProjectList(
+        meta=model.Meta(
             api_version="1.0",
         ),
         projects=projects,
     )
 
 
-def parse_json_project_page(body: str) -> ProjectDetail:
+def parse_json_project_page(body: str) -> model.ProjectDetail:
     page_dict = json.loads(body)
 
     files = []
     for file in page_dict["files"]:
-        if date_string := file.get("upload-time"):
+        date_string = file.get("upload-time")
+        if date_string:
             # PEP-700: upload-time MUST contain a valid ISO 8601 date/time string, in the format
             # yyyy-mm-ddThh:mm:ss.ffffffZ, which represents the time the file was uploaded to
             # the index. The fractional seconds part of the timestamp is optional.
@@ -67,13 +69,13 @@ def parse_json_project_page(body: str) -> ProjectDetail:
         else:
             upload_time = None
         files.append(
-            File(
+            model.File(
                 filename=file["filename"],
                 # Temporary fix: Escape the URLs coming from the source
                 # since Nexus is not escaping them correctly. The "safe" parameter
                 # allows the escape function to be applied to the entire URL
                 # and avoids escaping the special characters ":" and "/".
-                url=quote(file["url"], safe=":/"),
+                url=urllib.parse.quote(file["url"], safe=":/"),
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
                 # PEP-714: Clients consuming the JSON represenation of the Simple API MUST
@@ -86,16 +88,16 @@ def parse_json_project_page(body: str) -> ProjectDetail:
             ),
         )
 
-    return ProjectDetail(
+    return model.ProjectDetail(
         name=page_dict["name"],
-        meta=Meta(
+        meta=model.Meta(
             api_version=page_dict["meta"]["api-version"],
         ),
         files=tuple(files),
     )
 
 
-def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
+def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail:
     parser = html_parser.SimpleHTMLParser()
     if not page.lower().lstrip().startswith("<!DOCTYPE html>"):
         # Temporary fix: https://github.com/pypa/pip/issues/10825
@@ -112,7 +114,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             continue
 
         hashes = {}
-        url, fragment = urldefrag(a_tag.attrs["href"])
+        url, fragment = urllib.parse.urldefrag(a_tag.attrs["href"])
 
         if fragment:
             # PEP-503: The URL SHOULD include a hash in the form of a URL fragment with
@@ -121,9 +123,10 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
                 hash_name, hash_value = str(fragment).split('=', 1)
                 hashes[hash_name] = hash_value
 
-        yanked: Optional[Union[bool, str]] = None
+        yanked: typing.Union[bool, str, None] = None
         if "data-yanked" in a_tag.attrs:
-            if reason := a_tag.attrs.get("data-yanked"):
+            reason = a_tag.attrs.get("data-yanked")
+            if reason:
                 # Note that the reason can equally be the string "false" and it is
                 # still considered yanked.
                 yanked = reason
@@ -131,7 +134,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
                 # The data-yanked value is not set or is an empty string, replace it with True.
                 yanked = True
 
-        dist_info_metadata: Optional[Union[bool, dict[str, str]]] = None
+        dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = None
         # PEP-714: Clients consuming any of the HTML representations of the Simple API MUST
         #          read the PEP 658 metadata from the key data-core-metadata if it is present.
         if "data-core-metadata" in a_tag.attrs:
@@ -153,8 +156,9 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
                     # metadata exists.
                     dist_info_metadata = True
 
-        gpg_sig: Optional[bool] = None
-        if gpg_sig_value := a_tag.attrs.get("data-gpg-sig"):
+        gpg_sig: typing.Optional[bool] = None
+        gpg_sig_value = a_tag.attrs.get("data-gpg-sig")
+        if gpg_sig_value:
             # PEP-503: A repository MAY include a data-gpg-sig attribute on a file link with
             #          a value of either true or false to indicate whether or not there is a
             #          GPG signature. Repositories that do this SHOULD include it on every link.
@@ -163,7 +167,7 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             elif gpg_sig_value == "false":
                 gpg_sig = False
 
-        requires_python: Optional[str] = None
+        requires_python: typing.Optional[str] = None
         requires_python_attr = a_tag.attrs.get("data-requires-python")
         if requires_python_attr is not None:
             # PEP-503: A repository MAY include a data-requires-python attribute on a file link.
@@ -172,15 +176,15 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
             #          ignore the download when installing to a Python version that doesn’t
             #          satisfy the requirement. In the attribute value, < and > have to be HTML
             #          encoded as &lt; and &gt;, respectively.
-            requires_python = unescape(requires_python_attr)
+            requires_python = html.unescape(requires_python_attr)
 
-        file = File(
+        file = model.File(
             filename=a_tag.content,
             # Temporary fix: Escape the URLs coming from the source
             # since Nexus is not escaping them correctly. The "safe" parameter
             # allows the escape function to be applied to the entire URL
             # and avoids escaping the special characters ":" and "/".
-            url=quote(str(url), safe=":/"),
+            url=urllib.parse.quote(str(url), safe=":/"),
             hashes=hashes,
             requires_python=requires_python,
             dist_info_metadata=dist_info_metadata,
@@ -190,9 +194,9 @@ def parse_html_project_page(page: str, project_name: str) -> ProjectDetail:
 
         files.append(file)
 
-    return ProjectDetail(
+    return model.ProjectDetail(
         name=project_name,
-        meta=Meta(
+        meta=model.Meta(
             api_version="1.0",
         ),
         files=tuple(files),

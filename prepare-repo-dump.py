@@ -1,9 +1,9 @@
-from pathlib import Path
+import pathlib
 import shutil
 
 import tomlkit
 
-here = Path(__file__).parent
+here = pathlib.Path(__file__).parent
 
 build = here / 'built-repo'
 if build.is_dir():

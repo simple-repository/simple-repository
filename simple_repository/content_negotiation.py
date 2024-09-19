@@ -1,9 +1,11 @@
-from enum import Enum
+from __future__ import annotations
 
-from . import errors
+import enum
+
+from . import errors, utils
 
 
-class Format(Enum):
+class Format(enum.Enum):
     JSON_V1: str = "application/vnd.pypi.simple.v1+json"
     HTML_V1: str = "application/vnd.pypi.simple.v1+html"
     HTML_LEGACY: str = "text/html"
@@ -21,7 +23,7 @@ def select_response_format(content_type: str) -> Format:
         token_pieces = token.replace(" ", "").split(";")
         q = 1.0
         if len(token_pieces) == 2:
-            q = float(token_pieces[1].removeprefix("q="))
+            q = float(utils.remove_prefix(token_pieces[1], "q="))
         requested_formats.append(
             (token_pieces[0], q),
         )

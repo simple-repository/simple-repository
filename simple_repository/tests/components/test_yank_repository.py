@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import typing
+
 import pytest
 
 from ... import model
@@ -6,10 +10,10 @@ from .fake_repository import FakeRepository
 
 
 class FakeYankProvider(YankProvider):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         return {"1.0": "reason"}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         return {"project-1.0-any.whl": "reason"}
 
 

@@ -1,24 +1,26 @@
-from dataclasses import replace
+from __future__ import annotations
+
+import dataclasses
 import fnmatch
 import html
 import pathlib
 import typing
 
 import aiosqlite
-from packaging.utils import canonicalize_name
+import packaging.utils
 
+from . import core
 from .. import errors, model
 from .. import packaging as _packaging
 from .. import utils
-from .._typing_compat import override
-from .core import RepositoryContainer, SimpleRepository
+from .._typing_compat import Protocol, override
 
 
-class YankProvider(typing.Protocol):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+class YankProvider(Protocol):
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         ...
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         ...
 
 
@@ -46,7 +48,7 @@ class SqliteYankProvider(YankProvider):
         )
         self._initialise_db = False
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT version, reason FROM yanked_versions WHERE project_name = :project_name"
@@ -56,7 +58,7 @@ class SqliteYankProvider(YankProvider):
             version: reason for version, reason in result
         }
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
@@ -84,15 +86,19 @@ class GlobYankProvider(YankProvider):
         self,
         yank_config_file: pathlib.Path,
     ) -> None:
-        self._yank_config: dict[str, tuple[str, str]] = self._load_config_json(yank_config_file)
+        self._yank_config: typing.Dict[
+            str,
+            typing.Tuple[str, str],
+        ] = self._load_config_json(yank_config_file)
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         # TODO: Manage yanked_versions in this component
         return {}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> dict[str, str]:
+    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
         yanked_files = {}
-        if value := self._yank_config.get(project_page.name):
+        value = self._yank_config.get(project_page.name)
+        if value:
             pattern, reason = value
             yanked_files = {
                 file.filename: reason for file in project_page.files
@@ -101,10 +107,13 @@ class GlobYankProvider(YankProvider):
 
         return yanked_files
 
-    def _load_config_json(self, json_file: pathlib.Path) -> dict[str, tuple[str, str]]:
+    def _load_config_json(
+        self,
+        json_file: pathlib.Path,
+    ) -> typing.Dict[str, typing.Tuple[str, str]]:
         json_config = utils.load_config_json(json_file)
 
-        config_dict: dict[str, tuple[str, str]] = {}
+        config_dict: typing.Dict[str, typing.Tuple[str, str]] = {}
         for key, value in json_config.items():
             if (
                 not isinstance(key, str) or
@@ -117,20 +126,20 @@ class GlobYankProvider(YankProvider):
                     ' contain a dictionary mapping a project name to a tuple'
                     ' containing a glob pattern and a yank reason.',
                 )
-            config_dict[canonicalize_name(key)] = (value[0], value[1])
+            config_dict[packaging.utils.canonicalize_name(key)] = (value[0], value[1])
 
         return config_dict
 
 
 def update_yanked_attribute(file: model.File, reason: str) -> model.File:
     if reason == '':
-        yanked: bool | str = True
+        yanked: typing.Union[bool, str] = True
     else:
         yanked = html.escape(reason)
-    return replace(file, yanked=yanked)
+    return dataclasses.replace(file, yanked=yanked)
 
 
-class YankRepository(RepositoryContainer):
+class YankRepository(core.RepositoryContainer):
     """
     A class that adds support for PEP-592 yank to a SimpleRepository.
 
@@ -139,7 +148,7 @@ class YankRepository(RepositoryContainer):
     """
     def __init__(
         self,
-        source: SimpleRepository,
+        source: core.SimpleRepository,
         yank_provider: YankProvider,
     ) -> None:
         self._yank_provider = yank_provider
@@ -172,28 +181,31 @@ class YankRepository(RepositoryContainer):
     def _add_yanked_attribute(
         self,
         project_page: model.ProjectDetail,
-        yanked_versions: dict[str, str],
-        yanked_files: dict[str, str],
+        yanked_versions: typing.Dict[str, str],
+        yanked_files: typing.Dict[str, str],
     ) -> model.ProjectDetail:
         files = []
         for file in project_page.files:
             if file.yanked:
                 # Skip already yanked files
                 pass
-            elif reason := yanked_files.get(file.filename):
-                file = update_yanked_attribute(file, reason)
             else:
-                try:
-                    version = _packaging.extract_package_version(
-                        filename=file.filename,
-                        project_name=canonicalize_name(project_page.name),
-                    )
-                except ValueError:
-                    pass
+                reason = yanked_files.get(file.filename)
+                if reason:
+                    file = update_yanked_attribute(file, reason)
                 else:
-                    if reason := yanked_versions.get(version):
-                        file = update_yanked_attribute(file, reason)
+                    try:
+                        version = _packaging.extract_package_version(
+                            filename=file.filename,
+                            project_name=packaging.utils.canonicalize_name(project_page.name),
+                        )
+                    except ValueError:
+                        pass
+                    else:
+                        reason = yanked_versions.get(version)
+                        if reason:
+                            file = update_yanked_attribute(file, reason)
 
             files.append(file)
 
-        return replace(project_page, files=tuple(files))
+        return dataclasses.replace(project_page, files=tuple(files))

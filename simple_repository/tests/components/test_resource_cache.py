@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 import logging
 import os
@@ -7,9 +9,10 @@ from unittest import mock
 import pytest
 
 from ... import errors, model
-from ...components.core import SimpleRepository
+from ...components import core
 from ...components.resource_cache import ResourceCacheRepository
 from .fake_repository import FakeRepository
+from .mock_compat import AsyncMock
 
 
 @pytest.fixture
@@ -70,7 +73,7 @@ async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRep
 
     with mock.patch(
         "simple_repository.utils.download_file",
-        mock.AsyncMock(
+        AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),
     ):
@@ -96,7 +99,7 @@ async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheReposi
 
     with mock.patch(
         "simple_repository.utils.download_file",
-        mock.AsyncMock(
+        AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),
     ):
@@ -153,9 +156,9 @@ async def test_get_resource__path_traversal(
 async def test_get_resource__source_unavailable_cache_hit(
     tmp_path: pathlib.Path,
 ) -> None:
-    source = mock.AsyncMock(
-        spec=SimpleRepository,
-        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    source = AsyncMock(
+        spec=core.SimpleRepository,
+        get_resource=AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
     (tmp_path / "project-name").mkdir()
@@ -178,9 +181,9 @@ async def test_get_resource__source_unavailable_cache_hit(
 async def test_get_resource__source_unavailable_cache_hit__falback_disabled(
     tmp_path: pathlib.Path,
 ) -> None:
-    source = mock.AsyncMock(
-        spec=SimpleRepository,
-        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    source = AsyncMock(
+        spec=core.SimpleRepository,
+        get_resource=AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
     (tmp_path / "project-name").mkdir()
@@ -203,9 +206,9 @@ async def test_get_resource__source_unavailable_cache_hit__falback_disabled(
 async def test_get_resource__source_unavailable_cache_hit__log(
     tmp_path: pathlib.Path,
 ) -> None:
-    source = mock.AsyncMock(
-        spec=SimpleRepository,
-        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    source = AsyncMock(
+        spec=core.SimpleRepository,
+        get_resource=AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
     (tmp_path / "project-name").mkdir()
@@ -232,9 +235,9 @@ async def test_get_resource__source_unavailable_cache_hit__log(
 async def test_get_resource__source_unavailable_cache_miss(
     tmp_path: pathlib.Path,
 ) -> None:
-    source = mock.AsyncMock(
-        spec=SimpleRepository,
-        get_resource=mock.AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
+    source = AsyncMock(
+        spec=core.SimpleRepository,
+        get_resource=AsyncMock(side_effect=errors.SourceRepositoryUnavailable),
     )
 
     repository = ResourceCacheRepository(
@@ -305,7 +308,7 @@ async def test_get_resource__source_raised_not_modified__request_etag_invalid(
     repository: ResourceCacheRepository,
 ) -> None:
     # Upsream raised not modified and the request context misses the etag.
-    repository.source = mock.Mock(get_resource=mock.AsyncMock(side_effect=model.NotModified))
+    repository.source = mock.Mock(get_resource=AsyncMock(side_effect=model.NotModified))
 
     (repository._cache_path / "http").mkdir()
     cached_file = repository._cache_path / "http" / "http-1.0-any.whl"
@@ -333,7 +336,7 @@ async def test_get_resource__source_raised_not_modified__request_etag_valid(
     repository: ResourceCacheRepository,
 ) -> None:
     # Upsream raised not modified and the request etag matches.
-    repository.source = mock.Mock(get_resource=mock.AsyncMock(side_effect=model.NotModified))
+    repository.source = mock.Mock(get_resource=AsyncMock(side_effect=model.NotModified))
 
     (repository._cache_path / "http").mkdir()
     cached_file = repository._cache_path / "http" / "http-1.0-any.whl"
@@ -360,7 +363,7 @@ def test_resource_cache_init(tmp_path: pathlib.Path) -> None:
     symlink.symlink_to(real_repo)
 
     repo = ResourceCacheRepository(
-        source=mock.AsyncMock(),
+        source=AsyncMock(),
         cache_path=symlink,
         http_client=mock.MagicMock(),
     )
@@ -373,7 +376,7 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     cached_info.touch()
 
     with mock.patch(
-        "datetime.datetime",
+        "simple_repository.components.resource_cache.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2006-07-09")),
             fromisoformat=datetime.fromisoformat,
@@ -385,7 +388,7 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     assert os.path.getatime(cached_info) == datetime.fromisoformat("2006-07-09").timestamp()
 
     with mock.patch(
-        "datetime.datetime",
+        "simple_repository.components.resource_cache.datetime",
         mock.Mock(
             now=mock.Mock(return_value=datetime.fromisoformat("2025-07-09")),
             fromisoformat=datetime.fromisoformat,
@@ -451,7 +454,7 @@ async def test_update_last_access_for__cache_miss_remote_called(
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
         "simple_repository.utils.download_file",
-        mock.AsyncMock(
+        AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].touch(),
         ),
     ), mock.patch.object(
@@ -477,7 +480,7 @@ async def test_store_resource__http_resource(
 
     with mock.patch(
         "simple_repository.utils.download_file",
-        mock.AsyncMock(
+        AsyncMock(
             side_effect=lambda **kwargs: kwargs["dest_file"].write_text("http content"),
         ),
     ):
