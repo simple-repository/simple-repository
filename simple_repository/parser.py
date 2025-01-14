@@ -85,7 +85,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 url=urllib.parse.quote(file["url"], safe=":/"),
                 hashes=file["hashes"],
                 requires_python=file.get("requires-python"),
-                # PEP-714: Clients consuming the JSON represenation of the Simple API MUST
+                # PEP-714: Clients consuming the JSON representation of the Simple API MUST
                 #          read the PEP 658 metadata from the key core-metadata if it is present.
                 dist_info_metadata=file.get("core-metadata"),
                 gpg_sig=file.get("gpg-sig"),

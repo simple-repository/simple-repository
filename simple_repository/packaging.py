@@ -19,7 +19,7 @@ def split_sdist_filename(path: str) -> typing.Tuple[str, str]:
     """
     Like os.path.splitext, but take off .tar too.
     Standard functions like splitext or pathlib suffixes
-    will fail to extract the extention of sdists
+    will fail to extract the extension of sdists
     like numpy-1.0.0.tar.gz
     """
     base, ext = posixpath.splitext(path)
