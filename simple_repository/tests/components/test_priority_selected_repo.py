@@ -165,7 +165,7 @@ async def test_get_resource() -> None:
         ),
         FakeRepository(
             resources={
-                "numpy.whl": model.HttpResource("wrog"),
+                "numpy.whl": model.HttpResource("wrog"),  # codespell:ignore wrog
             },
         ),
     ])
