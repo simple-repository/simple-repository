@@ -32,7 +32,7 @@ Some of the implemented components in this repository include:
 * ```AllowListedRepository```: represents a repository which only permits projects to be accessed from a defined list of allowed projects.
 
 There are many such components in this library. In the case that a desired component doesn't already exist, implementing a new one is a matter of
-implementing a small number of methods. The resulting implementations are re-usable, concise, and are easy to validate and test.
+implementing a small number of methods. The resulting implementations are reusable, concise, and are easy to validate and test.
 
 ## Known usage
 
