@@ -6,9 +6,9 @@ from . import errors, utils
 
 
 class Format(enum.Enum):
-    JSON_V1: str = "application/vnd.pypi.simple.v1+json"
-    HTML_V1: str = "application/vnd.pypi.simple.v1+html"
-    HTML_LEGACY: str = "text/html"
+    JSON_V1 = "application/vnd.pypi.simple.v1+json"
+    HTML_V1 = "application/vnd.pypi.simple.v1+html"
+    HTML_LEGACY = "text/html"
 
 
 def select_response_format(content_type: str) -> Format:
