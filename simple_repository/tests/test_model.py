@@ -81,3 +81,67 @@ def test_ProjectDetail__post_init_v1_1() -> None:
     assert project_detail.versions == {
         "1.0", "2.0",
     }
+
+
+def test__File__aribtrary_private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        _foo='bar',
+    )
+    assert file._foo == 'bar'
+
+
+def test__File__eq__private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        _foo='bar',
+    )
+    file2 = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    assert file != file2
+    assert file == file
+
+
+@pytest.mark.xfail(strict=True)
+def test__File__hash__private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        _foo='bar',
+    )
+    file2 = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    assert hash(file) != hash(file2)
+
+
+@pytest.mark.xfail(strict=True)
+def test__File__hash() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    # The file should be hashable (it is frozen after all), but we currently
+    # allow dict to be passed.
+    hash(file)
+
+
+def test__File__no_aribtrary_public_metadata() -> None:
+    with pytest.raises(TypeError, match=r'unexpected keyword argument .?foo.?'):
+        model.File(
+            filename="pippo",
+            url="url",
+            hashes={},
+            foo='bar',
+        )

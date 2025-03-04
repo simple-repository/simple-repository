@@ -58,9 +58,26 @@ class NewReleasesRemover(core.RepositoryContainer):
         project_page: model.ProjectDetail,
         now: datetime,
     ) -> model.ProjectDetail:
-        filtered_files = tuple(
-            file for file in project_page.files
-            if not file.upload_time or
-            (now - file.upload_time).total_seconds() >= self._quarantine_time.total_seconds()
+        files_to_maintain = []
+        files_to_be_removed = []
+
+        for file in project_page.files:
+            if not file.upload_time:
+                # We maintain the file if there is no upload time information.
+                files_to_maintain.append(file)
+            else:
+                seconds_since_release = (now - file.upload_time).total_seconds()
+                # Maintain the file if it has been available for longer than the quarantine time.
+                if seconds_since_release >= self._quarantine_time.total_seconds():
+                    files_to_maintain.append(file)
+                else:
+                    files_to_be_removed.append(file)
+
+        return dataclasses.replace(
+            project_page,
+            files=tuple(files_to_maintain),
+            # Use a private attribute to give context of the files that have been quarantined.
+            _quarantined_files=tuple(
+                files_to_be_removed,
+            ),  # type: ignore[call-arg]  # Private attribute.
         )
-        return dataclasses.replace(project_page, files=filtered_files)

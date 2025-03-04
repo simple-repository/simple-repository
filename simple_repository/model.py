@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import datetime
+import functools
 import pathlib
 import typing
 
@@ -46,6 +47,49 @@ if typing.TYPE_CHECKING:
     from . import SimpleRepository
 
 
+_DataclassType = typing.TypeVar("_DataclassType")
+
+
+def _allow_underscore_attributes_on_dataclass(
+        cls: typing.Type[_DataclassType],
+) -> typing.Type[_DataclassType]:
+    # Replace the original (generated) initialiser of the given class, such
+    # that it support arbitrary kwargs.
+
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+
+    orig_init = cls.__init__
+
+    @functools.wraps(orig_init)
+    def new_init(self: _DataclassType, *args: typing.Any, **kwargs: typing.Any) -> None:
+        kwargs_minus_private = {}
+        private_kwargs = {}
+        for kwarg, value in kwargs.items():
+            if kwarg.startswith("_"):
+                private_kwargs[kwarg] = value
+            else:
+                kwargs_minus_private[kwarg] = value
+        orig_init(self, *args, **kwargs_minus_private)
+        for name, value in private_kwargs.items():
+            object.__setattr__(self, name, value)
+
+    cls.__init__ = new_init  # type: ignore[assignment]
+
+    orig_eq = cls.__eq__
+
+    @functools.wraps(orig_eq)
+    def new_eq(self: _DataclassType, other: typing.Any) -> bool:
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return NotImplemented  # type: ignore[no-any-return]
+
+    cls.__eq__ = new_eq  # type: ignore[assignment]
+
+    return cls
+
+
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class File:
     """
@@ -105,6 +149,7 @@ class File:
             raise ValueError("The yanked attribute may not be an empty string")
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class Meta:
     """Responses metadata defined in PEP-629:
@@ -113,6 +158,7 @@ class Meta:
     api_version: str
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectDetail:
     """Model of a project page as described in PEP-691"""
@@ -147,6 +193,7 @@ class ProjectDetail:
         return packaging.utils.canonicalize_name(self.name)
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectListElement:
     name: str  # not necessarily normalized.
@@ -156,6 +203,7 @@ class ProjectListElement:
         return packaging.utils.canonicalize_name(self.name)
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectList:
     """Model of the project list as described in PEP-691"""
