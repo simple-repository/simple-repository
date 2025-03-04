@@ -23,9 +23,9 @@ def split_sdist_filename(path: str) -> typing.Tuple[str, str]:
 
 
 class PackageFormat(enum.Enum):
-    WHEEL: str = "wheel"
-    SDIST: str = "sdist"
-    OTHER: str = "other format"
+    WHEEL = "wheel"
+    SDIST = "sdist"
+    OTHER = "other format"
 
 
 def extract_package_format(filename: str) -> PackageFormat:
