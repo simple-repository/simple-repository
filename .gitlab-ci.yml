@@ -43,6 +43,8 @@ static_analysis_wheel:
   before_script:
     - !reference [.acc_py_wheel_test, before_script]
     - python -m pip install $(ls -A ${project_root}/wheel-to-install/*.whl)[dev] mypy
+    # 3.7 version of mypy requires some specific configuration.
+    - '[[ "$PY_VERSION" == "3.7" ]] && sed -i "s/# only_py37: //" ./pyproject.toml'
   script:
     - python -m mypy -p simple_repository
 

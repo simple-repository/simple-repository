@@ -81,7 +81,7 @@ def _allow_underscore_attributes_on_dataclass(
     @functools.wraps(orig_eq)
     def new_eq(self: _DataclassType, other: typing.Any) -> bool:
         if type(other) is type(self):
-            return self.__dict__ == other.__dict__
+            return self.__dict__ == other.__dict__  # type: ignore[no-any-return]
         return NotImplemented  # type: ignore[no-any-return]
 
     cls.__eq__ = new_eq  # type: ignore[assignment]
