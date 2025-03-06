@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from .. import model
@@ -83,7 +85,67 @@ def test_ProjectDetail__post_init_v1_1() -> None:
     }
 
 
-def test__File__aribtrary_private_metadata() -> None:
+def test_ProjectDetail__versions_subset() -> None:
+    message = (
+        'The versions specified in ProjectDetail does not include all of '
+        'the versions that can be found in the files'
+    )
+    with pytest.raises(ValueError, match=message):
+        model.ProjectDetail(
+            meta=model.Meta("1.1"),
+            name="pippo",
+            files=(
+                model.File(
+                    filename="pippo-1.0.tar.gz",
+                    url="url",
+                    hashes={},
+                    size=1,
+                ),
+                model.File(
+                    filename="pippo-2.0-anylinux-py3.whl",
+                    url="url",
+                    hashes={},
+                    size=1,
+                ),
+            ),
+            versions={'1.0'},
+        )
+
+
+def test_ProjectDetail__manual_versions() -> None:
+    # Sometimes we want to be able to state that there are versions with no
+    # files (PEP-700):
+    # > The versions key MAY contain versions with no associated files
+    project_detail = model.ProjectDetail(
+        meta=model.Meta("1.1"),
+        name="pippo",
+        files=(
+            model.File(
+                filename="pippo-1.0.tar.gz",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+            model.File(
+                filename="pippo-2.0-anylinux-py3.whl",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+        ),
+    )
+    assert project_detail.versions == {'1.0', '2.0'}
+    pd2 = dataclasses.replace(project_detail, versions=project_detail.versions | {'1.2.3'})
+    # Now check that it persists with some other replacement.
+    pd3 = dataclasses.replace(pd2)
+
+    assert pd2.versions == {
+        "1.0", "2.0", "1.2.3",
+    }
+    assert pd2.versions == pd3.versions
+
+
+def test__File__arbitrary_private_metadata() -> None:
     file = model.File(
         filename="pippo",
         url="url",
@@ -91,6 +153,10 @@ def test__File__aribtrary_private_metadata() -> None:
         _foo='bar',
     )
     assert file._foo == 'bar'
+    # Ensure that the private attributes survives additional public attribute
+    # changes.
+    new_file = dataclasses.replace(file, filename='bar')
+    assert new_file._foo == 'bar'
 
 
 def test__File__eq__private_metadata() -> None:
@@ -137,7 +203,7 @@ def test__File__hash() -> None:
     hash(file)
 
 
-def test__File__no_aribtrary_public_metadata() -> None:
+def test__File__no_arbitrary_public_metadata() -> None:
     with pytest.raises(TypeError, match=r'unexpected keyword argument .?foo.?'):
         model.File(
             filename="pippo",

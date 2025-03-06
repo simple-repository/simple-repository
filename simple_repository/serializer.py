@@ -29,12 +29,10 @@ class Serializer(Protocol):
 class SerializerJsonV1(Serializer):
     def serialize_project_page(self, page: model.ProjectDetail) -> str:
         project_page_dict = {
-            "meta": {
-                "api-version": page.meta.api_version,
-            },
+            "meta": self._standardize_meta(page.meta),
             "name": page.name,
             "files": [
-                self.standardize_file(
+                self._standardize_file(
                     file=file,
                     version=packaging.version.Version(page.meta.api_version),
                 )
@@ -43,18 +41,57 @@ class SerializerJsonV1(Serializer):
         }
         if page.versions is not None:
             project_page_dict["versions"] = list(page.versions)
+        # Include the private metadata verbatim, as per PEP-700:
+        # > Keys (at any level) with a leading underscore are reserved as
+        # > private for index server use
+        self._update_with_serialized_private_attributes(page, project_page_dict)
         return json.dumps(project_page_dict)
+
+    def _update_with_serialized_private_attributes(
+            self,
+            model: typing.Union[
+                model.File,
+                model.Meta,
+                model.ProjectDetail,
+                model.ProjectList,
+                model.ProjectListElement,
+            ],
+            target: typing.Dict[str, typing.Any],
+    ):
+        for name in model.__dataclass_fields__:
+            if name.startswith("_"):
+                target[name] = getattr(model, name)
+
+    def _standardize_meta(self, meta: model.Meta) -> typing.Dict[str, typing.Any]:
+        result = {"api-version": meta.api_version}
+        self._update_with_serialized_private_attributes(meta, result)
+        return result
 
     def serialize_project_list(self, page: model.ProjectList) -> str:
         list_dict = {
-           "meta": {"api-version": page.meta.api_version},
+           "meta": self._standardize_meta(page.meta),
            "projects": [
-                {"name": elem.name} for elem in page.projects
+                self._standardize_project_list(elem) for elem in page.projects
            ],
         }
+        # Include the private metadata verbatim, as per PEP-700:
+        # > Keys (at any level) with a leading underscore are reserved as
+        # > private for index server use
+        self._update_with_serialized_private_attributes(page, list_dict)
         return json.dumps(list_dict)
 
-    def standardize_file(
+    def _standardize_project_list(
+            self,
+            project_list: model.ProjectList,
+    ) -> typing.Dict[str, typing.Any]:
+        result = {"name": project_list.name}
+        # Include the private metadata verbatim, as per PEP-700:
+        # > Keys (at any level) with a leading underscore are reserved as
+        # > private for index server use
+        self._update_with_serialized_private_attributes(project_list, result)
+        return result
+
+    def _standardize_file(
         self,
         file: model.File,
         version: packaging.version.Version,
@@ -79,6 +116,11 @@ class SerializerJsonV1(Serializer):
             file_dict["size"] = file.size
             if file.upload_time is not None:
                 file_dict["upload-time"] = file.upload_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Include the private metadata verbatim, as per PEP-700:
+        # > Keys (at any level) with a leading underscore are reserved as
+        # > private for index server use
+        self._update_with_serialized_private_attributes(file, file_dict)
         return file_dict
 
 

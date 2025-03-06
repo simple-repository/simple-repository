@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime, timedelta
 import typing
 from unittest import mock
@@ -46,8 +47,7 @@ def test_exclude_recent_distributions__old_files() -> None:
     now = datetime(2023, 1, 1)
     project_detail = create_project_detail(datetime(1926, 1, 1), datetime(2000, 1, 4))
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
-    assert new_project_detail.__dict__.pop('_quarantined_files') == ()
-    assert new_project_detail == project_detail
+    assert new_project_detail == dataclasses.replace(project_detail, _quarantined_files=())
 
 
 def test_exclude_recent_distributions__new_files() -> None:

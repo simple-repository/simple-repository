@@ -40,6 +40,7 @@ class NewReleasesRemover(core.RepositoryContainer):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
+
         project_page = await super().get_project_page(
             project_name,
             request_context=request_context,
@@ -71,8 +72,10 @@ class NewReleasesRemover(core.RepositoryContainer):
                 if seconds_since_release >= self._quarantine_time.total_seconds():
                     files_to_maintain.append(file)
                 else:
-                    files_to_be_removed.append(file)
+                    files_to_be_removed.append(file.filename)
 
+        # Note that we don't remove the version from the versions list on project page.
+        # PEP-700 states that we are allowed to have a release without any files in it.
         return dataclasses.replace(
             project_page,
             files=tuple(files_to_maintain),

@@ -95,12 +95,17 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
             ),
         )
 
+    versions = page_dict.get('versions', None)
+    if versions is not None:
+        versions = set(versions)
+
     return model.ProjectDetail(
         name=page_dict["name"],
         meta=model.Meta(
             api_version=page_dict["meta"]["api-version"],
         ),
         files=tuple(files),
+        versions=versions,
     )
 
 

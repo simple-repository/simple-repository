@@ -71,6 +71,16 @@ def _allow_underscore_attributes_on_dataclass(
             else:
                 kwargs_minus_private[kwarg] = value
         orig_init(self, *args, **kwargs_minus_private)
+        if private_kwargs:
+            # If we have some private fields, then update the instance's dataclass fields attribute
+            # so that calls such as dataclasses.replace can persist these private attributes.
+            updated_fields = self.__dataclass_fields__.copy()
+            for kwarg in private_kwargs:
+                f = dataclasses.field()
+                f.name = kwarg
+                updated_fields[kwarg] = f
+            object.__setattr__(self, "__dataclass_fields__", updated_fields)
+
         for name, value in private_kwargs.items():
             object.__setattr__(self, name, value)
 
@@ -81,7 +91,14 @@ def _allow_underscore_attributes_on_dataclass(
     @functools.wraps(orig_eq)
     def new_eq(self: _DataclassType, other: typing.Any) -> bool:
         if type(other) is type(self):
-            return self.__dict__ == other.__dict__  # type: ignore[no-any-return]
+            self_fields = set(self.__dataclass_fields__)
+            other_fields = set(other.__dataclass_fields__)
+            if self_fields != other_fields:
+                return False
+            for name in set(self.__dataclass_fields__) | set(other.__dataclass_fields__):
+                if not getattr(self, name) == getattr(other, name):
+                    return False
+            return True
         return NotImplemented  # type: ignore[no-any-return]
 
     cls.__eq__ = new_eq  # type: ignore[assignment]
@@ -170,7 +187,7 @@ class ProjectDetail:
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: typing.Optional[typing.Set[str]] = dataclasses.field(init=False)
+    versions: typing.Optional[typing.Set[str]] = None
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -184,9 +201,17 @@ class ProjectDetail:
                 str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             }
-        else:
-            versions = None
-        object.__setattr__(self, "versions", versions)
+            if self.versions:
+                # If we were given some versions already, confirm that they meet the needs of
+                # the files, per PEP-700.
+                if versions - self.versions:
+                    raise ValueError(
+                        "The versions specified in ProjectDetail does not include all of the "
+                        "versions that can be found in the files",
+                    )
+            else:
+                # If we weren't given versions, use the computed one.
+                object.__setattr__(self, "versions", versions)
 
     @property
     def _normalized_name(self) -> str:
