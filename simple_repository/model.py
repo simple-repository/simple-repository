@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import datetime
+import functools
 import pathlib
 import typing
 
@@ -46,6 +47,75 @@ if typing.TYPE_CHECKING:
     from . import SimpleRepository
 
 
+_DataclassType = typing.TypeVar("_DataclassType")
+
+
+def _allow_underscore_attributes_on_dataclass(
+        cls: typing.Type[_DataclassType],
+) -> typing.Type[_DataclassType]:
+    # Replace the original (generated) initialiser of the given class, such
+    # that it support arbitrary kwargs.
+
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+
+    orig_init = cls.__init__
+
+    @functools.wraps(orig_init)
+    def new_init(self: _DataclassType, *args: typing.Any, **kwargs: typing.Any) -> None:
+        kwargs_minus_private = {}
+        private_kwargs = {}
+        for kwarg, value in kwargs.items():
+            if kwarg.startswith("_"):
+                private_kwargs[kwarg] = value
+            else:
+                kwargs_minus_private[kwarg] = value
+        orig_init(self, *args, **kwargs_minus_private)
+        if private_kwargs:
+            # If we have some private fields, then update the instance's dataclass fields attribute
+            # so that calls such as dataclasses.replace can persist these private attributes.
+            updated_fields = getattr(self, "__dataclass_fields__").copy()
+            for kwarg in private_kwargs:
+                f = dataclasses.field()
+                f.name = kwarg
+                updated_fields[kwarg] = f
+            object.__setattr__(self, "__dataclass_fields__", updated_fields)
+
+        for name, value in private_kwargs.items():
+            object.__setattr__(self, name, value)
+
+    cls.__init__ = new_init  # type: ignore[assignment]
+
+    orig_eq = cls.__eq__
+
+    @functools.wraps(orig_eq)
+    def new_eq(self: _DataclassType, other: typing.Any) -> bool:
+        if type(other) is type(self):
+            self_fields = set(getattr(self, "__dataclass_fields__"))
+            other_fields = set(getattr(other, "__dataclass_fields__"))
+            if self_fields != other_fields:
+                return False
+            for name in self_fields:
+                if not getattr(self, name) == getattr(other, name):
+                    return False
+            return True
+        return NotImplemented  # type: ignore[no-any-return]
+
+    cls.__eq__ = new_eq  # type: ignore[assignment]
+
+    def new_repr(self: _DataclassType) -> str:
+        args = ', '.join([
+            f'{field.name}={getattr(self, field.name)!r}'
+            for field in getattr(self, '__dataclass_fields__').values()
+        ])
+        return f'{type(self).__name__}({args})'
+
+    cls.__repr__ = new_repr  # type: ignore[assignment]
+
+    return cls
+
+
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class File:
     """
@@ -105,6 +175,7 @@ class File:
             raise ValueError("The yanked attribute may not be an empty string")
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class Meta:
     """Responses metadata defined in PEP-629:
@@ -113,6 +184,7 @@ class Meta:
     api_version: str
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectDetail:
     """Model of a project page as described in PEP-691"""
@@ -124,7 +196,7 @@ class ProjectDetail:
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: typing.Optional[typing.Set[str]] = dataclasses.field(init=False)
+    versions: typing.Optional[typing.Set[str]] = None
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -138,15 +210,24 @@ class ProjectDetail:
                 str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             }
-        else:
-            versions = None
-        object.__setattr__(self, "versions", versions)
+            if self.versions:
+                # If we were given some versions already, confirm that they meet the needs of
+                # the files, per PEP-700.
+                if versions - self.versions:
+                    raise ValueError(
+                        "The versions specified in ProjectDetail does not include all of the "
+                        "versions that can be found in the files",
+                    )
+            else:
+                # If we weren't given versions, use the computed one.
+                object.__setattr__(self, "versions", versions)
 
     @property
     def _normalized_name(self) -> str:
         return packaging.utils.canonicalize_name(self.name)
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectListElement:
     name: str  # not necessarily normalized.
@@ -156,6 +237,7 @@ class ProjectListElement:
         return packaging.utils.canonicalize_name(self.name)
 
 
+@_allow_underscore_attributes_on_dataclass
 @dataclasses.dataclass(frozen=True)
 class ProjectList:
     """Model of the project list as described in PEP-691"""
