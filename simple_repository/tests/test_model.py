@@ -133,16 +133,20 @@ def test_ProjectDetail__manual_versions() -> None:
                 size=1,
             ),
         ),
+        versions={'1.0', '2.0', "1.2.3"},
     )
-    assert project_detail.versions == {'1.0', '2.0'}
-    pd2 = dataclasses.replace(project_detail, versions=project_detail.versions | {'1.2.3'})
-    # Now check that it persists with some other replacement.
-    pd3 = dataclasses.replace(pd2)
+    # Versions should persist with other replacement.
+    pd1 = dataclasses.replace(project_detail)
 
-    assert pd2.versions == {
+    assert pd1.versions == {
         "1.0", "2.0", "1.2.3",
     }
-    assert pd2.versions == pd3.versions
+
+    # And we should be able to get it to be generated again by setting it to None.
+    pd2 = dataclasses.replace(project_detail, versions=None)
+    assert pd2.versions == {
+        "1.0", "2.0",
+    }
 
 
 def test__File__arbitrary_private_metadata() -> None:
