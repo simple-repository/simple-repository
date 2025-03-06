@@ -40,7 +40,6 @@ class NewReleasesRemover(core.RepositoryContainer):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-
         project_page = await super().get_project_page(
             project_name,
             request_context=request_context,

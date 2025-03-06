@@ -74,7 +74,7 @@ def _allow_underscore_attributes_on_dataclass(
         if private_kwargs:
             # If we have some private fields, then update the instance's dataclass fields attribute
             # so that calls such as dataclasses.replace can persist these private attributes.
-            updated_fields = self.__dataclass_fields__.copy()
+            updated_fields = getattr(self, "__dataclass_fields__").copy()
             for kwarg in private_kwargs:
                 f = dataclasses.field()
                 f.name = kwarg
@@ -91,11 +91,11 @@ def _allow_underscore_attributes_on_dataclass(
     @functools.wraps(orig_eq)
     def new_eq(self: _DataclassType, other: typing.Any) -> bool:
         if type(other) is type(self):
-            self_fields = set(self.__dataclass_fields__)
-            other_fields = set(other.__dataclass_fields__)
+            self_fields = set(getattr(self, "__dataclass_fields__"))
+            other_fields = set(getattr(other, "__dataclass_fields__"))
             if self_fields != other_fields:
                 return False
-            for name in set(self.__dataclass_fields__) | set(other.__dataclass_fields__):
+            for name in self_fields:
                 if not getattr(self, name) == getattr(other, name):
                     return False
             return True

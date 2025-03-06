@@ -57,7 +57,7 @@ class SerializerJsonV1(Serializer):
                 model.ProjectListElement,
             ],
             target: typing.Dict[str, typing.Any],
-    ):
+    ) -> None:
         for name in model.__dataclass_fields__:
             if name.startswith("_"):
                 target[name] = getattr(model, name)
@@ -82,7 +82,7 @@ class SerializerJsonV1(Serializer):
 
     def _standardize_project_list(
             self,
-            project_list: model.ProjectList,
+            project_list: model.ProjectListElement,
     ) -> typing.Dict[str, typing.Any]:
         result = {"name": project_list.name}
         # Include the private metadata verbatim, as per PEP-700:
