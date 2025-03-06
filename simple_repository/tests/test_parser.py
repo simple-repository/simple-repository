@@ -331,6 +331,37 @@ def test_parse_json_project_list() -> None:
     )
 
 
+def test_parse_json_project_list__private() -> None:
+    page = '''
+    {
+        "meta": {
+            "api-version": "1.0",
+            "_extra_meta": 123
+        },
+        "projects": [
+            {
+                "name": "gym",
+                "_extra_project": 123
+            },
+            {
+                "name": "my_project"
+            }
+        ],
+        "_extra_list": 123
+    }'''
+
+    result = parser.parse_json_project_list(page)
+
+    assert result == model.ProjectList(
+        model.Meta("1.0", _extra_meta=123),
+        frozenset([
+            model.ProjectListElement("gym", _extra_project=123),
+            model.ProjectListElement("my_project"),
+        ]),
+        _extra_list=123,
+    )
+
+
 def test_parse_html_project_list() -> None:
     page = '''
         <a href="url">gym</a>
@@ -394,4 +425,58 @@ def test_parse_json_project_page__v_1_1() -> None:
                 upload_time=datetime(2000, 1, 1, 0, 0, 0),
             ),
         ),
+    )
+
+
+def test_parse_json_project_page__private() -> None:
+    page = '''
+    {
+        "meta": {
+            "api-version": "1.1",
+            "_extra_meta": 123
+        },
+        "name": "holygrail",
+        "files": [
+            {
+                "filename": "holygrail-1.0-py3-none-any.whl",
+                "url": "http://url.whl",
+                "hashes": {},
+                "size": 1,
+                "upload-time": "2000-01-01T00:00:00.000000Z",
+                "_extra_file": 123
+            },
+            {
+                "filename": "holygrail-1.1-py3-none-any.whl",
+                "url": "http://url.whl",
+                "hashes": {},
+                "size": 1,
+                "upload-time": "2000-01-01T00:00:00Z"
+            }
+        ],
+        "_extra_project_page": 123
+    }'''
+
+    result = parser.parse_json_project_page(page)
+
+    assert result == model.ProjectDetail(
+        model.Meta("1.1", _extra_meta=123),
+        "holygrail",
+        (
+            model.File(
+                filename="holygrail-1.0-py3-none-any.whl",
+                url="http://url.whl",
+                hashes={},
+                size=1,
+                upload_time=datetime(2000, 1, 1, 0, 0, 0),
+                _extra_file=123,
+            ),
+            model.File(
+                filename="holygrail-1.1-py3-none-any.whl",
+                url="http://url.whl",
+                hashes={},
+                size=1,
+                upload_time=datetime(2000, 1, 1, 0, 0, 0),
+            ),
+        ),
+        _extra_project_page=123,
     )

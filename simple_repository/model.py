@@ -103,6 +103,15 @@ def _allow_underscore_attributes_on_dataclass(
 
     cls.__eq__ = new_eq  # type: ignore[assignment]
 
+    def new_repr(self: _DataclassType) -> str:
+        args = ', '.join([
+            f'{field.name}={getattr(self, field.name)!r}'
+            for field in getattr(self, '__dataclass_fields__').values()
+        ])
+        return f'{type(self).__name__}({args})'
+
+    cls.__repr__ = new_repr  # type: ignore[assignment]
+
     return cls
 
 

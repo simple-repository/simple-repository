@@ -21,13 +21,16 @@ def parse_json_project_list(page: str) -> model.ProjectList:
     projects = frozenset(
         model.ProjectListElement(
             name=project.get("name"),
+            **_gather_private_attribs(project),
         ) for project in project_dict["projects"]
     )
     return model.ProjectList(
         meta=model.Meta(
             api_version=project_dict["meta"]["api-version"],
+            **_gather_private_attribs(project_dict["meta"]),
         ),
         projects=projects,
+        **_gather_private_attribs(project_dict),
     )
 
 
@@ -57,6 +60,10 @@ def parse_html_project_list(page: str) -> model.ProjectList:
         ),
         projects=projects,
     )
+
+
+def _gather_private_attribs(element: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+    return {name: value for name, value in element.items() if name.startswith("_")}
 
 
 def parse_json_project_page(body: str) -> model.ProjectDetail:
@@ -92,6 +99,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 yanked=file.get("yanked"),
                 size=file.get("size"),
                 upload_time=upload_time,
+                **_gather_private_attribs(file),
             ),
         )
 
@@ -103,9 +111,11 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
         name=page_dict["name"],
         meta=model.Meta(
             api_version=page_dict["meta"]["api-version"],
+            **_gather_private_attribs(page_dict["meta"]),
         ),
         files=tuple(files),
         versions=versions,
+        **_gather_private_attribs(page_dict),
     )
 
 
