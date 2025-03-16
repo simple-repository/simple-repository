@@ -196,7 +196,7 @@ class ProjectDetail:
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: typing.Optional[typing.Set[str]] = None
+    versions: typing.Optional[typing.Tuple[str, ...]] = None
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -206,21 +206,20 @@ class ProjectDetail:
                     raise ValueError(
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
-            versions = {
+            computed_versions = {
                 str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             }
+            updated_versions = self.versions
             if self.versions:
-                # If we were given some versions already, confirm that they meet the needs of
-                # the files, per PEP-700.
-                if versions - self.versions:
-                    raise ValueError(
-                        "The versions specified in ProjectDetail does not include all of the "
-                        "versions that can be found in the files",
-                    )
+                # If we were given some versions already, follow the rules of PEP-700 and ensure
+                # that they include our computed versions.
+                missing_versions = computed_versions - set(self.versions)
+                if missing_versions:
+                    updated_versions = self.versions + tuple(missing_versions)
             else:
-                # If we weren't given versions, use the computed one.
-                object.__setattr__(self, "versions", versions)
+                updated_versions = tuple(sorted(computed_versions))
+            object.__setattr__(self, "versions", updated_versions)
 
     @property
     def _normalized_name(self) -> str:
