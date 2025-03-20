@@ -124,7 +124,7 @@ class ProjectDetail:
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: typing.Optional[typing.Set[str]] = dataclasses.field(init=False)
+    versions: typing.Optional[typing.FrozenSet[str]] = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -134,10 +134,10 @@ class ProjectDetail:
                     raise ValueError(
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
-            versions = {
+            versions = frozenset(
                 str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
-            }
+            )
         else:
             versions = None
         object.__setattr__(self, "versions", versions)

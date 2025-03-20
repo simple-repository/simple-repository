@@ -42,7 +42,7 @@ class SerializerJsonV1(Serializer):
             ],
         }
         if page.versions is not None:
-            project_page_dict["versions"] = list(page.versions)
+            project_page_dict["versions"] = sorted(page.versions)
         return json.dumps(project_page_dict)
 
     def serialize_project_list(self, page: model.ProjectList) -> str:
