@@ -314,7 +314,7 @@ async def test_get_resource__no_cache_created_when_to_cache_is_false(
 async def test_get_resource__source_raised_not_modified__request_etag_invalid(
     repository: ResourceCacheRepository,
 ) -> None:
-    # Upsream raised not modified and the request context misses the etag.
+    # Upstream raised not modified and the request context misses the etag.
     repository.source = mock.Mock(get_resource=AsyncMock(side_effect=model.NotModified))
 
     (repository._cache_path / "http").mkdir()
@@ -342,7 +342,7 @@ async def test_get_resource__source_raised_not_modified__request_etag_invalid(
 async def test_get_resource__source_raised_not_modified__request_etag_valid(
     repository: ResourceCacheRepository,
 ) -> None:
-    # Upsream raised not modified and the request etag matches.
+    # Upstream raised not modified and the request etag matches.
     repository.source = mock.Mock(get_resource=AsyncMock(side_effect=model.NotModified))
 
     (repository._cache_path / "http").mkdir()

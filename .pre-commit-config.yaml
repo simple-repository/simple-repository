@@ -34,3 +34,10 @@ repos:
         args:
           - "--max-line-length=100"
           - "--per-file-ignores=simple_repository/tests/*.py:E501"
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+    - id: codespell
+      additional_dependencies:
+      - tomli
