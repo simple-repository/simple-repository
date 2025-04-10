@@ -40,7 +40,7 @@ Here are some of the known uses of the ``simple-repository`` core library:
 
 * [``simple-repository-server``](https://github.com/simple-repository/simple-repository-server): A tool for running a PEP-503 simple Python package repository, including features such as dist metadata (PEP-658) and JSON API (PEP-691)
 * [``simple-repository-browser``](https://github.com/simple-repository/simple-repository-browser): A web interface to browse and search packages in any simple package repository (PEP-503), inspired by PyPI / warehouse
-
+* [``pypi-timemachine``](https://github.com/astrofrog/pypi-timemachine): Install packages with pip as if you were in the past! pypi-timemachine allows you to see a package repository as it would have been at any given time
 
 If you know of other uses of ``simple-repository``, please submit a PR to add them to the list.
 

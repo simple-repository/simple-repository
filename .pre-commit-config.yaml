@@ -7,7 +7,7 @@
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: "v5.0.0"
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -16,7 +16,7 @@ repos:
       - id: check-toml
 
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: "v2.4.0"
+    rev: "v3.1.0"
     hooks:
       - id: add-trailing-comma
         args:
@@ -28,7 +28,7 @@ repos:
       - id: isort
 
   - repo: https://github.com/pycqa/flake8
-    rev: "6.0.0"
+    rev: "7.2.0"
     hooks:
       - id: flake8
         args:
@@ -36,7 +36,7 @@ repos:
           - "--per-file-ignores=simple_repository/tests/*.py:E501"
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
     - id: codespell
       additional_dependencies:
