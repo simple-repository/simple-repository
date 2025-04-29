@@ -34,17 +34,23 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
     `__eq__`.
 
     """
+
     def __init__(
-            self,
-            items: typing.Tuple[
-                       typing.Tuple[str, FrozenJSONType], ...,
-            ] | typing.Mapping[str, FrozenJSONType] | None = None,
+        self,
+        items: typing.Tuple[
+            typing.Tuple[str, FrozenJSONType],
+            ...,
+        ]
+        | typing.Mapping[str, FrozenJSONType]
+        | None = None,
     ):
-        self._data: typing.Mapping[str, FrozenJSONType] = self._finalize_data(dict(items or ()))
+        self._data: typing.Mapping[str, FrozenJSONType] = self._finalize_data(
+            dict(items or ()),
+        )
 
     def _finalize_data(
-            self,
-            data: typing.Mapping[str, FrozenJSONType],
+        self,
+        data: typing.Mapping[str, FrozenJSONType],
     ) -> typing.Mapping[str, FrozenJSONType]:
         """
         A hook to allow subclasses to refine the internal data. This could be used for validation or
@@ -54,9 +60,9 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
 
     @classmethod
     def from_any_dict(
-            cls,
-            data: typing.Mapping[str, typing.Any],
-            sub_dict_cls: typing.Optional[typing.Type[JSONMapping]] = None,
+        cls,
+        data: typing.Mapping[str, typing.Any],
+        sub_dict_cls: typing.Optional[typing.Type[JSONMapping]] = None,
     ) -> typing.Self:
         """
         Recursively transform the given data in to compatible types for JSONMapping.
@@ -68,18 +74,17 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
             sub_dict_cls_t = sub_dict_cls
 
         @typing.overload
-        def transform(value: typing.Mapping[str, typing.Any]) -> JSONMapping:
-            ...
+        def transform(value: typing.Mapping[str, typing.Any]) -> JSONMapping: ...
 
         @typing.overload
-        def transform(value: typing.Any) -> FrozenJSONType:
-            ...
+        def transform(value: typing.Any) -> FrozenJSONType: ...
 
         def transform(value: typing.Any) -> FrozenJSONType:
             if isinstance(value, Mapping) and not isinstance(value, JSONMapping):
-                non_str_k = ', '.join(
+                non_str_k = ", ".join(
                     sorted(
-                        f'{repr(k)!r} (type {type(k).__name__})' for k in value.keys()
+                        f"{repr(k)!r} (type {type(k).__name__})"
+                        for k in value.keys()
                         if not isinstance(k, str)
                     ),
                 )
@@ -88,7 +93,9 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
                         f"Unable to convert non-string key(s) to a valid frozen JSON "
                         f"type (got {non_str_k})",
                     )
-                return sub_dict_cls_t(tuple((k, transform(v)) for k, v in value.items()))
+                return sub_dict_cls_t(
+                    tuple((k, transform(v)) for k, v in value.items()),
+                )
             if isinstance(value, (list, tuple)):
                 return tuple(transform(v) for v in value)
             if not isinstance(value, valid_types):
@@ -109,7 +116,7 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
         return len(self._data)
 
     def __repr__(self) -> str:
-        return f'{type(self).__name__}({repr(tuple(self._data.items()))})'
+        return f"{type(self).__name__}({repr(tuple(self._data.items()))})"
 
     def __or__(self, other: typing.Mapping[str, FrozenJSONType]) -> JSONMapping:
         return type(self)({**self._data, **other})
