@@ -39,6 +39,7 @@ import typing
 import packaging.utils
 import packaging.version
 
+from ._private_metadata import PrivateMetadataMapping
 from ._typing_compat import Protocol, TypedDict
 from .packaging import safe_version
 
@@ -100,6 +101,10 @@ class File:
     #          MUST use the UTC timezone.
     upload_time: typing.Optional[datetime] = None
 
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+    private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
+
     def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
@@ -111,6 +116,10 @@ class Meta:
     https://peps.python.org/pep-0629/
     """
     api_version: str
+
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+    private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -125,6 +134,10 @@ class ProjectDetail:
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
     versions: typing.Optional[typing.FrozenSet[str]] = dataclasses.field(init=False)
+
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+    private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
     def __post_init__(self) -> None:
         api_version = packaging.version.Version(self.meta.api_version)
@@ -150,6 +163,10 @@ class ProjectDetail:
 @dataclasses.dataclass(frozen=True)
 class ProjectListElement:
     name: str  # not necessarily normalized.
+
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+    private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
     @property
     def normalized_name(self) -> str:
