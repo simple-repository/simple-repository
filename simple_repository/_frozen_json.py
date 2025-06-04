@@ -11,6 +11,9 @@ if sys.version_info >= (3, 10):
 else:
     NoneType = type(None)
 
+if typing.TYPE_CHECKING:
+    from ._typing_compat import Self
+
 FrozenJSONType: TypeAlias = typing.Union[
     str,
     int,
@@ -76,7 +79,7 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
         cls,
         data: typing.Mapping[str, typing.Any],
         sub_mapping_cls: typing.Optional[typing.Type[JSONMapping]] = None,
-    ) -> typing.Self:
+    ) -> Self:
         """
         Recursively transform the given data in to compatible types for JSONMapping.
 
@@ -132,7 +135,7 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({repr(tuple(self._data.items()))})"
 
-    def __or__(self, other: typing.Mapping[str, FrozenJSONType]) -> JSONMapping:
+    def __or__(self, other: typing.Mapping[str, FrozenJSONType]) -> Self:
         return type(self)({**self._data, **other})
 
     def __hash__(self) -> int:
