@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from .. import model
@@ -81,3 +83,61 @@ def test_ProjectDetail__post_init_v1_1() -> None:
     assert project_detail.versions == {
         "1.0", "2.0",
     }
+
+
+def test__File__arbitrary_private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+    )
+    assert dict(file.private_metadata) == {'_foo': 'bar'}
+    # Ensure that the private attributes survives additional public attribute
+    # changes.
+    new_file = dataclasses.replace(file, filename='bar')
+    assert dict(new_file.private_metadata) == {'_foo': 'bar'}
+
+
+def test__File__eq__private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+    )
+    file2 = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    assert file != file2
+    assert file == file
+
+
+@pytest.mark.xfail(strict=True)
+def test__File__hash__private_metadata() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+    )
+    file2 = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    assert hash(file) != hash(file2)
+
+
+@pytest.mark.xfail(strict=True)
+def test__File__hash() -> None:
+    file = model.File(
+        filename="pippo",
+        url="url",
+        hashes={},
+    )
+    # The file should be hashable (it is frozen after all), but we currently
+    # allow dict to be passed.
+    hash(file)

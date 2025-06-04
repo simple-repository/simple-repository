@@ -21,13 +21,16 @@ def parse_json_project_list(page: str) -> model.ProjectList:
     projects = frozenset(
         model.ProjectListElement(
             name=project.get("name"),
+            private_metadata=_gather_private_attribs(project),
         ) for project in project_dict["projects"]
     )
     return model.ProjectList(
         meta=model.Meta(
             api_version=project_dict["meta"]["api-version"],
+            private_metadata=_gather_private_attribs(project_dict['meta']),
         ),
         projects=projects,
+        private_metadata=_gather_private_attribs(project_dict),
     )
 
 
@@ -92,6 +95,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 yanked=file.get("yanked"),
                 size=file.get("size"),
                 upload_time=upload_time,
+                private_metadata=_gather_private_attribs(file),
             ),
         )
 
@@ -99,8 +103,10 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
         name=page_dict["name"],
         meta=model.Meta(
             api_version=page_dict["meta"]["api-version"],
+            private_metadata=_gather_private_attribs(page_dict["meta"]),
         ),
         files=tuple(files),
+        private_metadata=_gather_private_attribs(page_dict),
     )
 
 
@@ -207,4 +213,12 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
             api_version="1.0",
         ),
         files=tuple(files),
+    )
+
+
+def _gather_private_attribs(
+        element: typing.Mapping[str, typing.Any],
+) -> model.PrivateMetadataMapping:
+    return model.PrivateMetadataMapping.from_any_mapping(
+        {name: value for name, value in element.items() if name.startswith("_")},
     )
