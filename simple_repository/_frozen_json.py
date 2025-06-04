@@ -115,11 +115,12 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
             if isinstance(value, (list, tuple)):
                 return tuple(transform(v) for v in value)
             # For everything else, it must match what is allowed in FrozenJSONType.
-            if not isinstance(value, (str, int, float, bool, NoneType)):
-                raise ValueError(
-                    f"Unable to convert type {type(value).__name__} to a valid frozen JSON type",
-                )
-            return value  # only_py37_type: ignore[return-value]
+            if isinstance(value, (str, int, float, bool, NoneType)):
+                return value  # only_py37_type: ignore[return-value]
+
+            raise ValueError(
+                f"Unable to convert type {type(value).__name__} to a valid frozen JSON type",
+            )
 
         return cls(transform(data))
 

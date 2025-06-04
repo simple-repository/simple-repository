@@ -292,6 +292,46 @@ def test_serialize_project_page_json__v1_1_attrs(
     assert json.loads(res)["files"] == json.loads(serialization)
 
 
+def test_serialize_project_page_json__private_attrs() -> None:
+    serialization = '''{
+      "meta": {
+        "api-version": "1.1",
+        "_meta_extra": "abc"
+      },
+      "name": "project",
+      "versions": [
+        "1.2.3"
+      ],
+      "files": [
+        {
+          "filename": "test1-1.2.3-any.whl",
+          "url": "test1.whl",
+          "hashes": {},
+          "size": 1,
+          "_file_extra": 123
+        }
+      ],
+      "_page_extra": 456
+    }'''
+    page = model.ProjectDetail(
+        model.Meta("1.1", private_metadata=model.PrivateMetadataMapping(dict(_meta_extra="abc"))),
+        "project",
+        files=(
+            model.File(
+                filename="test1-1.2.3-any.whl",
+                url="test1.whl",
+                hashes={},
+                size=1,
+                private_metadata=model.PrivateMetadataMapping(dict(_file_extra=123)),
+            ),
+        ),
+        private_metadata=model.PrivateMetadataMapping(dict(_page_extra=456)),
+    )
+    serializer = SerializerJsonV1()
+    res = serializer.serialize_project_page(page)
+    assert json.loads(res) == json.loads(serialization)
+
+
 def test_serialize_project_list_json() -> None:
     page = model.ProjectList(
         model.Meta("1.0"),
@@ -310,5 +350,33 @@ def test_serialize_project_list_json() -> None:
         "projects": [
             {"name": "a"}
         ]
+    }'''),
+    )
+
+
+def test_serialize_project_list_json__with_extra() -> None:
+    page = model.ProjectList(
+        model.Meta("1.0", private_metadata=model.PrivateMetadataMapping(dict(_extra_meta="abc"))),
+        projects=frozenset([
+            model.ProjectListElement(
+                "a",
+                private_metadata=model.PrivateMetadataMapping(dict(_extra_list_element=123)),
+            ),
+        ]),
+        private_metadata=model.PrivateMetadataMapping(dict(_extra_project_list=456)),
+    )
+    serializer = SerializerJsonV1()
+    res = serializer.serialize_project_list(page)
+
+    assert res == json.dumps(
+        json.loads('''{
+        "meta": {
+            "api-version": "1.0",
+            "_extra_meta": "abc"
+        },
+        "projects": [
+            {"name": "a", "_extra_list_element": 123}
+        ],
+        "_extra_project_list": 456
     }'''),
     )
