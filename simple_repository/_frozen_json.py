@@ -116,7 +116,7 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
                 raise ValueError(
                     f"Unable to convert type {type(value).__name__} to a valid frozen JSON type",
                 )
-            return value
+            return value  # only_py37_type: ignore[return-value]
 
         return cls(transform(data))
 

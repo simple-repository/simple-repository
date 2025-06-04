@@ -54,6 +54,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install mypy --editable .[test]
+    - if: matrix.python-version == '3.7'
+      run: |
+        sed -i "s/# only_py37_type: ignore/# type: ignore/" ./simple_repository/*.py
     - name: mypy
       run: |
         python -m mypy -p simple_repository
