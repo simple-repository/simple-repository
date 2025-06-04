@@ -179,6 +179,10 @@ class ProjectList:
     meta: Meta
     projects: typing.FrozenSet[ProjectListElement]
 
+    # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
+    # index server use. No future standard will assign a meaning to any such key.
+    private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
+
 
 class Context(TypedDict, total=False):
     etag: str
