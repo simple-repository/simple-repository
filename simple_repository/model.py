@@ -39,7 +39,7 @@ import typing
 import packaging.utils
 import packaging.version
 
-from ._private_metadata import PrivateMetadataMapping
+from ._private_metadata import PrivateMetadataMapping as PrivateMetadataMapping
 from ._typing_compat import Protocol, TypedDict
 from .packaging import safe_version
 

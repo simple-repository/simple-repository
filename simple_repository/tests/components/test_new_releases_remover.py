@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime, timedelta
 import typing
 from unittest import mock
@@ -46,6 +47,8 @@ def test_exclude_recent_distributions__old_files() -> None:
     now = datetime(2023, 1, 1)
     project_detail = create_project_detail(datetime(1926, 1, 1), datetime(2000, 1, 4))
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
+    assert dict(new_project_detail.private_metadata) == {'_quarantined_files': ()}
+    new_project_detail = dataclasses.replace(new_project_detail, private_metadata=model.PrivateMetadataMapping({}))
     assert new_project_detail == project_detail
 
 
@@ -61,6 +64,13 @@ def test_exclude_recent_distributions__new_files() -> None:
     assert new_project_detail != project_detail
     assert len(new_project_detail.files) == 1
     assert new_project_detail.files[0].upload_time == now - timedelta(days=11)
+
+    assert dict(new_project_detail.private_metadata) == {
+        '_quarantined_files': (
+             'project-0.whl',
+             'project-1.whl',
+        ),
+    }
 
 
 @pytest.mark.asyncio
