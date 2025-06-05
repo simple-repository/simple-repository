@@ -85,6 +85,62 @@ def test_ProjectDetail__post_init_v1_1() -> None:
     }
 
 
+def test_ProjectDetail__versions_subset() -> None:
+    detail = model.ProjectDetail(
+        meta=model.Meta("1.1"),
+        name="pippo",
+        files=(
+            model.File(
+                filename="pippo-1.0.tar.gz",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+            model.File(
+                filename="pippo-2.0-anylinux-py3.whl",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+        ),
+        versions=frozenset({'1.0'}),
+    )
+    assert detail.versions == {'1.0', '2.0'}
+
+
+def test_ProjectDetail__manual_versions() -> None:
+    # Sometimes we want to be able to state that there are versions with no
+    # files (PEP-700):
+    # > The versions key MAY contain versions with no associated files
+    project_detail = model.ProjectDetail(
+        meta=model.Meta("1.1"),
+        name="pippo",
+        files=(
+            model.File(
+                filename="pippo-1.0.tar.gz",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+            model.File(
+                filename="pippo-2.0-anylinux-py3.whl",
+                url="url",
+                hashes={},
+                size=1,
+            ),
+        ),
+        versions=frozenset({'1.0', '2.0', "1.2.3"}),
+    )
+    # Versions should persist with other replacement.
+    pd1 = dataclasses.replace(project_detail, files=project_detail.files[:1])
+
+    assert pd1.versions == {'1.0', '2.0', "1.2.3"}
+
+    # And we should be able to get it to be generated again by setting it to None.
+    pd2 = dataclasses.replace(project_detail, versions=None)
+    assert pd2.versions == {"1.0", "2.0"}
+
+
 def test__File__arbitrary_private_metadata() -> None:
     file = model.File(
         filename="pippo",
