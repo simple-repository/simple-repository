@@ -60,6 +60,54 @@ async def test_get_project_page() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_project_page__versions() -> None:
+    repo = MergedRepository(
+        [
+            FakeRepository(),
+            FakeRepository(
+                project_pages=[
+                    model.ProjectDetail(
+                        model.Meta('1.1'),
+                        "numpy",
+                        files=(
+                            model.File("numpy-1.1.whl", "url1", {}, size=1),
+                            model.File("numpy-1.2.whl", "url1", {}, size=1),
+                        ),
+                        versions=frozenset({"1.1", "1.2"}),
+                    ),
+                ],
+            ),
+            FakeRepository(
+                project_pages=[
+                    model.ProjectDetail(
+                        model.Meta('1.2'),
+                        "numpy",
+                        files=(
+                            model.File("numpy-1.1.whl", "url2", {}, size=1),
+                            model.File("numpy-1.3.whl", "url2", {}, size=1),
+                        ),
+                        versions=frozenset({"1.1", "1.3", "1.5"}),
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    resp = await repo.get_project_page("numpy")
+
+    assert resp == model.ProjectDetail(
+        model.Meta('1.1'),
+        "numpy",
+        files=(
+            model.File("numpy-1.1.whl", "url1", {}, size=1),
+            model.File("numpy-1.2.whl", "url1", {}, size=1),
+            model.File("numpy-1.3.whl", "url2", {}, size=1),
+        ),
+        versions=frozenset({"1.1", "1.2", "1.3", "1.5"}),
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
     repo = MergedRepository([
         FakeRepository(),

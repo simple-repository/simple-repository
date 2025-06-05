@@ -74,17 +74,31 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
                 package_name=project_name,
             )
 
+        # If we only have one resulting project page, bring it through verbatim,
+        # and avoid the cost of having to compute the common metadata.
+        if len(project_pages) == 1:
+            return project_pages[0]
+
         # Downgrade the API version to the lowest available, as it will not be
         # possible to calculate the missing files to perform a version upgrade.
-        api_version = str(
-            min((
-                packaging.version.Version(result.meta.api_version)
-                for result in project_pages
-            )),
+        api_version = min(
+            packaging.version.Version(result.meta.api_version)
+            for result in project_pages
         )
 
+        versions = None
+        if api_version >= packaging.version.Version("1.1"):
+            # All project pages are >=1.1, therefore they MUST all have
+            # versions specified. We combine them together.
+            all_versions: typing.List[typing.FrozenSet[str]] = typing.cast(
+                typing.List[typing.FrozenSet[str]],
+                [page.versions for page in project_pages],
+            )
+            versions = frozenset().union(*all_versions)
+
         return model.ProjectDetail(
-            meta=model.Meta(api_version),
+            meta=model.Meta(str(api_version)),
             name=project_pages[0].name,
             files=tuple(files.values()),
+            versions=versions,
         )
