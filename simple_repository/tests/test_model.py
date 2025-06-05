@@ -105,7 +105,9 @@ def test_ProjectDetail__versions_subset() -> None:
         ),
         versions=frozenset({'1.0'}),
     )
-    assert detail.versions == {'1.0', '2.0'}
+    # When we have a subset of versions specified (not spec compliant), we don't
+    # do any magic, but we also don't raise.
+    assert detail.versions == {'1.0'}
 
 
 def test_ProjectDetail__manual_versions() -> None:
