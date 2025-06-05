@@ -147,14 +147,20 @@ class ProjectDetail:
                     raise ValueError(
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
-            computed_versions = frozenset(
-                str(safe_version(file.filename, self._normalized_name))
-                for file in self.files
-            )
-            # If we were given some versions already, follow the rules of PEP-700 and ensure
-            # that they include our computed versions.
-            versions = computed_versions | (self.versions or set())
-            object.__setattr__(self, "versions", versions)
+            if self.versions is None:
+                versions = self.compute_versions_from_files(self.files, self._normalized_name)
+                object.__setattr__(self, "versions", versions)
+
+    @classmethod
+    def compute_versions_from_files(
+            cls,
+            files: typing.Tuple[File, ...],
+            normalized_name: str,
+    ) -> typing.FrozenSet[str]:
+        return frozenset(
+            str(safe_version(file.filename, normalized_name))
+            for file in files
+        )
 
     @property
     def _normalized_name(self) -> str:

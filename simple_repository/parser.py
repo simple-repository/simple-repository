@@ -98,6 +98,9 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 private_metadata=_gather_private_attribs(file),
             ),
         )
+    versions = page_dict.get('versions', None)
+    if versions is not None:
+        versions = frozenset(versions)
 
     return model.ProjectDetail(
         name=page_dict["name"],
@@ -106,6 +109,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
             private_metadata=_gather_private_attribs(page_dict["meta"]),
         ),
         files=tuple(files),
+        versions=versions,
         private_metadata=_gather_private_attribs(page_dict),
     )
 

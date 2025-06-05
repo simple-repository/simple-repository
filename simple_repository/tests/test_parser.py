@@ -129,6 +129,41 @@ def test_parse_html_project_page() -> None:
     )
 
 
+def test_parse_json_project_page__additional_versions() -> None:
+    # Check that if we receive the versions flag (PEP-700), we persist it.
+    # It shouldn't always be auto-computed.
+    page = '''
+    {
+        "meta": {
+            "api-version": "1.0"
+        },
+        "name": "holygrail",
+        "files": [
+            {
+                "filename": "holygrail-1.0.tar.gz",
+                "url": "https://example.com/files/holygrail-1.0.tar.gz",
+                "hashes": {}
+            }
+        ],
+        "versions": ["1.0", "2.0"]
+    }'''
+
+    result = parser.parse_json_project_page(page)
+
+    assert result == model.ProjectDetail(
+        model.Meta("1.0"),
+        "holygrail",
+        (
+            model.File(
+                filename="holygrail-1.0.tar.gz",
+                url="https://example.com/files/holygrail-1.0.tar.gz",
+                hashes={},
+            ),
+        ),
+        versions=frozenset({"1.0", "2.0"}),
+    )
+
+
 @pytest.mark.parametrize(
     "fragment_attr, hashes",
     [
