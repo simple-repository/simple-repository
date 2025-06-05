@@ -133,7 +133,7 @@ class ProjectDetail:
     #          strings specifying all the project versions uploaded for this project.
     #
     # This field is automatically calculated when a ProjectDetail is created with api_version>=1.1.
-    versions: typing.Optional[typing.FrozenSet[str]] = dataclasses.field(init=False)
+    versions: typing.Optional[typing.FrozenSet[str]] = None
 
     # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
     # index server use. No future standard will assign a meaning to any such key.
@@ -147,13 +147,14 @@ class ProjectDetail:
                     raise ValueError(
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
-            versions = frozenset(
+            computed_versions = frozenset(
                 str(safe_version(file.filename, self._normalized_name))
                 for file in self.files
             )
-        else:
-            versions = None
-        object.__setattr__(self, "versions", versions)
+            # If we were given some versions already, follow the rules of PEP-700 and ensure
+            # that they include our computed versions.
+            versions = computed_versions | (self.versions or set())
+            object.__setattr__(self, "versions", versions)
 
     @property
     def _normalized_name(self) -> str:
