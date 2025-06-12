@@ -59,7 +59,7 @@ def test_exclude_recent_distributions__new_files() -> None:
     )
 
     now = datetime(2023, 1, 1)
-    project_detail = create_project_detail(now, now - timedelta(days=1), now - timedelta(days=11))
+    project_detail = create_project_detail(now, now - timedelta(days=1, hours=6), now - timedelta(days=11))
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
     assert new_project_detail != project_detail
     assert len(new_project_detail.files) == 1
@@ -67,8 +67,8 @@ def test_exclude_recent_distributions__new_files() -> None:
 
     assert dict(new_project_detail.private_metadata) == {
         '_quarantined_files': (
-             'project-0.whl',
-             'project-1.whl',
+            {'filename': 'project-0.whl', 'quarantine_release_time': '2023-01-11T00:00:00Z', 'upload_time': '2023-01-01T00:00:00Z'},
+            {'filename': 'project-1.whl', 'quarantine_release_time': '2023-01-09T18:00:00Z', 'upload_time': '2022-12-30T18:00:00Z'},
         ),
     }
 

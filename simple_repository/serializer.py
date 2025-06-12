@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from functools import singledispatch
 import html
 import json
 import typing
@@ -15,6 +16,7 @@ import packaging.utils
 import packaging.version
 
 from . import content_negotiation, model
+from ._frozen_json import JSONMapping
 from ._typing_compat import Protocol
 
 
@@ -24,6 +26,29 @@ class Serializer(Protocol):
 
     def serialize_project_list(self, page: model.ProjectList) -> str:
         ...
+
+
+@singledispatch
+def to_json_serializable(obj: typing.Any) -> typing.Any:
+    """
+    A function which can turn an object into a JSON serializable structure.
+
+    Nested types can remain in a non-serializable state, so long as it can
+    also be converted via to_json_serializable too.
+    """
+    raise TypeError("No JSON serializer override registered")
+
+
+# Register the obvious JSON types.
+for input_type in [bool, int, str, float, type(None), dict, tuple, list]:
+    @to_json_serializable.register(input_type)
+    def _(obj: typing.Any) -> typing.Any:
+        return obj
+
+
+@to_json_serializable.register
+def _(obj: JSONMapping) -> typing.Any:
+    return dict(obj.items())
 
 
 class SerializerJsonV1(Serializer):
@@ -45,7 +70,7 @@ class SerializerJsonV1(Serializer):
         # > Keys (at any level) with a leading underscore are reserved as
         # > private for index server use
         self._update_with_serialized_private_attributes(page, project_page_dict)
-        return json.dumps(project_page_dict)
+        return json.dumps(project_page_dict, default=to_json_serializable)
 
     def _update_with_serialized_private_attributes(
             self,
@@ -77,7 +102,7 @@ class SerializerJsonV1(Serializer):
         # > Keys (at any level) with a leading underscore are reserved as
         # > private for index server use
         self._update_with_serialized_private_attributes(page, list_dict)
-        return json.dumps(list_dict)
+        return json.dumps(list_dict, default=to_json_serializable)
 
     def _standardize_project_list(
             self,

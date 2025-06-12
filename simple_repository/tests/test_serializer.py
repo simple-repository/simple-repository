@@ -360,7 +360,9 @@ def test_serialize_project_list_json__with_extra() -> None:
         projects=frozenset([
             model.ProjectListElement(
                 "a",
-                private_metadata=model.PrivateMetadataMapping(dict(_extra_list_element=123)),
+                private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+                    dict(_extra_list_element=123, _nested={"nested": True}),
+                ),
             ),
         ]),
         private_metadata=model.PrivateMetadataMapping(dict(_extra_project_list=456)),
@@ -375,7 +377,7 @@ def test_serialize_project_list_json__with_extra() -> None:
             "_extra_meta": "abc"
         },
         "projects": [
-            {"name": "a", "_extra_list_element": 123}
+            {"name": "a", "_extra_list_element": 123, "_nested": {"nested": true}}
         ],
         "_extra_project_list": 456
     }'''),
