@@ -146,6 +146,13 @@ def test_frozen_json_mapping__or_operator(simple_json: _frozen_json.JSONMapping)
     assert simple_json["int"] == 1
 
 
+def test_frozen_json_mapping__or_operator__ensure_frozen_too(simple_json: _frozen_json.JSONMapping):
+    new = simple_json | {"some": {'mutable': ['things']}}
+    assert isinstance(new["some"], _frozen_json.JSONMapping)
+    assert isinstance(new["some"]['mutable'], tuple)
+    assert new['some'] == {'mutable': ('things',)}
+
+
 def test_frozen_json_mapping__drop(simple_json: _frozen_json.JSONMapping):
     new = _frozen_json.JSONMapping(
         {key: value for key, value in simple_json.items() if key not in ['int']},

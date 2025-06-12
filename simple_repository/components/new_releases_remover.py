@@ -59,20 +59,28 @@ class NewReleasesRemover(core.RepositoryContainer):
         now: datetime,
     ) -> model.ProjectDetail:
         files_to_maintain = []
-        files_to_be_removed = []
+        files_to_be_removed: typing.List[typing.Tuple[model.File, datetime]] = []
 
         for file in project_page.files:
             if not file.upload_time:
                 # We maintain the file if there is no upload time information.
                 files_to_maintain.append(file)
             else:
-                seconds_since_release = (now - file.upload_time).total_seconds()
+                quarantine_release_time = file.upload_time + self._quarantine_time
                 # Maintain the file if it has been available for longer than the quarantine time.
-                if seconds_since_release >= self._quarantine_time.total_seconds():
+                if quarantine_release_time < now:
                     files_to_maintain.append(file)
                 else:
-                    files_to_be_removed.append(file.filename)
+                    files_to_be_removed.append((file, quarantine_release_time))
 
+        date_format = "%Y-%m-%dT%H:%M:%SZ"
+        serialized_quarantined_files = [
+            {
+                'filename': file.filename,
+                'quarantine_release_time': quarantine_release_time.strftime(date_format),
+                'upload_time': typing.cast(datetime, file.upload_time).strftime(date_format),
+            } for file, quarantine_release_time in files_to_be_removed
+        ]
         # Note that we don't remove the version from the versions list on project page.
         # PEP-700 states that we are allowed to have a release without any files in it.
         return dataclasses.replace(
@@ -80,6 +88,6 @@ class NewReleasesRemover(core.RepositoryContainer):
             files=tuple(files_to_maintain),
             # Use a private attribute to give context of the files that have been quarantined.
             private_metadata=project_page.private_metadata | {
-                '_quarantined_files': tuple(files_to_be_removed),
+                '_quarantined_files': serialized_quarantined_files,
             },
         )

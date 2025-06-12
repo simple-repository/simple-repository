@@ -136,7 +136,9 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({repr(tuple(self._data.items()))})"
 
-    def __or__(self, other: typing.Mapping[str, FrozenJSONType]) -> Self:
+    def __or__(self, other: typing.Mapping[str, typing.Any]) -> Self:
+        if not isinstance(other, type(self)):
+            other = type(self).from_any_mapping(other)
         return type(self)({**self._data, **other})
 
     def __hash__(self) -> int:
