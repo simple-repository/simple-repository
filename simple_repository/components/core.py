@@ -18,40 +18,7 @@ if typing.TYPE_CHECKING:
     WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
-class SimpleRepositoryMeta(type):
-    # A metaclass that swaps model.RequestContext.DEFAULT arguments for RequestContext
-    # instances containing the repository upon which the method is called.
-    def __new__(
-            cls: typing.Type[type],
-            name: str,
-            bases: typing.Tuple[typing.Type[type]],
-            namespace: typing.Dict[str, typing.Any],
-    ) -> typing.Type[type]:
-
-        def dec(fn: WrappedFunction) -> WrappedFunction:
-            @functools.wraps(fn)
-            async def wrapper(
-                    self: typing.Any, *args: typing.Any, **kwargs: typing.Any,
-            ) -> typing.Any:
-                # If we have the default RequestContext (which is None), swap it for
-                # a new context which contains self.
-                if kwargs.get('request_context') is model.RequestContext.DEFAULT:
-                    kwargs['request_context'] = model.RequestContext(self)
-                return await fn(self, *args, **kwargs)
-            return wrapper
-
-        # if 'get_project_page' in namespace:
-        #     namespace['get_project_page'] = dec(namespace['get_project_page'])
-        # if 'get_project_list' in namespace:
-        #     namespace['get_project_list'] = dec(namespace['get_project_list'])
-        # if 'get_resource' in namespace:
-        #     namespace['get_resource'] = dec(namespace['get_resource'])
-
-        result = type.__new__(cls, name, bases, dict(namespace))
-        return result
-
-
-class SimpleRepository(metaclass=SimpleRepositoryMeta):
+class SimpleRepository:
     # XXX: Could this be a protocol?
     async def get_project_page(
         self,

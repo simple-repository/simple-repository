@@ -101,6 +101,24 @@ if typing.TYPE_CHECKING:
 #     async def auxilliary_file(self, auxilliary_name: str) -> AsyncFileLike:
 #         pass
 
+@dataclasses.dataclass(frozen=True)
+class RequestContext:
+    # repository: "SimpleRepository"
+    # TODO: Worry that context is mutable.
+    context: typing.Mapping[str, str] = dataclasses.field(default_factory=dict)
+
+    # Provider a default context which can be used in all signatures using RequestContext.
+    # By default, if not specified, the default request context will be the one containing the
+    # repository of the originating call (i.e. the repository upon which you call a method is the
+    # one that is injected into the context, and passed down to each subsequent (nested) request.
+    # We know that None isn't a RequestContext instance... as a result of this, every user
+    # of RequestContext should handle this. RepositorySource automatically transforms this
+    # to a sensible incoming request (see RepositorySource._build_request_context).
+    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
+
+RequestContext.DEFAULT = RequestContext()
+# object.__setattr__(RequestContext, 'DEFAULT', RequestContext())
+
 
 @dataclasses.dataclass(frozen=True)
 class File:
@@ -160,12 +178,12 @@ class File:
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
-    _fetcher: typing.Optional[typing.Callable[[], typing.Awaitable[bytes]]] = dataclasses.field(repr=False, init=False)
+    _fetcher: typing.Optional[typing.Callable[[], typing.Awaitable[bytes]]] = dataclasses.field(repr=False, init=False, compare=False)
 
-    async def read_bytes(self, request_context: RequestContext) -> bytes:
+    async def read_bytes(self, request_context: RequestContext = RequestContext.DEFAULT) -> bytes:
         if self._fetcher is None:
             raise RuntimeError("The File has not been prepared for fetching bytes")
-        return await self._fetcher(request_context=RequestContext)
+        return await self._fetcher(request_context=request_context)
 
     def __post_init__(self) -> None:
         if self.yanked == "":
@@ -261,22 +279,6 @@ class Resource(Protocol):
     context: Context
     # If this attribute is set to False, cache components will ignore this resource
     to_cache: bool
-
-
-@dataclasses.dataclass(frozen=True)
-class RequestContext:
-    repository: "SimpleRepository"
-    # TODO: Worry that context is mutable.
-    context: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
-
-    # Provider a default context which can be used in all signatures using RequestContext.
-    # By default, if not specified, the default request context will be the one containing the
-    # repository of the originating call (i.e. the repository upon which you call a method is the
-    # one that is injected into the context, and passed down to each subsequent (nested) request.
-    # We know that None isn't a RequestContext instance... as a result of this, every user
-    # of RequestContext should handle this. RepositorySource automatically transforms this
-    # to a sensible incoming request (see RepositorySource._build_request_context).
-    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
 @dataclasses.dataclass(frozen=True)

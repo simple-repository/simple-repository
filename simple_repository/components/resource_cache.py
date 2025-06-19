@@ -84,7 +84,6 @@ class ResourceCacheRepository(core.RepositoryContainer):
         else:
             context = request_context.context
         new_request_context = model.RequestContext(
-            repository=request_context.repository,
             context=context,
         )
         try:
