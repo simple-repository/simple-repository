@@ -117,18 +117,29 @@ class HttpRepository(core.SimpleRepository):
         )
         import functools
         for file in files:
-            object.__setattr__(file, '_fetcher', functools.partial(self._fetch_file, file.url))
-            # print('Replaced: ', file._fetcher)
+            object.__setattr__(file, '_file_retriever', functools.partial(self._fetch_file, file.url, self._http_client))
+            object.__setattr__(
+                file, '_source_chain', (self,),
+            )
+            # print('Replaced: ', file._file_retriever)
         project_page = dataclasses.replace(project_page, files=files)
         return project_page
 
-    @override
-    async def resolve_file(self, project, filename):
-        ...
-
     @classmethod
-    async def _fetch_file(cls, url: str, *, request_context: model.RequestContext) -> bytes:
-        return b'f'
+    async def _fetch_file(cls, url: str, http_client: httpx.AsyncClient, *, request_context: model.RequestContext) -> bytes:
+        headers = {}  # Generate from the context.
+        # timeout = request_context.timeout  # TODO?
+        timeout = 15
+        response = await http_client.get(
+            url=url,
+            headers=headers,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        body = b''.join(response.iter_bytes())
+        content_type: str = response.headers.get("content-type", "")
+        return body  # , content_type
+
         # raise NotImplementedError()
 
     @override

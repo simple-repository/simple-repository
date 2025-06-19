@@ -104,22 +104,15 @@ class SimpleRepository:
         """
         raise NotImplementedError()
 
-    async def resolve_file(self, project, filename, full_repository: SimpleRepository):
-        """
-        Resolve the given filename into the given project.
-
-        Note that this is a short-cut to get a single File instance, instead of all of them which you would get from get_project_page.
-        It may or may not be more efficient than doing the longer-option.
-        """
-        # Sources should override this.
-        raise NotImplementedError()
-
-    async def _fetch_file(self, parent_fetcher, request_context: model.RequestContext) -> bytes:
-        raise NotImplementedError()
-
-    def _prepare_file(self, parent_file: model.File):
-        # TODO: Do we need the full repo context too? (for metadata injection case)
-        raise NotImplementedError()
+    # async def resolve_file(self, project: str, filename, full_repository: SimpleRepository):
+    #     """
+    #     Resolve the given filename into the given project.
+    #
+    #     Note that this is a short-cut to get a single File instance, instead of all of them which you would get from get_project_page.
+    #     It may or may not be more efficient than doing the longer-option.
+    #     """
+    #     # Sources should override this.
+    #     raise NotImplementedError()
 
     async def get_resource(
         self,
@@ -181,12 +174,12 @@ class RepositoryContainer(SimpleRepository):
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
         detail = await self.source.get_project_page(project_name, request_context=request_context)
-        return self._route_file_retrieval(detail)
+        return self._setup_file_retrieval(detail)
 
-    def _route_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
+    def _setup_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
         # If a suitable implementation exists, ensure that the result of fetching the bytes of a
         # File goes through this repository's method.
-        if type(self)._fetch_file is not SimpleRepository._fetch_file:
+        if getattr(type(self)._fetch_file, '_is_overridden', True):
             import copy
             import dataclasses
 
@@ -196,14 +189,21 @@ class RepositoryContainer(SimpleRepository):
                 # Drop the url (and implicitly take a copy), since the URL won't reflect the original file anymore.
                 file = dataclasses.replace(original_file, url=None)  # type: ignore
                 object.__setattr__(
-                    file, '_fetcher',
-                    functools.partial(self._fetch_file, getattr(original_file, '_fetcher')),
+                    file, '_file_retriever',
+                    functools.partial(self._fetch_file, getattr(original_file, '_file_retriever')),
                 )
+                object.__setattr__(file, '_source_chain', getattr(original_file, '_source_chain') + (self,))
                 files.append(file)
 
             detail = dataclasses.replace(detail, files=tuple(files))
 
         return detail
+
+    async def _fetch_file(self, parent_file_retriever: model.FileRetrievalFunction, *, request_context: model.RequestContext) -> bytes:
+        """A hook for RepositoryContainers to modify the contents of retrieved files."""
+        raise NotImplementedError()
+
+    setattr(_fetch_file, '_is_overridden', False)
 
     @override
     async def get_project_list(

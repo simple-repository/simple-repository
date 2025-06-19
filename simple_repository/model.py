@@ -120,6 +120,11 @@ RequestContext.DEFAULT = RequestContext()
 # object.__setattr__(RequestContext, 'DEFAULT', RequestContext())
 
 
+class FileRetrievalFunction(Protocol):
+    def __call__(self, *, request_context: RequestContext) -> typing.Awaitable[bytes]:
+        ...
+
+
 @dataclasses.dataclass(frozen=True)
 class File:
     """
@@ -178,12 +183,12 @@ class File:
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
-    _fetcher: typing.Optional[typing.Callable[[], typing.Awaitable[bytes]]] = dataclasses.field(repr=False, init=False, compare=False)
+    _file_retriever: typing.Optional[FileRetrievalFunction] = dataclasses.field(repr=False, init=False, default=None)
 
     async def read_bytes(self, request_context: RequestContext = RequestContext.DEFAULT) -> bytes:
-        if self._fetcher is None:
+        if self._file_retriever is None:
             raise RuntimeError("The File has not been prepared for fetching bytes")
-        return await self._fetcher(request_context=request_context)
+        return await self._file_retriever(request_context=request_context)
 
     def __post_init__(self) -> None:
         if self.yanked == "":
