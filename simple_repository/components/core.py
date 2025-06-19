@@ -40,18 +40,19 @@ class SimpleRepositoryMeta(type):
                 return await fn(self, *args, **kwargs)
             return wrapper
 
-        if 'get_project_page' in namespace:
-            namespace['get_project_page'] = dec(namespace['get_project_page'])
-        if 'get_project_list' in namespace:
-            namespace['get_project_list'] = dec(namespace['get_project_list'])
-        if 'get_resource' in namespace:
-            namespace['get_resource'] = dec(namespace['get_resource'])
+        # if 'get_project_page' in namespace:
+        #     namespace['get_project_page'] = dec(namespace['get_project_page'])
+        # if 'get_project_list' in namespace:
+        #     namespace['get_project_list'] = dec(namespace['get_project_list'])
+        # if 'get_resource' in namespace:
+        #     namespace['get_resource'] = dec(namespace['get_resource'])
 
         result = type.__new__(cls, name, bases, dict(namespace))
         return result
 
 
 class SimpleRepository(metaclass=SimpleRepositoryMeta):
+    # XXX: Could this be a protocol?
     async def get_project_page(
         self,
         project_name: str,
@@ -136,6 +137,23 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         """
         raise NotImplementedError()
 
+    async def resolve_file(self, project, filename, full_repository: SimpleRepository):
+        """
+        Resolve the given filename into the given project.
+
+        Note that this is a short-cut to get a single File instance, instead of all of them which you would get from get_project_page.
+        It may or may not be more efficient than doing the longer-option.
+        """
+        # Sources should override this.
+        raise NotImplementedError()
+
+    async def _fetch_file(self, parent_fetcher, request_context: model.RequestContext) -> bytes:
+        raise NotImplementedError()
+
+    def _prepare_file(self, parent_file: model.File):
+        # TODO: Do we need the full repo context too? (for metadata injection case)
+        raise NotImplementedError()
+
     async def get_resource(
         self,
         project_name: str,
@@ -182,7 +200,9 @@ class RepositoryContainer(SimpleRepository):
     """A base class for components that enhance the functionality of a source
     `SimpleRepository`. If not overridden, the methods provided by this class
     will delegate to the corresponding methods of the source repository.
+
     """
+    # TODO: Write a guide on when to call `self.source.get_*`, `super().get_*` and `self.get_*`
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 
@@ -193,7 +213,30 @@ class RepositoryContainer(SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        return await self.source.get_project_page(project_name, request_context=request_context)
+        detail = await self.source.get_project_page(project_name, request_context=request_context)
+        return self._route_file_retrieval(detail)
+
+    def _route_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
+        # If a suitable implementation exists, ensure that the result of fetching the bytes of a
+        # File goes through this repository's method.
+        if type(self)._fetch_file is not SimpleRepository._fetch_file:
+            import copy
+            import dataclasses
+
+            # print('Found a prepare_files implementation')
+            files = []
+            for original_file in detail.files:
+                # Drop the url (and implicitly take a copy), since the URL won't reflect the original file anymore.
+                file = dataclasses.replace(original_file, url=None)  # type: ignore
+                object.__setattr__(
+                    file, '_fetcher',
+                    functools.partial(self._fetch_file, getattr(original_file, '_fetcher')),
+                )
+                files.append(file)
+
+            detail = dataclasses.replace(detail, files=tuple(files))
+
+        return detail
 
     @override
     async def get_project_list(

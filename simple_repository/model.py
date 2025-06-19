@@ -45,6 +45,61 @@ from .packaging import safe_version
 
 if typing.TYPE_CHECKING:
     from . import SimpleRepository
+#
+#
+# class AsyncFileLike:
+#     def __init__(self):
+#         self._context_and_loop = None  # Perhaps use contextvar (equivalent of thread local storage, but for asyncio)
+#         self._source_chain: typing.Tuple[SimpleRepository, ...] = ()
+#
+#     def __aiter__(self):
+#         pass
+#
+#     async def __anext__(self):
+#         pass
+#
+#     async def context(self):
+#         raise NotImplementedError("AsyncFileLike.context")
+#
+#
+# class ChainedAsyncFileLike(AsyncFileLike):
+#     def __init__(self, child: AsyncFileLike):
+#         self._file_like_parent: AsyncFileLike = child
+#
+#     def __aiter__(self):
+#         return self._file_like_parent.__anext__()
+#
+#     async def __anext__(self):
+#         return await self._file_like_parent.__anext__()
+#
+#     async def context(self):
+#         # Includes response headers.
+#         context = await self._file_like_parent.context()
+#         self._context_and_loop = context
+#         return context
+#
+#
+# @dataclasses.dataclass(frozen=True)
+# class File_2:
+#     # Everything from file, except URL
+#     pass
+#
+#     # Anything that may have a say in the resolution of a resource (including things like injecting metadata)
+#     sources: typing.Tuple[SimpleRepository]
+#
+#     async def open(self) -> AsyncFileLike:
+#         # Conclusion: Instead of this approach, let's build the file-like in the get_project_page response.
+#         # If you want a file through a server, then you will need to call get_project_page anyway. Perhaps there can be a nice API for doing this efficiently if we know where the resource is coming from (thought
+#
+#         # TODO: worry that self might not have come from source.
+#         file_like = self.sources[0]._initiate_resource_file(self)
+#         for source in self.sources[1:]:
+#             # TODO: Worry that self might need to be the one that came from this source.
+#             file_like = source._initiate_resource_file(self, parent_file_like=file_like)
+#         return file_like
+#
+#     async def auxilliary_file(self, auxilliary_name: str) -> AsyncFileLike:
+#         pass
 
 
 @dataclasses.dataclass(frozen=True)
@@ -104,6 +159,13 @@ class File:
     # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
+
+    _fetcher: typing.Optional[typing.Callable[[], typing.Awaitable[bytes]]] = dataclasses.field(repr=False, init=False)
+
+    async def read_bytes(self, request_context: RequestContext) -> bytes:
+        if self._fetcher is None:
+            raise RuntimeError("The File has not been prepared for fetching bytes")
+        return await self._fetcher(request_context=RequestContext)
 
     def __post_init__(self) -> None:
         if self.yanked == "":

@@ -115,8 +115,21 @@ class HttpRepository(core.SimpleRepository):
             dataclasses.replace(file, url=utils.url_absolutizer(file.url, page_url))
             for file in project_page.files
         )
+        import functools
+        for file in files:
+            object.__setattr__(file, '_fetcher', functools.partial(self._fetch_file, file.url))
+            # print('Replaced: ', file._fetcher)
         project_page = dataclasses.replace(project_page, files=files)
         return project_page
+
+    @override
+    async def resolve_file(self, project, filename):
+        ...
+
+    @classmethod
+    async def _fetch_file(cls, url: str, *, request_context: model.RequestContext) -> bytes:
+        return b'f'
+        # raise NotImplementedError()
 
     @override
     async def get_project_list(
