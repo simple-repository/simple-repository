@@ -13,14 +13,14 @@ import typing
 
 import pytest
 
+from . import MockedFile
 from .. import model, utils
 from ..serializer import SerializerHtmlV1, SerializerJsonV1
 
 
 def test_serialize_file_html() -> None:
     serializer = SerializerHtmlV1()
-
-    file = model.File(
+    file = MockedFile(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={"test": "123", "sha256": "abc123"},
@@ -32,7 +32,7 @@ def test_serialize_file_html() -> None:
     )
     assert serializer._serialize_file(file) == expected
 
-    file = model.File(
+    file = MockedFile(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -57,10 +57,8 @@ def test_serialize_file_html_yank(
     yank_attr: str,
     yank_value: typing.Union[bool, str, None],
 ) -> None:
-    serializer = SerializerHtmlV1(
-
-    )
-    file = model.File(
+    serializer = SerializerHtmlV1()
+    file = MockedFile(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -88,8 +86,7 @@ def test_serialize_file_html_metadata(
     metadata_value: typing.Union[bool, typing.Dict[str, str], None],
 ) -> None:
     serializer = SerializerHtmlV1()
-
-    file = model.File(
+    file = MockedFile(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -113,8 +110,7 @@ def test_serialize_file_html_metadata(
 )
 def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
     serializer = SerializerHtmlV1()
-
-    file = model.File(
+    file = MockedFile(
         filename="test.html",
         url="https://example.com/test.html",
         hashes={},
@@ -133,8 +129,8 @@ def test_serialize_project_page_html() -> None:
         meta=model.Meta(api_version="1.0"),
         name="test-project",
         files=(
-            model.File(filename="test.html", url="https://example.com/test.html", hashes={}),
-            model.File(filename="test.txt", url="test.txt", hashes={}),
+            MockedFile(filename="test.html", url="https://example.com/test.html", hashes={}),
+            MockedFile(filename="test.txt", url="test.txt", hashes={}),
         ),
     )
     expected = """<!DOCTYPE html>
@@ -189,12 +185,12 @@ def test_serialize_project_page_json() -> None:
         model.Meta("1.0"),
         "project",
         files=(
-            model.File(
+            MockedFile(
                 filename="test1.whl",
                 url="test1.whl",
                 hashes={},
             ),
-            model.File(
+            MockedFile(
                 filename="test2.whl",
                 url="test2.whl",
                 hashes={"hash": "test_hash"},
@@ -203,7 +199,7 @@ def test_serialize_project_page_json() -> None:
                 yanked="yanked",
                 gpg_sig=True,
             ),
-            model.File(
+            MockedFile(
                 filename="test3.whl",
                 url="test3.whl",
                 hashes={},
@@ -278,7 +274,7 @@ def test_serialize_project_page_json__v1_1_attrs(
         model.Meta(version),
         "project",
         files=(
-            model.File(
+            MockedFile(
                 filename="test1-1.0.whl",
                 url="test1.whl",
                 hashes={},
@@ -317,7 +313,7 @@ def test_serialize_project_page_json__private_attrs() -> None:
         model.Meta("1.1", private_metadata=model.PrivateMetadataMapping(dict(_meta_extra="abc"))),
         "project",
         files=(
-            model.File(
+            MockedFile(
                 filename="test1-1.2.3-any.whl",
                 url="test1.whl",
                 hashes={},

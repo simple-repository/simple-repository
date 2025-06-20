@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from datetime import timedelta
 import typing
@@ -103,16 +104,19 @@ class HttpRepository(core.SimpleRepository):
             "application/vnd.pypi.simple.v1+html" in content_type or
             "text/html" in content_type or not content_type
         ):
-            project_page = parser.parse_html_project_page(body, project_name)
+            project_page = parser.parse_html_project_page(body, project_name, repo=self)
         elif "application/vnd.pypi.simple.v1+json" in content_type:
-            project_page = parser.parse_json_project_page(body)
+            project_page = parser.parse_json_project_page(body, repo=self)
         else:
             raise errors.UnsupportedSerialization(content_type)
 
         # Make the URLs in the project page absolute, such that they can be
         # resolved upstream without knowing the original source URLs.
         files = tuple(
-            dataclasses.replace(file, url=utils.url_absolutizer(file.url, page_url))
+            dataclasses.replace(
+                file,
+                url=utils.url_absolutizer(typing.cast(str, file.url), page_url),
+            )
             for file in project_page.files
         )
         project_page = dataclasses.replace(project_page, files=files)
@@ -140,6 +144,30 @@ class HttpRepository(core.SimpleRepository):
         raise errors.UnsupportedSerialization(content_type)
 
     @override
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        *,
+        request_context: model.RequestContext,
+    ) -> typing.AsyncIterator[bytes]:
+        assert file.file_source is None
+
+        headers: typing.Dict[str, str] = {}  # Generate from the context.
+        # TODO: Implement the ETAG handling that is in get_resource (and check tests validate it).
+        assert file.url is not None
+        response = await self._http_client.get(
+            url=file.url,
+            headers=headers,
+            timeout=self._connection_timeout.total_seconds(),
+        )
+        response.raise_for_status()
+        body = b''.join(response.iter_bytes())
+        content_type: str = response.headers.get("content-type", "")
+        _ = content_type
+        yield body  # , content_type
+
+    @override
     async def get_resource(
         self,
         project_name: str,
@@ -161,6 +189,7 @@ class HttpRepository(core.SimpleRepository):
         else:
             for file in project_page.files:
                 if resource_name == file.filename:
+                    assert file.url is not None
                     resource = model.HttpResource(url=file.url)
                     break
 
@@ -193,5 +222,6 @@ class HttpRepository(core.SimpleRepository):
         distribution_name = utils.remove_suffix(resource_name, ".metadata")
         for file in project_page.files:
             if distribution_name == file.filename and file.dist_info_metadata:
+                assert file.url is not None
                 return model.HttpResource(url=file.url + ".metadata")
         raise errors.ResourceUnavailable(resource_name)

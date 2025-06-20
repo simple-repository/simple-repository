@@ -11,6 +11,7 @@ import typing
 
 import pytest
 
+from .. import MockedFile
 from ... import model
 from ...components.yanking import YankProvider, YankRepository
 from .fake_repository import FakeRepository
@@ -28,9 +29,9 @@ class FakeYankProvider(YankProvider):
 def project_page() -> model.ProjectDetail:
     return model.ProjectDetail(
         model.Meta("1.0"), name="project", files=(
-            model.File("project-1.0-any.whl", "url", {}),
-            model.File("project-1.0.tar.gz", "url", {}),
-            model.File("project-1.1.tar.gz", "url", {}),
+            MockedFile("project-1.0-any.whl", "url", {}),
+            MockedFile("project-1.0.tar.gz", "url", {}),
+            MockedFile("project-1.1.tar.gz", "url", {}),
         ),
     )
 

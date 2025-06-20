@@ -136,6 +136,7 @@ async def test_get_project_page(simple_dir: pathlib.Path) -> None:
         name="numpy",
         files=(
             model.File(
+                originating_repository=repo,
                 filename='numpy-1.0-any.whl',
                 url="file://" + str(simple_dir / 'numpy/numpy-1.0-any.whl'),
                 # On the fly hashes currently disabled for local repository.
@@ -148,6 +149,7 @@ async def test_get_project_page(simple_dir: pathlib.Path) -> None:
                 size=os.stat(simple_dir / "numpy" / "numpy-1.0-any.whl").st_size,
             ),
             model.File(
+                originating_repository=repo,
                 filename='numpy-1.1.tar.gz',
                 url="file://" + str(simple_dir / 'numpy/numpy-1.1.tar.gz'),
                 hashes={

@@ -15,6 +15,7 @@ import zipfile
 import httpx
 import pytest
 
+from .. import MockedFile
 from ... import errors, model
 from ...components import core
 from ...components.metadata_injector import MetadataInjectorRepository
@@ -29,8 +30,8 @@ def repository() -> MetadataInjectorRepository:
             project_pages=[
                 model.ProjectDetail(
                     model.Meta("1.0"), "numpy", files=(
-                        model.File("numpy-1.0-any.whl", "url", {}),
-                        model.File("numpy-1.0.tar.gz", "url", {}),
+                        MockedFile("numpy-1.0-any.whl", "url", {}),
+                        MockedFile("numpy-1.0.tar.gz", "url", {}),
                     ),
                 ),
             ],
@@ -55,10 +56,10 @@ def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
        model.Meta("1.0"),
        "numpy",
        (
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
-            model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
-            model.File(
+            MockedFile("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
+            MockedFile("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
+            MockedFile("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
+            MockedFile(
                 "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
             ),
        ),

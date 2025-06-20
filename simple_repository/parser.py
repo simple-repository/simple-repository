@@ -15,6 +15,9 @@ import urllib.parse
 
 from . import html_parser, model
 
+if typing.TYPE_CHECKING:
+    from .components.core import SimpleRepository
+
 
 def parse_json_project_list(page: str) -> model.ProjectList:
     project_dict = json.loads(page)
@@ -62,7 +65,7 @@ def parse_html_project_list(page: str) -> model.ProjectList:
     )
 
 
-def parse_json_project_page(body: str) -> model.ProjectDetail:
+def parse_json_project_page(body: str, *, repo: SimpleRepository) -> model.ProjectDetail:
     page_dict = json.loads(body)
 
     files = []
@@ -96,6 +99,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 size=file.get("size"),
                 upload_time=upload_time,
                 private_metadata=_gather_private_attribs(file),
+                originating_repository=repo,
             ),
         )
     versions = page_dict.get('versions', None)
@@ -114,7 +118,11 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
     )
 
 
-def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail:
+def parse_html_project_page(
+    page: str, project_name: str,
+    *,
+    repo: SimpleRepository,
+) -> model.ProjectDetail:
     parser = html_parser.SimpleHTMLParser()
     if not page.lower().lstrip().startswith("<!DOCTYPE html>"):
         # Temporary fix: https://github.com/pypa/pip/issues/10825
@@ -207,6 +215,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
             dist_info_metadata=dist_info_metadata,
             yanked=yanked,
             gpg_sig=gpg_sig,
+            originating_repository=repo,
         )
 
         files.append(file)

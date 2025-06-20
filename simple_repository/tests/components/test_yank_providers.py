@@ -12,6 +12,7 @@ import pathlib
 import aiosqlite
 import pytest
 
+from .. import MockedFile
 from ... import errors, model
 from ...components.yanking import GlobYankProvider, SqliteYankProvider
 
@@ -22,8 +23,8 @@ def project_page() -> model.ProjectDetail:
         model.Meta("1.0"),
         "project",
         (
-            model.File("project-1.0.whl", "url", {}),
-            model.File("project-1.0.tar.gz", "url", {}),
+            MockedFile("project-1.0.whl", "url", {}),
+            MockedFile("project-1.0.tar.gz", "url", {}),
         ),
     )
 

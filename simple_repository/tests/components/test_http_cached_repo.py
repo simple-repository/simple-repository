@@ -133,11 +133,13 @@ async def test_get_project_page__cached(
         ),
         files=(
             model.File(
+                originating_repository=repository,
                 filename="test1.whl",
                 url="https://example.com/simple/project/test1.whl",
                 hashes={"hash": "test_hash"},
             ),
             model.File(
+                originating_repository=repository,
                 filename="test2.whl",
                 url="http://test2.whl",
                 hashes={},
