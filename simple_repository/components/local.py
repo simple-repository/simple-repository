@@ -68,6 +68,7 @@ class LocalRepository(core.SimpleRepository):
             file_stat = os.stat(file)
             files.append(
                 model.File(
+                    originating_repository=self,
                     filename=file.name,
                     url=f"file://{file.resolve()}",
                     hashes={},

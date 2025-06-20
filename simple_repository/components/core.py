@@ -7,9 +7,8 @@
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
-import functools
+import dataclasses
 import typing
 
 from .. import model
@@ -21,7 +20,6 @@ if typing.TYPE_CHECKING:
 
 
 class SimpleRepository:
-    # XXX: Could this be a protocol?
     async def get_project_page(
         self,
         project_name: str,
@@ -106,16 +104,6 @@ class SimpleRepository:
         """
         raise NotImplementedError()
 
-    # async def resolve_file(self, project: str, filename, full_repository: SimpleRepository):
-    #     """
-    #     Resolve the given filename into the given project.
-    #
-    #     Note that this is a short-cut to get a single File instance, instead of all of them which you would get from get_project_page.
-    #     It may or may not be more efficient than doing the longer-option.
-    #     """
-    #     # Sources should override this.
-    #     raise NotImplementedError()
-
     @contextlib.asynccontextmanager
     async def get_file(
             self,
@@ -126,6 +114,8 @@ class SimpleRepository:
             request_context: model.RequestContext,
     ):
         raise NotImplementedError()
+
+    setattr(get_file, '_is_overridden', False)
 
     async def get_resource(
         self,
@@ -192,54 +182,46 @@ class RepositoryContainer(SimpleRepository):
     def _setup_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
         # If a suitable implementation exists, ensure that the result of fetching the bytes of a
         # File goes through this repository's method.
-        if getattr(type(self)._fetch_file, '_is_overridden', True):
-            import copy
-            import dataclasses
-
-            # print('Found a prepare_files implementation')
+        if getattr(type(self).get_file, '_is_overridden', True):
             files = []
             for original_file in detail.files:
-                # Drop the url (and implicitly take a copy), since the URL won't reflect the original file anymore.
-                file = dataclasses.replace(original_file, url=None)  # type: ignore
-                object.__setattr__(
-                    file, '_file_retriever',
-                    functools.partial(self._fetch_file, getattr(original_file, '_file_retriever')),
+                # Drop the url (and implicitly take a copy), since the URL won't reflect the
+                # original file any more.
+                file = dataclasses.replace(
+                    original_file,
+                    url=None,
+                    file_source=original_file,
+                    originating_repository=self,
                 )
-                object.__setattr__(file, '_source_chain', getattr(original_file, '_source_chain') + (self,))
-
-                object.__setattr__(file, '_file_source', original_file)
-                object.__setattr__(file, '_file_repository', self)
                 files.append(file)
 
             detail = dataclasses.replace(detail, files=tuple(files))
 
         return detail
 
-    @classmethod
-    async def _stream_file(cls, upstream_source: typing.Awaitable[bytes], file: model.File, *, request_context: model.RequestContext) -> typing.Awaitable[bytes]:
-        # The file in its original state when it was created by _setup_file_retrieval in this repo.
-        # Note that it is important the RequestContext can be manipulated by the upstream before making downstream requests.
-        return upstream_stream
-
-    async def _fetch_file(self, parent_file_retriever: model.FileRetrievalFunction, *, request_context: model.RequestContext) -> bytes:
-        """A hook for RepositoryContainers to modify the contents of retrieved files."""
-        raise NotImplementedError()
-
-    setattr(_fetch_file, '_is_overridden', False)
-
     @contextlib.asynccontextmanager
     async def get_file(
         self,
-        file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
-        # file_source: typing.Optional[model.File],
-        # repo_chain: typing.Tuple[SimpleRepository, ...],
-        # file: typing.Union[model.File, model.AuxilliaryFile],
+        file: typing.Union[model.File, model.AuxiliaryFile],
         request_context: model.RequestContext,
     ):
-        file_source = file._file_source
-        assert file_source is not None
-        async with file_source.open(request_context=request_context) as response:
+        # Note that we don't use self.source here... the chain of repositories comes from the File
+        # definition.
+
+        if file.originating_repository is not self:
+            # TODO: This might be quite unreasonable if the terminating repository doesn't modify
+            #  the file. Perhaps we should be walking the repository children to confirm this error.
+            raise ValueError("The file you are trying to get does not belong to the repository")
+        file_source = file.file_source
+        assert file_source is not None  # RepositoryContainers are always going to produce Files
+        # with a file_source.
+        async with file_source.originating_repository.get_file(
+                file_source,
+                request_context=request_context,
+        ) as response:
             yield response
+
+    get_file._is_overridden = False
 
     @override
     async def get_project_list(

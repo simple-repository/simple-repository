@@ -104,9 +104,9 @@ class HttpRepository(core.SimpleRepository):
             "application/vnd.pypi.simple.v1+html" in content_type or
             "text/html" in content_type or not content_type
         ):
-            project_page = parser.parse_html_project_page(body, project_name)
+            project_page = parser.parse_html_project_page(body, project_name, repo=self)
         elif "application/vnd.pypi.simple.v1+json" in content_type:
-            project_page = parser.parse_json_project_page(body)
+            project_page = parser.parse_json_project_page(body, repo=self)
         else:
             raise errors.UnsupportedSerialization(content_type)
 
@@ -116,47 +116,8 @@ class HttpRepository(core.SimpleRepository):
             dataclasses.replace(file, url=utils.url_absolutizer(file.url, page_url))
             for file in project_page.files
         )
-        import functools
-        for file in files:
-            object.__setattr__(file, '_file_retriever', functools.partial(self._fetch_file, file.url, self._http_client))
-            object.__setattr__(
-                file, '_source_chain', (self,),
-            )
-            object.__setattr__(
-                file, '_file_repository', self,
-            )
-            # print('Replaced: ', file._file_retriever)
         project_page = dataclasses.replace(project_page, files=files)
         return project_page
-
-    @classmethod
-    async def _fetch_file(cls, url: str, http_client: httpx.AsyncClient, *, request_context: model.RequestContext) -> bytes:
-        headers = {}  # Generate from the context.
-        # timeout = request_context.timeout  # TODO?
-        timeout = 15
-        response = await http_client.get(
-            url=url,
-            headers=headers,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-        body = b''.join(response.iter_bytes())
-        content_type: str = response.headers.get("content-type", "")
-        return body  # , content_type
-
-        # raise NotImplementedError()
-
-    @override
-    @contextlib.asynccontextmanager
-    async def get_file(
-            self,
-            file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
-            # file_source: typing.Optional[model.File],
-            *,
-            request_context: model.RequestContext,
-    ):
-        assert file._file_source is None
-        yield await self._fetch_file(file.url, self._http_client, request_context=request_context)
 
     @override
     async def get_project_list(
@@ -178,6 +139,31 @@ class HttpRepository(core.SimpleRepository):
             return parser.parse_json_project_list(body)
 
         raise errors.UnsupportedSerialization(content_type)
+
+    @override
+    @contextlib.asynccontextmanager
+    async def get_file(
+            self,
+            file: typing.Union[model.File, model.AuxiliaryFile],  # possibly aux too?
+            # file_source: typing.Optional[model.File],
+            *,
+            request_context: model.RequestContext,
+    ):
+        assert file.file_source is None
+
+        headers = {}  # Generate from the context.
+        # timeout = request_context.timeout  # TODO?
+        timeout = 15
+        response = await self._http_client.get(
+            url=file.url,
+            headers=headers,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        body = b''.join(response.iter_bytes())
+        content_type: str = response.headers.get("content-type", "")
+        _ = content_type
+        yield body  # , content_type
 
     @override
     async def get_resource(

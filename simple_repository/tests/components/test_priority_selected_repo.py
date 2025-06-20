@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from .. import MockedFile
 from ... import errors, model
 from ...components.priority_selected import PrioritySelectedProjectsRepository
 from .fake_repository import FakeRepository
@@ -29,7 +30,7 @@ async def test_get_project_page(version: str) -> None:
                 model.ProjectDetail(
                     model.Meta(version),
                     "numpy",
-                    files=(model.File("1", "1", {}, size=1), model.File("2", "2", {}, size=1)),
+                    files=(MockedFile("1", "1", {}, size=1), MockedFile("2", "2", {}, size=1)),
                 ),
             ],
         ),
@@ -38,7 +39,7 @@ async def test_get_project_page(version: str) -> None:
                 model.ProjectDetail(
                     model.Meta('1.0'),
                     "numpy",
-                    files=(model.File("3", "3", {}),),
+                    files=(MockedFile("3", "3", {}),),
                 ),
             ],
         ),
@@ -53,7 +54,7 @@ async def test_get_project_page(version: str) -> None:
         model.Meta(version),
         "numpy",
         files=(
-            model.File("1", "1", {}, size=1), model.File("2", "2", {}, size=1),
+            MockedFile("1", "1", {}, size=1), MockedFile("2", "2", {}, size=1),
         ),
     )
 

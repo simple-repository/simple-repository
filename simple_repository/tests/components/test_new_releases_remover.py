@@ -14,6 +14,8 @@ from unittest import mock
 
 import pytest
 
+from simple_repository import SimpleRepository
+
 from ... import model
 from ...components.new_releases_remover import NewReleasesRemover
 from .fake_repository import FakeRepository
@@ -22,11 +24,13 @@ from .fake_repository import FakeRepository
 def create_project_detail(
     *dates: typing.Optional[datetime],
     project_name: str = "project",
+    originating_repository: SimpleRepository,
 ) -> model.ProjectDetail:
     files = tuple(
         model.File(
+            originating_repository=originating_repository,
             filename=f"{project_name}-{i}.whl",
-            url="url",
+            url=None,
             hashes={},
             upload_time=date,
         ) for i, date in enumerate(dates)
@@ -45,7 +49,11 @@ def test_exclude_recent_distributions__old_files() -> None:
         quarantine_time=timedelta(days=10),
     )
     now = datetime(2023, 1, 1)
-    project_detail = create_project_detail(datetime(1926, 1, 1), datetime(2000, 1, 4))
+    project_detail = create_project_detail(
+        datetime(1926, 1, 1),
+        datetime(2000, 1, 4),
+        originating_repository=repository,
+    )
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
     assert dict(new_project_detail.private_metadata) == {'_quarantined_files': ()}
     new_project_detail = dataclasses.replace(new_project_detail, private_metadata=model.PrivateMetadataMapping({}))
@@ -59,7 +67,11 @@ def test_exclude_recent_distributions__new_files() -> None:
     )
 
     now = datetime(2023, 1, 1)
-    project_detail = create_project_detail(now, now - timedelta(days=1, hours=6), now - timedelta(days=11))
+    project_detail = create_project_detail(
+        now, now - timedelta(days=1, hours=6),
+        now - timedelta(days=11),
+        originating_repository=repository,
+    )
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
     assert new_project_detail != project_detail
     assert len(new_project_detail.files) == 1
@@ -81,6 +93,7 @@ async def test_get_project_page() -> None:
                 datetime.now(),
                 datetime(1926, 1, 1),
                 None,
+                originating_repository=None,  # We really want to be able to have a circular reference here...
             ),
         ],
     )
@@ -112,6 +125,7 @@ async def test_whitelist() -> None:
     whitelisted_project_list = create_project_detail(
         datetime.now(),
         project_name="project1",
+        originating_repository=None,
     )
 
     regular_project_list = create_project_detail(
@@ -119,6 +133,7 @@ async def test_whitelist() -> None:
         datetime(1926, 1, 1),
         datetime(2000, 1, 4),
         project_name="project2",
+        originating_repository=None,
     )
 
     repository = NewReleasesRemover(

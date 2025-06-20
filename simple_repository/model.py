@@ -47,61 +47,7 @@ from .packaging import safe_version
 
 if typing.TYPE_CHECKING:
     from . import SimpleRepository
-#
-#
-# class AsyncFileLike:
-#     def __init__(self):
-#         self._context_and_loop = None  # Perhaps use contextvar (equivalent of thread local storage, but for asyncio)
-#         self._source_chain: typing.Tuple[SimpleRepository, ...] = ()
-#
-#     def __aiter__(self):
-#         pass
-#
-#     async def __anext__(self):
-#         pass
-#
-#     async def context(self):
-#         raise NotImplementedError("AsyncFileLike.context")
-#
-#
-# class ChainedAsyncFileLike(AsyncFileLike):
-#     def __init__(self, child: AsyncFileLike):
-#         self._file_like_parent: AsyncFileLike = child
-#
-#     def __aiter__(self):
-#         return self._file_like_parent.__anext__()
-#
-#     async def __anext__(self):
-#         return await self._file_like_parent.__anext__()
-#
-#     async def context(self):
-#         # Includes response headers.
-#         context = await self._file_like_parent.context()
-#         self._context_and_loop = context
-#         return context
-#
-#
-# @dataclasses.dataclass(frozen=True)
-# class File_2:
-#     # Everything from file, except URL
-#     pass
-#
-#     # Anything that may have a say in the resolution of a resource (including things like injecting metadata)
-#     sources: typing.Tuple[SimpleRepository]
-#
-#     async def open(self) -> AsyncFileLike:
-#         # Conclusion: Instead of this approach, let's build the file-like in the get_project_page response.
-#         # If you want a file through a server, then you will need to call get_project_page anyway. Perhaps there can be a nice API for doing this efficiently if we know where the resource is coming from (thought
-#
-#         # TODO: worry that self might not have come from source.
-#         file_like = self.sources[0]._initiate_resource_file(self)
-#         for source in self.sources[1:]:
-#             # TODO: Worry that self might need to be the one that came from this source.
-#             file_like = source._initiate_resource_file(self, parent_file_like=file_like)
-#         return file_like
-#
-#     async def auxiliary_file(self, auxilliary_name: str) -> AsyncFileLike:
-#         pass
+
 
 @dataclasses.dataclass(frozen=True)
 class RequestContext:
@@ -118,13 +64,8 @@ class RequestContext:
     # to a sensible incoming request (see RepositorySource._build_request_context).
     DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
+
 RequestContext.DEFAULT = RequestContext()
-# object.__setattr__(RequestContext, 'DEFAULT', RequestContext())
-
-
-class FileRetrievalFunction(Protocol):
-    def __call__(self, *, request_context: RequestContext) -> typing.Awaitable[bytes]:
-        ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -133,14 +74,21 @@ class File:
     Simple representation of a distribution file.
     Defined in PEP-691: https://peps.python.org/pep-0691/
     """
-
     filename: str
-    url: str
+    # Unlike PEP-503, URL is optional for a File. This is because in
+    # simple-repository, file content may be entirely virtual and only computed
+    # during get. Unlike PEP-503, file contents can always be accessed via the :meth:`File.open`
+    # method.
+    url: typing.Optional[str]
 
-    # PEP-592: A dictionary mapping a hash name to a hex encoded digest of the file.
-    # PEP-592: Limited to a len() of 1 in HTML
+    # PEP-691: A dictionary mapping a hash name to a hex encoded digest of the file.
+    # PEP-691: Limited to a len() of 1 in HTML
     # Additional hashes are not included in the HTML serialization.
     hashes: typing.Dict[str, str]
+
+    #: The source of the File object.
+    originating_repository: SimpleRepository
+
     requires_python: typing.Optional[str] = None
 
     # PEP-691: An optional key that indicates that metadata for this file is available
@@ -185,19 +133,16 @@ class File:
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
-    #: If this file is a derivative of another file (e.g. it has some processing on it, including caching and logging), then
-    #: we keep track of the original file here.
-    _file_source: typing.Optional[File] = dataclasses.field(repr=False, init=False, default=None)
-
-    #: The source of the File object.
-    _file_repository: SimpleRepository = dataclasses.field(repr=False, init=False)
+    #: If this file is a derivative of another file (e.g. it has some processing on it, including
+    # caching and logging), then we keep track of the original file here.
+    file_source: typing.Optional[File] = None
 
     @contextlib.asynccontextmanager
     async def open(
-            self,
-            request_context: RequestContext = RequestContext.DEFAULT,
+        self,
+        request_context: RequestContext = RequestContext.DEFAULT,
     ) -> types.AsyncGeneratorType[bytes, None]:
-        async with self._file_repository.get_file(
+        async with self.originating_repository.get_file(
             self,
             request_context=request_context,
         ) as response:
@@ -216,7 +161,8 @@ class File:
 
 @dataclasses.dataclass(frozen=True)
 class AuxiliaryFile:
-    # Represents a file which is associated to a distribution File, for example a PEP-658 metadata file, or PEP-503 GPG signature (an `.asc` file).
+    # Represents a file which is associated to a distribution File, for example a PEP-658 metadata
+    # file, or PEP-503 GPG signature (an `.asc` file).
     filename_suffix: str
     file: File
 
@@ -231,17 +177,21 @@ class AuxiliaryFile:
         return self.file.filename + self.filename_suffix
 
     @property
-    def _file_source(self) -> typing.Optional[AuxiliaryFile]:
-        if self.file._file_source is None:
+    def file_source(self) -> typing.Optional[AuxiliaryFile]:
+        if self.file.file_source is None:
             return None
-        return AuxiliaryFile(self.filename_suffix, self.file._file_source)
+        return AuxiliaryFile(self.filename_suffix, self.file.file_source)
+
+    @property
+    def originating_repository(self) -> SimpleRepository:
+        return self.file.originating_repository
 
     @contextlib.asynccontextmanager
     async def open(
             self,
             request_context: RequestContext = RequestContext.DEFAULT,
     ) -> types.AsyncGeneratorType[bytes, None]:
-        async with self._file_repository.get_file(
+        async with self.originating_repository.get_file(
             self,
             request_context=request_context,
         ) as response:
@@ -251,9 +201,6 @@ class AuxiliaryFile:
     _source_chain: typing.Tuple[typing.Tuple[File, SimpleRepository], ...] = dataclasses.field(
         repr=False, init=False, default=(),
     )
-
-
-    # def read_bytes(self, request_context: RequestContext = RequestContext.DEFAULT) -> bytes:
 
 
 @dataclasses.dataclass(frozen=True)
