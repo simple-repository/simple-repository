@@ -148,7 +148,7 @@ class HttpRepository(core.SimpleRepository):
 
     @override
     @contextlib.asynccontextmanager
-    async def fetch_resource(
+    async def get_file(
             self,
             file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
             # file_source: typing.Optional[model.File],

@@ -100,7 +100,7 @@ if typing.TYPE_CHECKING:
 #             file_like = source._initiate_resource_file(self, parent_file_like=file_like)
 #         return file_like
 #
-#     async def auxilliary_file(self, auxilliary_name: str) -> AsyncFileLike:
+#     async def auxiliary_file(self, auxilliary_name: str) -> AsyncFileLike:
 #         pass
 
 @dataclasses.dataclass(frozen=True)
@@ -197,17 +197,17 @@ class File:
             self,
             request_context: RequestContext = RequestContext.DEFAULT,
     ) -> types.AsyncGeneratorType[bytes, None]:
-        async with self._file_repository.fetch_resource(
-                self,
-                request_context=request_context,
+        async with self._file_repository.get_file(
+            self,
+            request_context=request_context,
         ) as response:
             yield response
 
-    def auxilliary_file(
-            self,
-            aux_filename_suffix: str,
-    ) -> AuxilliaryFile:
-        return AuxilliaryFile(aux_filename_suffix, file=self)
+    def auxiliary_file(
+        self,
+        aux_filename_suffix: str,
+    ) -> AuxiliaryFile:
+        return AuxiliaryFile(aux_filename_suffix, file=self)
 
     def __post_init__(self) -> None:
         if self.yanked == "":
@@ -215,7 +215,7 @@ class File:
 
 
 @dataclasses.dataclass(frozen=True)
-class AuxilliaryFile:
+class AuxiliaryFile:
     # Represents a file which is associated to a distribution File, for example a PEP-658 metadata file, or PEP-503 GPG signature (an `.asc` file).
     filename_suffix: str
     file: File
@@ -231,19 +231,19 @@ class AuxilliaryFile:
         return self.file.filename + self.filename_suffix
 
     @property
-    def _file_source(self) -> AuxilliaryFile:
+    def _file_source(self) -> typing.Optional[AuxiliaryFile]:
         if self.file._file_source is None:
             return None
-        return AuxilliaryFile(self.filename_suffix, self.file._file_source)
+        return AuxiliaryFile(self.filename_suffix, self.file._file_source)
 
     @contextlib.asynccontextmanager
     async def open(
             self,
             request_context: RequestContext = RequestContext.DEFAULT,
     ) -> types.AsyncGeneratorType[bytes, None]:
-        async with self.file._file_repository.fetch_resource(
-                self,
-                request_context=request_context,
+        async with self._file_repository.get_file(
+            self,
+            request_context=request_context,
         ) as response:
             yield response
 

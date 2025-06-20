@@ -117,7 +117,7 @@ class SimpleRepository:
     #     raise NotImplementedError()
 
     @contextlib.asynccontextmanager
-    async def fetch_resource(
+    async def get_file(
             self,
             file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
             # file_source: typing.Optional[model.File],
@@ -125,16 +125,7 @@ class SimpleRepository:
             # file: typing.Union[model.File, model.AuxilliaryFile],
             request_context: model.RequestContext,
     ):
-        file_source = file._file_source
-        async with file_source.open(request_context=request_context) as response:
-        # upstream_repo = file_source._file_repository
-        # upstream_file =
-        # self.fetch_resource()
-        # parent = repo_chain[-1]
-        # async with parent.fetch_resource(repo_chain[:-1], file, request_context=request_context) as response:
-        #     # print('RESPONSE:', response.headers)
-        #     print('RESPONSE:', response)
-            yield response
+        raise NotImplementedError()
 
     async def get_resource(
         self,
@@ -230,12 +221,25 @@ class RepositoryContainer(SimpleRepository):
         # Note that it is important the RequestContext can be manipulated by the upstream before making downstream requests.
         return upstream_stream
 
-
     async def _fetch_file(self, parent_file_retriever: model.FileRetrievalFunction, *, request_context: model.RequestContext) -> bytes:
         """A hook for RepositoryContainers to modify the contents of retrieved files."""
         raise NotImplementedError()
 
     setattr(_fetch_file, '_is_overridden', False)
+
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
+        # file_source: typing.Optional[model.File],
+        # repo_chain: typing.Tuple[SimpleRepository, ...],
+        # file: typing.Union[model.File, model.AuxilliaryFile],
+        request_context: model.RequestContext,
+    ):
+        file_source = file._file_source
+        assert file_source is not None
+        async with file_source.open(request_context=request_context) as response:
+            yield response
 
     @override
     async def get_project_list(
