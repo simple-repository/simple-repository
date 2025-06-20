@@ -143,21 +143,19 @@ class HttpRepository(core.SimpleRepository):
     @override
     @contextlib.asynccontextmanager
     async def get_file(
-            self,
-            file: typing.Union[model.File, model.AuxiliaryFile],  # possibly aux too?
-            # file_source: typing.Optional[model.File],
-            *,
-            request_context: model.RequestContext,
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        *,
+        request_context: model.RequestContext,
     ):
         assert file.file_source is None
 
         headers = {}  # Generate from the context.
-        # timeout = request_context.timeout  # TODO?
-        timeout = 15
+        # TODO: Implement the ETAG handling that is in get_resource (and check tests validate it).
         response = await self._http_client.get(
             url=file.url,
             headers=headers,
-            timeout=timeout,
+            timeout=self._connection_timeout.total_seconds(),
         )
         response.raise_for_status()
         body = b''.join(response.iter_bytes())

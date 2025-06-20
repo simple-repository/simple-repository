@@ -106,16 +106,12 @@ class SimpleRepository:
 
     @contextlib.asynccontextmanager
     async def get_file(
-            self,
-            file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
-            # file_source: typing.Optional[model.File],
-            # repo_chain: typing.Tuple[SimpleRepository, ...],
-            # file: typing.Union[model.File, model.AuxilliaryFile],
-            request_context: model.RequestContext,
+        self,
+        file: typing.Union[model.File, model.AuxilliaryFile],
+        *,
+        request_context: model.RequestContext,
     ):
         raise NotImplementedError()
-
-    setattr(get_file, '_is_overridden', False)
 
     async def get_resource(
         self,

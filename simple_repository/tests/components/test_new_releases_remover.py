@@ -87,13 +87,14 @@ def test_exclude_recent_distributions__new_files() -> None:
 
 @pytest.mark.asyncio
 async def test_get_project_page() -> None:
+    mock_repo = mock.Mock(spec=SimpleRepository)
     source = FakeRepository(
         project_pages=[
             create_project_detail(
                 datetime.now(),
                 datetime(1926, 1, 1),
                 None,
-                originating_repository=None,  # We really want to be able to have a circular reference here...
+                originating_repository=mock_repo,
             ),
         ],
     )
@@ -122,10 +123,11 @@ async def test_get_project_page() -> None:
 
 @pytest.mark.asyncio
 async def test_whitelist() -> None:
+    mock_repo = mock.Mock(spec=SimpleRepository)
     whitelisted_project_list = create_project_detail(
         datetime.now(),
         project_name="project1",
-        originating_repository=None,
+        originating_repository=mock_repo,
     )
 
     regular_project_list = create_project_detail(
@@ -133,7 +135,7 @@ async def test_whitelist() -> None:
         datetime(1926, 1, 1),
         datetime(2000, 1, 4),
         project_name="project2",
-        originating_repository=None,
+        originating_repository=mock_repo,
     )
 
     repository = NewReleasesRemover(
