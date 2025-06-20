@@ -31,9 +31,11 @@ brackets, for example ``[additional context]``.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from datetime import datetime
 import pathlib
+import types
 import typing
 
 import packaging.utils
@@ -183,16 +185,75 @@ class File:
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
-    _file_retriever: typing.Optional[FileRetrievalFunction] = dataclasses.field(repr=False, init=False, default=None)
+    #: If this file is a derivative of another file (e.g. it has some processing on it, including caching and logging), then
+    #: we keep track of the original file here.
+    _file_source: typing.Optional[File] = dataclasses.field(repr=False, init=False, default=None)
 
-    async def read_bytes(self, request_context: RequestContext = RequestContext.DEFAULT) -> bytes:
-        if self._file_retriever is None:
-            raise RuntimeError("The File has not been prepared for fetching bytes")
-        return await self._file_retriever(request_context=request_context)
+    #: The source of the File object.
+    _file_repository: SimpleRepository = dataclasses.field(repr=False, init=False)
+
+    @contextlib.asynccontextmanager
+    async def open(
+            self,
+            request_context: RequestContext = RequestContext.DEFAULT,
+    ) -> types.AsyncGeneratorType[bytes, None]:
+        async with self._file_repository.fetch_resource(
+                self,
+                request_context=request_context,
+        ) as response:
+            yield response
+
+    def auxilliary_file(
+            self,
+            aux_filename_suffix: str,
+    ) -> AuxilliaryFile:
+        return AuxilliaryFile(aux_filename_suffix, file=self)
 
     def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuxilliaryFile:
+    # Represents a file which is associated to a distribution File, for example a PEP-658 metadata file, or PEP-503 GPG signature (an `.asc` file).
+    filename_suffix: str
+    file: File
+
+    @property
+    def url(self) -> typing.Optional[str]:
+        if self.file.url is None:
+            return None
+        return self.file.url + self.filename_suffix
+
+    @property
+    def filename(self) -> str:
+        return self.file.filename + self.filename_suffix
+
+    @property
+    def _file_source(self) -> AuxilliaryFile:
+        if self.file._file_source is None:
+            return None
+        return AuxilliaryFile(self.filename_suffix, self.file._file_source)
+
+    @contextlib.asynccontextmanager
+    async def open(
+            self,
+            request_context: RequestContext = RequestContext.DEFAULT,
+    ) -> types.AsyncGeneratorType[bytes, None]:
+        async with self.file._file_repository.fetch_resource(
+                self,
+                request_context=request_context,
+        ) as response:
+            yield response
+
+    # The repositories which *may* contribute to the contents of this file when retrieved.
+    _source_chain: typing.Tuple[typing.Tuple[File, SimpleRepository], ...] = dataclasses.field(
+        repr=False, init=False, default=(),
+    )
+
+
+    # def read_bytes(self, request_context: RequestContext = RequestContext.DEFAULT) -> bytes:
 
 
 @dataclasses.dataclass(frozen=True)

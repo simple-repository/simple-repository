@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from datetime import timedelta
 import typing
@@ -121,6 +122,9 @@ class HttpRepository(core.SimpleRepository):
             object.__setattr__(
                 file, '_source_chain', (self,),
             )
+            object.__setattr__(
+                file, '_file_repository', self,
+            )
             # print('Replaced: ', file._file_retriever)
         project_page = dataclasses.replace(project_page, files=files)
         return project_page
@@ -141,6 +145,18 @@ class HttpRepository(core.SimpleRepository):
         return body  # , content_type
 
         # raise NotImplementedError()
+
+    @override
+    @contextlib.asynccontextmanager
+    async def fetch_resource(
+            self,
+            file: typing.Union[model.File, model.AuxilliaryFile],  # possibly aux too?
+            # file_source: typing.Optional[model.File],
+            *,
+            request_context: model.RequestContext,
+    ):
+        assert file._file_source is None
+        yield await self._fetch_file(file.url, self._http_client, request_context=request_context)
 
     @override
     async def get_project_list(
