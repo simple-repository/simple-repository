@@ -53,11 +53,9 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
     # The content of the the info file matches the upstream cache
     cached_info_file.write_text("etag")
 
-    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="http",
         resource_name="http-1.0-any.whl",
-        request_context=context,
     )
     # The cache returns a LocalResource pointing to
     # the cached file with the same etag as upstream
@@ -76,8 +74,6 @@ async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRep
     # The content of the the info file matches the upstream cache
     cached_info_file.write_text("wrong_etag")
 
-    context = model.RequestContext(repository)
-
     with mock.patch(
         "simple_repository.utils.download_file",
         AsyncMock(
@@ -87,7 +83,6 @@ async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRep
         response = await repository.get_resource(
             project_name="http",
             resource_name="http-1.0-any.whl",
-            request_context=context,
         )
 
     # after the cache miss, the upstream file is downloaded and the info file is created.
@@ -102,7 +97,6 @@ async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRep
 async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheRepository) -> None:
     assert not (repository._cache_path / "http" / "http-1.0-any.whl.info").is_file()
     assert not (repository._cache_path / "http" / "http-1.0-any.whl").is_file()
-    context = model.RequestContext(repository)
 
     with mock.patch(
         "simple_repository.utils.download_file",
@@ -113,7 +107,6 @@ async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheReposi
         response = await repository.get_resource(
             project_name="http",
             resource_name="http-1.0-any.whl",
-            request_context=context,
         )
 
     # after the cache miss, the upstream file is downloaded and the info file is created.
@@ -129,11 +122,9 @@ async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheReposi
 async def test_get_resource__cache_miss_local_resource(
     repository: ResourceCacheRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="local",
         resource_name="local-1.0.tar.gz",
-        request_context=context,
     )
 
     # the cache doesn't store LocalResources. No cache file or info file is created.
@@ -147,7 +138,6 @@ async def test_get_resource__cache_miss_local_resource(
 async def test_get_resource__path_traversal(
     repository: ResourceCacheRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     with pytest.raises(
         ValueError,
         match="is not contained in",
@@ -155,7 +145,6 @@ async def test_get_resource__path_traversal(
         await repository.get_resource(
             project_name="not-used",
             resource_name="../../../etc/passwords",
-            request_context=context,
         )
 
 
@@ -261,11 +250,9 @@ async def test_get_resource__source_unavailable_cache_miss(
 async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
     repository: ResourceCacheRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="http-no-etag",
         resource_name="http_no_etag-1.0-any.whl",
-        request_context=context,
     )
 
     # Upstream doesn't set an etag so the HttpResource is not cached,
@@ -296,11 +283,9 @@ async def test_get_resource__no_cache_created_when_to_cache_is_false(
         http_client=mock.MagicMock(),
     )
 
-    context = model.RequestContext(repository)
     result = await repository.get_resource(
         project_name="resource",
         resource_name="resource-1.0-any.whl",
-        request_context=context,
     )
 
     # Upstream sets an etag but the to_cache attribute is False so the resource is not cached.
@@ -324,11 +309,9 @@ async def test_get_resource__source_raised_not_modified__request_etag_invalid(
     # The content of the the info file matches the upstream cache
     cached_info_file.write_text("etag")
 
-    context = model.RequestContext(repository)
     resource = await repository.get_resource(
         project_name="http",
         resource_name="http-1.0-any.whl",
-        request_context=context,
     )
     # The cache returns a LocalResource pointing to
     # the cached file with the same etag as upstream
@@ -352,7 +335,7 @@ async def test_get_resource__source_raised_not_modified__request_etag_valid(
     # The content of the the info file matches the upstream cache
     cached_info_file.write_text("etag")
 
-    context = model.RequestContext(repository, {"etag": "etag"})
+    context = model.RequestContext({"etag": "etag"})
 
     with pytest.raises(model.NotModified):
         await repository.get_resource(
@@ -419,7 +402,6 @@ async def test_update_last_access__cache_hit_called(
 
     update_last_access_mock = mock.Mock()
 
-    context = model.RequestContext(repository)
     with mock.patch.object(
         target=ResourceCacheRepository,
         attribute="_update_last_access",
@@ -428,7 +410,6 @@ async def test_update_last_access__cache_hit_called(
         await repository.get_resource(
             project_name="http",
             resource_name="http-1.0-any.whl",
-            request_context=context,
         )
 
     update_last_access_mock.assert_called_once()
@@ -439,7 +420,6 @@ async def test_update_last_access_for__cache_miss_local_not_called(
     repository: ResourceCacheRepository,
 ) -> None:
     update_last_access_for_mock = mock.Mock()
-    context = model.RequestContext(repository)
     with mock.patch.object(
         target=ResourceCacheRepository,
         attribute="_update_last_access",
@@ -448,7 +428,6 @@ async def test_update_last_access_for__cache_miss_local_not_called(
         await repository.get_resource(
             project_name="local",
             resource_name="local-1.0.tar.gz",
-            request_context=context,
         )
     update_last_access_for_mock.assert_not_called()
 
@@ -457,7 +436,6 @@ async def test_update_last_access_for__cache_miss_local_not_called(
 async def test_update_last_access_for__cache_miss_remote_called(
     repository: ResourceCacheRepository,
 ) -> None:
-    context = model.RequestContext(repository)
     update_last_access_for_mock = mock.Mock()
     with mock.patch(
         "simple_repository.utils.download_file",
@@ -472,7 +450,6 @@ async def test_update_last_access_for__cache_miss_remote_called(
         await repository.get_resource(
             project_name="http",
             resource_name="http-1.0-any.whl",
-            request_context=context,
         )
     update_last_access_for_mock.assert_called_once()
 

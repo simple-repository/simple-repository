@@ -39,12 +39,10 @@ import typing
 import packaging.utils
 import packaging.version
 
+from ._frozen_json import JSONMapping
 from ._private_metadata import PrivateMetadataMapping as PrivateMetadataMapping
 from ._typing_compat import Protocol, TypedDict
 from .packaging import safe_version
-
-if typing.TYPE_CHECKING:
-    from . import SimpleRepository
 
 
 @dataclasses.dataclass(frozen=True)
@@ -191,6 +189,19 @@ class ProjectList:
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
 
+@dataclasses.dataclass(frozen=True)
+class RequestContext:
+    context: JSONMapping
+
+    def __init__(
+        self,
+        context: typing.Union[JSONMapping, typing.Mapping[str, typing.Any]] = JSONMapping(),
+    ) -> None:
+        if not isinstance(context, JSONMapping):
+            context = JSONMapping.from_any_mapping(context)
+        object.__setattr__(self, "context", context)
+
+
 class Context(TypedDict, total=False):
     etag: str
 
@@ -199,22 +210,6 @@ class Resource(Protocol):
     context: Context
     # If this attribute is set to False, cache components will ignore this resource
     to_cache: bool
-
-
-@dataclasses.dataclass(frozen=True)
-class RequestContext:
-    repository: "SimpleRepository"
-    # TODO: Worry that context is mutable.
-    context: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
-
-    # Provider a default context which can be used in all signatures using RequestContext.
-    # By default, if not specified, the default request context will be the one containing the
-    # repository of the originating call (i.e. the repository upon which you call a method is the
-    # one that is injected into the context, and passed down to each subsequent (nested) request.
-    # We know that None isn't a RequestContext instance... as a result of this, every user
-    # of RequestContext should handle this. RepositorySource automatically transforms this
-    # to a sensible incoming request (see RepositorySource._build_request_context).
-    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
 @dataclasses.dataclass(frozen=True)

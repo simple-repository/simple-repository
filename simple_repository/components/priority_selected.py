@@ -41,7 +41,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources in a first seen policy.
@@ -64,7 +64,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
         results: typing.List[typing.Union[model.ProjectList, BaseException]] = await asyncio.gather(
@@ -110,7 +110,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         for source in self.sources:
             try:

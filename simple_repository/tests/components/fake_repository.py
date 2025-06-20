@@ -34,7 +34,7 @@ class FakeRepository(core.SimpleRepository):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         if project_name in self.project_pages:
             return self.project_pages[project_name]
@@ -43,7 +43,7 @@ class FakeRepository(core.SimpleRepository):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         return self.project_list
 
@@ -52,7 +52,7 @@ class FakeRepository(core.SimpleRepository):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         resource = self.resources.get(resource_name)
         if resource:
