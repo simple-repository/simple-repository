@@ -83,7 +83,7 @@ class HttpRepository(core.SimpleRepository):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         page_url = _url_path_append(self._source_url, f'{project_name}/')
         try:
@@ -122,7 +122,7 @@ class HttpRepository(core.SimpleRepository):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         try:
             body, content_type = await self._fetch_simple_page(self._source_url)
@@ -145,8 +145,9 @@ class HttpRepository(core.SimpleRepository):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
+        request_context = request_context or model.RequestContext()
         try:
             project_page = await self.get_project_page(
                 project_name,

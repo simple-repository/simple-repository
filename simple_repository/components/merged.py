@@ -34,7 +34,7 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         """Retrieves a project page for the specified normalized project name
         by searching through the grouped list of sources and blending them together.

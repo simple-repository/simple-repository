@@ -53,13 +53,15 @@ class ResourceCacheRepository(core.RepositoryContainer):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         """
         Get a resource from the cache. If it is not present in the
         cache, or its etag has expired, retrieve it from the source repository.
         If it's a remote resource, download the resource and cache it.
         """
+        request_context = request_context or model.RequestContext()
+
         project_dir = (self._cache_path / project_name).resolve()
         resource_path = (project_dir / resource_name).resolve()
         resource_info_path = resource_path.with_suffix(resource_path.suffix + ".info")
@@ -77,14 +79,13 @@ class ResourceCacheRepository(core.RepositoryContainer):
         # Require the resource upstream, if available use the cached etag.
         cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
         if cache_etag:
-            context = {
+            context: typing.Mapping[str, typing.Any] = {
                 **request_context.context,
                 "etag": cache_etag,
             }
         else:
             context = request_context.context
         new_request_context = model.RequestContext(
-            repository=request_context.repository,
             context=context,
         )
         try:

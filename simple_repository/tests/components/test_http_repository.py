@@ -313,7 +313,7 @@ async def test_get_resource__not_modified(
             await repository.get_resource(
                 project_name="numpy",
                 resource_name="numpy-2.0.whl",
-                request_context=model.RequestContext(repository, {"etag": etag}),
+                request_context=model.RequestContext({"etag": etag}),
             )
 
 

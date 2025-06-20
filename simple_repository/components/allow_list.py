@@ -24,7 +24,7 @@ class AllowListRepository(core.RepositoryContainer):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         project_list = await super().get_project_list(request_context=request_context)
         projects = frozenset(
@@ -37,7 +37,7 @@ class AllowListRepository(core.RepositoryContainer):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         if project_name not in self._allow_list:
             raise errors.PackageNotFoundError(project_name)
@@ -49,7 +49,7 @@ class AllowListRepository(core.RepositoryContainer):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         if project_name not in self._allow_list:
             raise errors.ResourceUnavailable(resource_name)
