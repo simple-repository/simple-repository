@@ -9,8 +9,11 @@ from __future__ import annotations
 
 from datetime import datetime
 import typing
+from unittest import mock
 
 import pytest
+
+from simple_repository.components.core import SimpleRepository
 
 from .. import model, parser
 
@@ -52,13 +55,15 @@ def test_parse_json_project_page() -> None:
 
     }'''
 
-    result = parser.parse_json_project_page(page)
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_json_project_page(page, repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="https://example.com/files/holygrail-1.0.tar.gz",
                 hashes={"sha256": "...", "blake2b": "..."},
@@ -66,12 +71,14 @@ def test_parse_json_project_page() -> None:
                 yanked="Had a vulnerability",
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0-py3-none-any.whl",
                 url="holygrail-1.0-py3-none-any.whl",
                 hashes={},
                 dist_info_metadata=True,
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.1-py3-none-any.whl",
                 url="holygrail-1.0-py3-none-any.whl",
                 hashes={},
@@ -79,6 +86,7 @@ def test_parse_json_project_page() -> None:
                 yanked=True,
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.2-py3-none-any.whl",
                 url="http://unnormalized%20url.whl",
                 hashes={},
@@ -103,24 +111,28 @@ def test_parse_html_project_page() -> None:
         <a href="bad-project.whl></a>
     '''
 
-    result = parser.parse_html_project_page(page, "holygrail")
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_html_project_page(page, "holygrail", repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={"sha256": "..."},
                 requires_python=">=3.7",
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.1-py3-none-any.whl",
                 url="holygrail-1.1-py3-none-any.whl",
                 hashes={},
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.2-py3-none-any.whl",
                 url="unnormalized%20url.whl",
                 hashes={},
@@ -148,13 +160,15 @@ def test_parse_json_project_page__additional_versions() -> None:
         "versions": ["1.0", "2.0"]
     }'''
 
-    result = parser.parse_json_project_page(page)
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_json_project_page(page, repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="https://example.com/files/holygrail-1.0.tar.gz",
                 hashes={},
@@ -180,13 +194,15 @@ def test_parse_html_project_page_URL_fragment(
 ) -> None:
     page = f'''<a href="holygrail-1.0.tar.gz{fragment_attr}">holygrail-1.0.tar.gz</a>'''
 
-    result = parser.parse_html_project_page(page, "holygrail")
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_html_project_page(page, "holygrail", repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes=hashes,
@@ -215,13 +231,15 @@ def test_parse_html_project_page_yank(
         >holygrail-1.0.tar.gz</a>
     '''
 
-    result = parser.parse_html_project_page(page, "holygrail")
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_html_project_page(page, "holygrail", repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
@@ -256,13 +274,15 @@ def test_parse_html_project_page_metadata(
         >holygrail-1.0.tar.gz</a>
     '''
 
-    result = parser.parse_html_project_page(page, "holygrail")
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_html_project_page(page, "holygrail", repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
@@ -288,13 +308,15 @@ def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: typing.Optional[b
         >holygrail-1.0.tar.gz</a>
     '''
 
-    result = parser.parse_html_project_page(page, "holygrail")
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_html_project_page(page, "holygrail", repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.0"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0.tar.gz",
                 url="holygrail-1.0.tar.gz",
                 hashes={},
@@ -407,13 +429,15 @@ def test_parse_json_project_page__v_1_1() -> None:
         ]
     }'''
 
-    result = parser.parse_json_project_page(page)
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_json_project_page(page, repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.1"),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0-py3-none-any.whl",
                 url="http://url.whl",
                 hashes={},
@@ -421,6 +445,7 @@ def test_parse_json_project_page__v_1_1() -> None:
                 upload_time=datetime(2000, 1, 1, 0, 0, 0),
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.1-py3-none-any.whl",
                 url="http://url.whl",
                 hashes={},
@@ -459,13 +484,15 @@ def test_parse_json_project_page__private() -> None:
         "_extra_project_page": 123
     }'''
 
-    result = parser.parse_json_project_page(page)
+    mock_repo = mock.Mock(spec=SimpleRepository)
+    result = parser.parse_json_project_page(page, repo=mock_repo)
 
     assert result == model.ProjectDetail(
         model.Meta("1.1", private_metadata=model.PrivateMetadataMapping(dict(_extra_meta=123))),
         "holygrail",
         (
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.0-py3-none-any.whl",
                 url="http://url.whl",
                 hashes={},
@@ -474,6 +501,7 @@ def test_parse_json_project_page__private() -> None:
                 private_metadata=model.PrivateMetadataMapping(dict(_extra_file=123)),
             ),
             model.File(
+                originating_repository=mock_repo,
                 filename="holygrail-1.1-py3-none-any.whl",
                 url="http://url.whl",
                 hashes={},

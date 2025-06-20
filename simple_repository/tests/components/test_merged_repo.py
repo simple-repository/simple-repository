@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from .. import MockedFile
 from ... import errors, model
 from ...components.merged import MergedRepository
 from .fake_repository import FakeRepository
@@ -25,8 +26,8 @@ async def test_get_project_page() -> None:
                         model.Meta('1.1'),
                         "numpy",
                         files=(
-                            model.File("numpy-1.1.whl", "url1", {}, size=1),
-                            model.File("numpy-1.2.whl", "url1", {}, size=1),
+                            MockedFile("numpy-1.1.whl", "url1", {}, size=1),
+                            MockedFile("numpy-1.2.whl", "url1", {}, size=1),
                         ),
                     ),
                 ],
@@ -37,8 +38,8 @@ async def test_get_project_page() -> None:
                         model.Meta('1.0'),
                         "numpy",
                         files=(
-                            model.File("numpy-1.1.whl", "url2", {}),
-                            model.File("numpy-1.3.whl", "url2", {}),
+                            MockedFile("numpy-1.1.whl", "url2", {}),
+                            MockedFile("numpy-1.3.whl", "url2", {}),
                         ),
                     ),
                 ],
@@ -52,9 +53,9 @@ async def test_get_project_page() -> None:
         model.Meta('1.0'),
         "numpy",
         files=(
-            model.File("numpy-1.1.whl", "url1", {}, size=1),
-            model.File("numpy-1.2.whl", "url1", {}, size=1),
-            model.File("numpy-1.3.whl", "url2", {}),
+            MockedFile("numpy-1.1.whl", "url1", {}, size=1),
+            MockedFile("numpy-1.2.whl", "url1", {}, size=1),
+            MockedFile("numpy-1.3.whl", "url2", {}),
         ),
     )
 
@@ -70,8 +71,8 @@ async def test_get_project_page__versions() -> None:
                         model.Meta('1.1'),
                         "numpy",
                         files=(
-                            model.File("numpy-1.1.whl", "url1", {}, size=1),
-                            model.File("numpy-1.2.whl", "url1", {}, size=1),
+                            MockedFile("numpy-1.1.whl", "url1", {}, size=1),
+                            MockedFile("numpy-1.2.whl", "url1", {}, size=1),
                         ),
                         versions=frozenset({"1.1", "1.2"}),
                     ),
@@ -83,8 +84,8 @@ async def test_get_project_page__versions() -> None:
                         model.Meta('1.2'),
                         "numpy",
                         files=(
-                            model.File("numpy-1.1.whl", "url2", {}, size=1),
-                            model.File("numpy-1.3.whl", "url2", {}, size=1),
+                            MockedFile("numpy-1.1.whl", "url2", {}, size=1),
+                            MockedFile("numpy-1.3.whl", "url2", {}, size=1),
                         ),
                         versions=frozenset({"1.1", "1.3", "1.5"}),
                     ),
@@ -99,9 +100,9 @@ async def test_get_project_page__versions() -> None:
         model.Meta('1.1'),
         "numpy",
         files=(
-            model.File("numpy-1.1.whl", "url1", {}, size=1),
-            model.File("numpy-1.2.whl", "url1", {}, size=1),
-            model.File("numpy-1.3.whl", "url2", {}, size=1),
+            MockedFile("numpy-1.1.whl", "url1", {}, size=1),
+            MockedFile("numpy-1.2.whl", "url1", {}, size=1),
+            MockedFile("numpy-1.3.whl", "url2", {}, size=1),
         ),
         versions=frozenset({"1.1", "1.2", "1.3", "1.5"}),
     )

@@ -11,6 +11,7 @@ import dataclasses
 
 import pytest
 
+from . import MockedFile
 from .. import model
 
 
@@ -37,7 +38,7 @@ def test_ProjectDetail__failed_post_init() -> None:
             meta=model.Meta("1.1"),
             name="pippo",
             files=(
-                model.File(
+                MockedFile(
                     filename="pippozzo",
                     url="url",
                     hashes={},
@@ -51,7 +52,7 @@ def test_ProjectDetail__post_init_v1() -> None:
         meta=model.Meta("1.0"),
         name="pippo",
         files=(
-            model.File(
+            MockedFile(
                 filename="pippozzo",
                 url="url",
                 hashes={},
@@ -66,13 +67,13 @@ def test_ProjectDetail__post_init_v1_1() -> None:
         meta=model.Meta("1.1"),
         name="pippo",
         files=(
-            model.File(
+            MockedFile(
                 filename="pippo-1.0.tar.gz",
                 url="url",
                 hashes={},
                 size=1,
             ),
-            model.File(
+            MockedFile(
                 filename="pippo-2.0-anylinux-py3.whl",
                 url="url",
                 hashes={},
@@ -90,13 +91,13 @@ def test_ProjectDetail__versions_subset() -> None:
         meta=model.Meta("1.1"),
         name="pippo",
         files=(
-            model.File(
+            MockedFile(
                 filename="pippo-1.0.tar.gz",
                 url="url",
                 hashes={},
                 size=1,
             ),
-            model.File(
+            MockedFile(
                 filename="pippo-2.0-anylinux-py3.whl",
                 url="url",
                 hashes={},
@@ -118,13 +119,13 @@ def test_ProjectDetail__manual_versions() -> None:
         meta=model.Meta("1.1"),
         name="pippo",
         files=(
-            model.File(
+            MockedFile(
                 filename="pippo-1.0.tar.gz",
                 url="url",
                 hashes={},
                 size=1,
             ),
-            model.File(
+            MockedFile(
                 filename="pippo-2.0-anylinux-py3.whl",
                 url="url",
                 hashes={},
@@ -144,7 +145,7 @@ def test_ProjectDetail__manual_versions() -> None:
 
 
 def test__File__arbitrary_private_metadata() -> None:
-    file = model.File(
+    file = MockedFile(
         filename="pippo",
         url="url",
         hashes={},
@@ -158,13 +159,13 @@ def test__File__arbitrary_private_metadata() -> None:
 
 
 def test__File__eq__private_metadata() -> None:
-    file = model.File(
+    file = MockedFile(
         filename="pippo",
         url="url",
         hashes={},
         private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
     )
-    file2 = model.File(
+    file2 = MockedFile(
         filename="pippo",
         url="url",
         hashes={},
@@ -175,13 +176,13 @@ def test__File__eq__private_metadata() -> None:
 
 @pytest.mark.xfail(strict=True)
 def test__File__hash__private_metadata() -> None:
-    file = model.File(
+    file = MockedFile(
         filename="pippo",
         url="url",
         hashes={},
         private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
     )
-    file2 = model.File(
+    file2 = MockedFile(
         filename="pippo",
         url="url",
         hashes={},
@@ -191,7 +192,7 @@ def test__File__hash__private_metadata() -> None:
 
 @pytest.mark.xfail(strict=True)
 def test__File__hash() -> None:
-    file = model.File(
+    file = MockedFile(
         filename="pippo",
         url="url",
         hashes={},

@@ -13,6 +13,7 @@ from unittest import mock
 import httpx
 import pytest
 
+from .. import MockedFile
 from ... import errors, model
 from ...components.http import HttpRepository, _url_path_append
 from .mock_compat import AsyncMock
@@ -129,11 +130,13 @@ async def test_get_project_page(text: str, header: str, httpx_mock: pytest_httpx
         ),
         files=(
             model.File(
+                originating_repository=repository,
                 filename="test1.whl",
                 url="https://example.com/simple/project/test1.whl",
                 hashes={"hash": "test_hash"},
             ),
             model.File(
+                originating_repository=repository,
                 filename="test2.whl",
                 url="http://test2.whl",
                 hashes={},
@@ -257,13 +260,13 @@ def project_detail() -> model.ProjectDetail:
         meta=model.Meta("1.0"),
         name="numpy",
         files=(
-            model.File(
+            MockedFile(
                 filename="numpy-1.0.whl",
                 url="http://my_url/numpy-1.0.whl",
                 hashes={},
                 dist_info_metadata={"sha256": "..."},
             ),
-            model.File(
+            MockedFile(
                 filename="numpy-2.0.whl",
                 url="http://my_url/numpy-2.0.whl",
                 hashes={},
@@ -313,7 +316,7 @@ async def test_get_resource__not_modified(
             await repository.get_resource(
                 project_name="numpy",
                 resource_name="numpy-2.0.whl",
-                request_context=model.RequestContext(repository, {"etag": etag}),
+                request_context=model.RequestContext({"etag": etag}),
             )
 
 

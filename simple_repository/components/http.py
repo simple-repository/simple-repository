@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from datetime import timedelta
 import typing
@@ -103,9 +104,9 @@ class HttpRepository(core.SimpleRepository):
             "application/vnd.pypi.simple.v1+html" in content_type or
             "text/html" in content_type or not content_type
         ):
-            project_page = parser.parse_html_project_page(body, project_name)
+            project_page = parser.parse_html_project_page(body, project_name, repo=self)
         elif "application/vnd.pypi.simple.v1+json" in content_type:
-            project_page = parser.parse_json_project_page(body)
+            project_page = parser.parse_json_project_page(body, repo=self)
         else:
             raise errors.UnsupportedSerialization(content_type)
 
@@ -138,6 +139,29 @@ class HttpRepository(core.SimpleRepository):
             return parser.parse_json_project_list(body)
 
         raise errors.UnsupportedSerialization(content_type)
+
+    @override
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        *,
+        request_context: model.RequestContext,
+    ):
+        assert file.file_source is None
+
+        headers = {}  # Generate from the context.
+        # TODO: Implement the ETAG handling that is in get_resource (and check tests validate it).
+        response = await self._http_client.get(
+            url=file.url,
+            headers=headers,
+            timeout=self._connection_timeout.total_seconds(),
+        )
+        response.raise_for_status()
+        body = b''.join(response.iter_bytes())
+        content_type: str = response.headers.get("content-type", "")
+        _ = content_type
+        yield body  # , content_type
 
     @override
     async def get_resource(

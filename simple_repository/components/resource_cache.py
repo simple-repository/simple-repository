@@ -77,14 +77,13 @@ class ResourceCacheRepository(core.RepositoryContainer):
         # Require the resource upstream, if available use the cached etag.
         cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
         if cache_etag:
-            context = {
+            context: typing.Mapping[str, str] = {
                 **request_context.context,
                 "etag": cache_etag,
             }
         else:
             context = request_context.context
         new_request_context = model.RequestContext(
-            repository=request_context.repository,
             context=context,
         )
         try:

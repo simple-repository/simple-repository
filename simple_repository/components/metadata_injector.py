@@ -74,7 +74,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
 
         # Get hold of the actual artefact from which we want to extract
         # the metadata.
-        resource = await request_context.repository.get_resource(
+        resource = await self.get_resource(
             project_name, utils.remove_suffix(resource_name, ".metadata"),
             request_context=request_context,
         )

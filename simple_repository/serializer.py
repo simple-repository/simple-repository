@@ -127,6 +127,8 @@ class SerializerJsonV1(Serializer):
         }
         if file.requires_python is not None:
             file_dict["requires-python"] = file.requires_python
+        if file.url is None:
+            raise ValueError("Files being serialized must have a URL")
         # From PEP-714: The PEP 658 metadata, when used in the PEP 691
         # JSON representation of the Simple API, MUST be emitted using
         # the key core-metadata, with the supported values remaining the same.

@@ -7,7 +7,8 @@
 
 from __future__ import annotations
 
-import functools
+import contextlib
+import dataclasses
 import typing
 
 from .. import model
@@ -18,40 +19,7 @@ if typing.TYPE_CHECKING:
     WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
-class SimpleRepositoryMeta(type):
-    # A metaclass that swaps model.RequestContext.DEFAULT arguments for RequestContext
-    # instances containing the repository upon which the method is called.
-    def __new__(
-            cls: typing.Type[type],
-            name: str,
-            bases: typing.Tuple[typing.Type[type]],
-            namespace: typing.Dict[str, typing.Any],
-    ) -> typing.Type[type]:
-
-        def dec(fn: WrappedFunction) -> WrappedFunction:
-            @functools.wraps(fn)
-            async def wrapper(
-                    self: typing.Any, *args: typing.Any, **kwargs: typing.Any,
-            ) -> typing.Any:
-                # If we have the default RequestContext (which is None), swap it for
-                # a new context which contains self.
-                if kwargs.get('request_context') is model.RequestContext.DEFAULT:
-                    kwargs['request_context'] = model.RequestContext(self)
-                return await fn(self, *args, **kwargs)
-            return wrapper
-
-        if 'get_project_page' in namespace:
-            namespace['get_project_page'] = dec(namespace['get_project_page'])
-        if 'get_project_list' in namespace:
-            namespace['get_project_list'] = dec(namespace['get_project_list'])
-        if 'get_resource' in namespace:
-            namespace['get_resource'] = dec(namespace['get_resource'])
-
-        result = type.__new__(cls, name, bases, dict(namespace))
-        return result
-
-
-class SimpleRepository(metaclass=SimpleRepositoryMeta):
+class SimpleRepository:
     async def get_project_page(
         self,
         project_name: str,
@@ -136,6 +104,15 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         """
         raise NotImplementedError()
 
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxilliaryFile],
+        *,
+        request_context: model.RequestContext,
+    ):
+        raise NotImplementedError()
+
     async def get_resource(
         self,
         project_name: str,
@@ -182,7 +159,9 @@ class RepositoryContainer(SimpleRepository):
     """A base class for components that enhance the functionality of a source
     `SimpleRepository`. If not overridden, the methods provided by this class
     will delegate to the corresponding methods of the source repository.
+
     """
+    # TODO: Write a guide on when to call `self.source.get_*`, `super().get_*` and `self.get_*`
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 
@@ -193,7 +172,52 @@ class RepositoryContainer(SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        return await self.source.get_project_page(project_name, request_context=request_context)
+        detail = await self.source.get_project_page(project_name, request_context=request_context)
+        return self._setup_file_retrieval(detail)
+
+    def _setup_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
+        # If a suitable implementation exists, ensure that the result of fetching the bytes of a
+        # File goes through this repository's method.
+        if getattr(type(self).get_file, '_is_overridden', True):
+            files = []
+            for original_file in detail.files:
+                # Drop the url (and implicitly take a copy), since the URL won't reflect the
+                # original file any more.
+                file = dataclasses.replace(
+                    original_file,
+                    url=None,
+                    file_source=original_file,
+                    originating_repository=self,
+                )
+                files.append(file)
+
+            detail = dataclasses.replace(detail, files=tuple(files))
+
+        return detail
+
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        request_context: model.RequestContext,
+    ):
+        # Note that we don't use self.source here... the chain of repositories comes from the File
+        # definition.
+
+        if file.originating_repository is not self:
+            # TODO: This might be quite unreasonable if the terminating repository doesn't modify
+            #  the file. Perhaps we should be walking the repository children to confirm this error.
+            raise ValueError("The file you are trying to get does not belong to the repository")
+        file_source = file.file_source
+        assert file_source is not None  # RepositoryContainers are always going to produce Files
+        # with a file_source.
+        async with file_source.originating_repository.get_file(
+                file_source,
+                request_context=request_context,
+        ) as response:
+            yield response
+
+    get_file._is_overridden = False
 
     @override
     async def get_project_list(
