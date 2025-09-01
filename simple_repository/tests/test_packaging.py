@@ -20,6 +20,8 @@ from .. import packaging as packaging_private
             ("my_package1-0.0.1-any.whl", "0.0.1"),
             ("my-package1-0.0.1.tar.gz", "0.0.1"),
             ("my-package1-0.10.zip", "0.10"),
+            ("my-package1-1.1.0-py2.6.egg", "1.1.0"),
+            ("my_package1-1.1.0-py2.6.egg", "1.1.0"),
         ],
 )
 def test_extract_package_version(filename: str, package_version: typing.Optional[str]) -> None:
@@ -39,6 +41,7 @@ def test_extract_package_version_failed() -> None:
             ("my_package-0.0.1-any.whl", "wheel"),
             ("my-package-0.0.1.tar.gz", "sdist"),
             ("my-package-0.0.1.jpeg", "other format"),
+            ("my-package-0.0.1.egg", "other format"),
         ],
 )
 def test_extract_package_format(filename: str, package_format: str) -> None:
