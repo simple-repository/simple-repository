@@ -41,6 +41,7 @@ def extract_package_format(filename: str) -> PackageFormat:
         return PackageFormat.WHEEL
     if file_format in ('.zip', '.tar.gz', '.tar.bz2', '.tar.xz', '.tar.Z', '.tar'):
         return PackageFormat.SDIST
+    # .egg files and other legacy formats are OTHER
     return PackageFormat.OTHER
 
 
@@ -52,7 +53,10 @@ def extract_version_from_fragment(fragment: str, project_name: str) -> str:
             if packaging.utils.canonicalize_name(candidate) == project_name:
                 return len(candidate)
         raise ValueError(f"{fragment} does not match {project_name}")
-    return fragment[find_version_start() + 1:]
+    version = fragment[find_version_start() + 1:]
+    # Drop trailing parts (e.g. openpyxl-1.1.0-py2.6.egg)
+    version = version.split('-', 1)[0]
+    return version
 
 
 def extract_package_version(filename: str, project_name: str) -> str:
