@@ -79,7 +79,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
 
         if len(project_lists) != len(self.sources):
             # TODO: Use an exception group to raise
-            # multiple exceptions together.
+            #   multiple exceptions together.
             any_exception = next(item for item in results if isinstance(item, BaseException))
             raise any_exception
 

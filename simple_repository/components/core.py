@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import functools
 import typing
 
@@ -136,6 +138,17 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         """
         raise NotImplementedError()
 
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        *,
+        request_context: model.RequestContext,
+    ) -> typing.AsyncIterator[bytes]:
+        if False:
+            yield b''
+        raise NotImplementedError()
+
     async def get_resource(
         self,
         project_name: str,
@@ -178,11 +191,35 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         raise NotImplementedError()
 
 
+Callable = typing.TypeVar("Callable")
+
+
+def _mark_as_base_impl(fn: Callable) -> Callable:
+    """
+    Attach a flag to the decorated function so that we can determine if it
+    has been specialised.
+
+    """
+    setattr(fn, '_is_base_impl', True)
+    return fn
+
+
+def is_base_impl(fn: Callable) -> bool:
+    """
+    Determine whether the given callable is one that has been marked as a base
+    implementation, or whether it was specialised.
+
+    """
+    return getattr(fn, '_is_base_impl', False)
+
+
 class RepositoryContainer(SimpleRepository):
     """A base class for components that enhance the functionality of a source
     `SimpleRepository`. If not overridden, the methods provided by this class
     will delegate to the corresponding methods of the source repository.
+
     """
+    # TODO: Write a guide on when to call `self.source.get_*`, `super().get_*` and `self.get_*`
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 
@@ -193,7 +230,51 @@ class RepositoryContainer(SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.ProjectDetail:
-        return await self.source.get_project_page(project_name, request_context=request_context)
+        detail = await self.source.get_project_page(project_name, request_context=request_context)
+        return self._setup_file_retrieval(detail)
+
+    def _setup_file_retrieval(self, detail: model.ProjectDetail) -> model.ProjectDetail:
+        # If a suitable implementation exists, ensure that the result of fetching the bytes of a
+        # File goes through this repository's method.
+        if not is_base_impl(type(self).get_file):
+            files = []
+            for original_file in detail.files:
+                # Drop the url (and implicitly take a copy), since the URL won't reflect the
+                # original file any more.
+                file = dataclasses.replace(
+                    original_file,
+                    url=None,
+                    file_source=original_file,
+                    originating_repository=self,
+                )
+                files.append(file)
+
+            detail = dataclasses.replace(detail, files=tuple(files))
+
+        return detail
+
+    @_mark_as_base_impl
+    @contextlib.asynccontextmanager
+    async def get_file(
+        self,
+        file: typing.Union[model.File, model.AuxiliaryFile],
+        request_context: model.RequestContext,
+    ) -> typing.AsyncIterator[bytes]:
+        # Note that we don't use self.source here... the chain of repositories comes from the File
+        # definition.
+
+        if file.originating_repository is not self:
+            # TODO: This might be quite unreasonable if the terminating repository doesn't modify
+            #  the file. Perhaps we should be walking the repository children to confirm this error.
+            raise ValueError("The file you are trying to get does not belong to the repository")
+        file_source = file.file_source
+        assert file_source is not None  # RepositoryContainers are always going to produce Files
+        # with a file_source.
+        async with file_source.originating_repository.get_file(
+                file_source,
+                request_context=request_context,
+        ) as response:
+            yield response
 
     @override
     async def get_project_list(

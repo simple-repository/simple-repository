@@ -31,6 +31,7 @@ brackets, for example ``[additional context]``.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from datetime import datetime
 import pathlib
@@ -48,19 +49,42 @@ if typing.TYPE_CHECKING:
 
 
 @dataclasses.dataclass(frozen=True)
+class RequestContext:
+    repository: "SimpleRepository"
+    # TODO: Worry that context is mutable.
+    context: typing.Mapping[str, str] = dataclasses.field(default_factory=dict)
+
+    # Provide a default context which can be used in all signatures using RequestContext.
+    # By default, if not specified, the default request context will be the one containing the
+    # repository of the originating call (i.e. the repository upon which you call a method is the
+    # one that is injected into the context, and passed down to each subsequent (nested) request.
+    # We know that None isn't a RequestContext instance... as a result of this, every user
+    # of RequestContext should handle this. RepositorySource automatically transforms this
+    # to a sensible incoming request (see RepositorySource._build_request_context).
+    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
+
+
+@dataclasses.dataclass(frozen=True)
 class File:
     """
     Simple representation of a distribution file.
     Defined in PEP-691: https://peps.python.org/pep-0691/
     """
-
     filename: str
-    url: str
+    # Unlike PEP-503, URL is optional for a File. This is because in
+    # simple-repository, file content may be entirely virtual and only computed
+    # during get. Unlike PEP-503, file contents can always be accessed via the :meth:`File.open`
+    # method.
+    url: typing.Optional[str]
 
-    # PEP-592: A dictionary mapping a hash name to a hex encoded digest of the file.
-    # PEP-592: Limited to a len() of 1 in HTML
+    # PEP-691: A dictionary mapping a hash name to a hex encoded digest of the file.
+    # PEP-691: Limited to a len() of 1 in HTML
     # Additional hashes are not included in the HTML serialization.
     hashes: typing.Dict[str, str]
+
+    #: The source of the File object.
+    originating_repository: SimpleRepository
+
     requires_python: typing.Optional[str] = None
 
     # PEP-691: An optional key that indicates that metadata for this file is available
@@ -105,9 +129,74 @@ class File:
     # index server use. No future standard will assign a meaning to any such key.
     private_metadata: PrivateMetadataMapping = PrivateMetadataMapping()
 
+    #: If this file is a derivative of another file (e.g. it has some processing on it, including
+    # caching and logging), then we keep track of the original file here.
+    file_source: typing.Optional[File] = None
+
+    @contextlib.asynccontextmanager
+    async def open(
+        self,
+        request_context: RequestContext = RequestContext.DEFAULT,
+    ) -> typing.AsyncIterator[bytes]:
+        async with self.originating_repository.get_file(
+            self,
+            request_context=request_context,
+        ) as response:
+            yield response
+
+    def auxiliary_file(
+        self,
+        aux_filename_suffix: str,
+    ) -> AuxiliaryFile:
+        return AuxiliaryFile(aux_filename_suffix, file=self)
+
     def __post_init__(self) -> None:
         if self.yanked == "":
             raise ValueError("The yanked attribute may not be an empty string")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuxiliaryFile:
+    # Represents a file which is associated to a distribution File, for example a PEP-658 metadata
+    # file, or PEP-503 GPG signature (an `.asc` file).
+    filename_suffix: str
+    file: File
+
+    @property
+    def url(self) -> typing.Optional[str]:
+        if self.file.url is None:
+            return None
+        return self.file.url + self.filename_suffix
+
+    @property
+    def filename(self) -> str:
+        return self.file.filename + self.filename_suffix
+
+    @property
+    def file_source(self) -> typing.Optional[AuxiliaryFile]:
+        if self.file.file_source is None:
+            return None
+        return AuxiliaryFile(self.filename_suffix, self.file.file_source)
+
+    @property
+    def originating_repository(self) -> SimpleRepository:
+        return self.file.originating_repository
+
+    @contextlib.asynccontextmanager
+    async def open(
+            self,
+            request_context: RequestContext = RequestContext.DEFAULT,
+    ) -> typing.AsyncIterator[bytes]:
+        async with self.originating_repository.get_file(
+            self,
+            request_context=request_context,
+        ) as response:
+            yield response
+
+    # The repositories which *may* contribute to the contents of this file when retrieved.
+    _source_chain: typing.Tuple[typing.Tuple[File, SimpleRepository], ...] = dataclasses.field(
+        repr=False, init=False, default=(),
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -199,22 +288,6 @@ class Resource(Protocol):
     context: Context
     # If this attribute is set to False, cache components will ignore this resource
     to_cache: bool
-
-
-@dataclasses.dataclass(frozen=True)
-class RequestContext:
-    repository: "SimpleRepository"
-    # TODO: Worry that context is mutable.
-    context: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
-
-    # Provider a default context which can be used in all signatures using RequestContext.
-    # By default, if not specified, the default request context will be the one containing the
-    # repository of the originating call (i.e. the repository upon which you call a method is the
-    # one that is injected into the context, and passed down to each subsequent (nested) request.
-    # We know that None isn't a RequestContext instance... as a result of this, every user
-    # of RequestContext should handle this. RepositorySource automatically transforms this
-    # to a sensible incoming request (see RepositorySource._build_request_context).
-    DEFAULT: "RequestContext" = None  # type: ignore[assignment]
 
 
 @dataclasses.dataclass(frozen=True)
