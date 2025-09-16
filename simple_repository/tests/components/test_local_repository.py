@@ -80,27 +80,28 @@ async def test_get_resource(simple_dir: pathlib.Path) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    ("project, resource"), [
-        ("numpy", "numpy-2.0.tar.gz"),
-        ("seaborn", "seaborn-1.0.tar.gz"),
-    ],
-)
 @pytest.mark.asyncio
-async def test_get_resource__unavailable(
-    simple_dir: pathlib.Path,
-    project: str,
-    resource: str,
-) -> None:
-    repo = LocalRepository(
-        index_path=simple_dir,
-    )
+async def test_get_resource__unavailable(simple_dir: pathlib.Path) -> None:
+    """Test when project exists but resource doesn't exist."""
+    repo = LocalRepository(index_path=simple_dir)
 
     with pytest.raises(
         errors.ResourceUnavailable,
-        match=f"Resource '{resource}' was not found in the configured source",
+        match="Resource 'numpy-2.0.tar.gz' was not found in the configured source",
     ):
-        await repo.get_resource(project, resource)
+        await repo.get_resource("numpy", "numpy-2.0.tar.gz")
+
+
+@pytest.mark.asyncio
+async def test_get_resource__project_not_found(simple_dir: pathlib.Path) -> None:
+    """Test when project doesn't exist at all."""
+    repo = LocalRepository(index_path=simple_dir)
+
+    with pytest.raises(
+        errors.PackageNotFoundError,
+        match="Package 'seaborn' was not found in the configured source",
+    ):
+        await repo.get_resource("seaborn", "seaborn-1.0.tar.gz")
 
 
 @pytest.mark.parametrize(

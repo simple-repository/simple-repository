@@ -95,6 +95,7 @@ class LocalRepository(core.SimpleRepository):
         repository_uri = (self._index_path / project_name).resolve()
         resource_uri = (repository_uri / resource_name).resolve()
 
+        # Validate both paths for security (path traversal prevention)
         if (
             not utils.is_relative_to(repository_uri, self._index_path) or
             not utils.is_relative_to(resource_uri, repository_uri)
@@ -102,6 +103,12 @@ class LocalRepository(core.SimpleRepository):
             raise ValueError(
                 f"{resource_uri} is not contained in {repository_uri}",
             )
+
+        # Check if project directory exists
+        if not repository_uri.is_dir():
+            raise errors.PackageNotFoundError(project_name)
+
+        # Check if resource file exists
         if not resource_uri.is_file():
             raise errors.ResourceUnavailable(resource_name)
 
