@@ -153,7 +153,7 @@ class HttpRepository(core.SimpleRepository):
                 request_context=request_context,
             )
         except errors.PackageNotFoundError:
-            raise errors.ResourceUnavailable(resource_name)
+            raise
 
         resource: typing.Optional[model.HttpResource] = None
         if resource_name.endswith(".metadata"):
