@@ -46,7 +46,6 @@ async def test_get_project_page(version: str) -> None:
 
     resp = await group_repository.get_project_page(
         project_name="numpy",
-        request_context=model.RequestContext(group_repository),
     )
 
     assert resp == model.ProjectDetail(

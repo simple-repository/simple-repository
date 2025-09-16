@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import functools
 import typing
 
 from .. import model
@@ -18,45 +17,12 @@ if typing.TYPE_CHECKING:
     WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
-class SimpleRepositoryMeta(type):
-    # A metaclass that swaps model.RequestContext.DEFAULT arguments for RequestContext
-    # instances containing the repository upon which the method is called.
-    def __new__(
-            cls: typing.Type[type],
-            name: str,
-            bases: typing.Tuple[typing.Type[type]],
-            namespace: typing.Dict[str, typing.Any],
-    ) -> typing.Type[type]:
-
-        def dec(fn: WrappedFunction) -> WrappedFunction:
-            @functools.wraps(fn)
-            async def wrapper(
-                    self: typing.Any, *args: typing.Any, **kwargs: typing.Any,
-            ) -> typing.Any:
-                # If we have the default RequestContext (which is None), swap it for
-                # a new context which contains self.
-                if kwargs.get('request_context') is model.RequestContext.DEFAULT:
-                    kwargs['request_context'] = model.RequestContext(self)
-                return await fn(self, *args, **kwargs)
-            return wrapper
-
-        if 'get_project_page' in namespace:
-            namespace['get_project_page'] = dec(namespace['get_project_page'])
-        if 'get_project_list' in namespace:
-            namespace['get_project_list'] = dec(namespace['get_project_list'])
-        if 'get_resource' in namespace:
-            namespace['get_resource'] = dec(namespace['get_resource'])
-
-        result = type.__new__(cls, name, bases, dict(namespace))
-        return result
-
-
-class SimpleRepository(metaclass=SimpleRepositoryMeta):
+class SimpleRepository:
     async def get_project_page(
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         """
         Get the project detail page of the given project
@@ -99,7 +65,7 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         """
         Get the list of projects available in the repository.
@@ -130,7 +96,7 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         Notes
         -----
         It is technically possible for projects to be accessible
-        from :meth:`get_project_page` which are not in list provided by this
+        from :meth:`get_project_page` which are not in the list provided by this
         method.
 
         """
@@ -141,7 +107,7 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         """
         Fetch a project detail resource from the repository
@@ -200,7 +166,7 @@ class RepositoryContainer(SimpleRepository):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         return await self.source.get_project_page(project_name, request_context=request_context)
 
@@ -208,7 +174,7 @@ class RepositoryContainer(SimpleRepository):
     async def get_project_list(
         self,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         return await self.source.get_project_list(request_context=request_context)
 
@@ -218,7 +184,7 @@ class RepositoryContainer(SimpleRepository):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         return await self.source.get_resource(
             project_name,

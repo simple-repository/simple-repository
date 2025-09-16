@@ -42,7 +42,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         return self._add_metadata_attribute(
             await super().get_project_page(project_name, request_context=request_context),
@@ -54,7 +54,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         project_name: str,
         resource_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.Resource:
         try:
             # Attempt to get the resource from upstream.
@@ -74,7 +74,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
 
         # Get hold of the actual artefact from which we want to extract
         # the metadata.
-        resource = await request_context.repository.get_resource(
+        resource = await self.get_resource(
             project_name, utils.remove_suffix(resource_name, ".metadata"),
             request_context=request_context,
         )

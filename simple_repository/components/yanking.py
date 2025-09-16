@@ -166,7 +166,7 @@ class YankRepository(core.RepositoryContainer):
         self,
         project_name: str,
         *,
-        request_context: model.RequestContext = model.RequestContext.DEFAULT,
+        request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         project_page = await super().get_project_page(
             project_name,
