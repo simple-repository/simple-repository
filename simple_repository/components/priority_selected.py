@@ -114,9 +114,10 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
     ) -> model.Resource:
         """Retrieves a resource from the first source that has the project.
 
-        This follows the same first-seen policy as get_project_page. Repositories
-        are expected to raise PackageNotFoundError when they don't have the project,
-        and ResourceUnavailable when they have the project but not the resource.
+        This follows the same first-seen project policy as get_project_page.
+        Repositories are expected to raise PackageNotFoundError when they don't
+        have the project, and ResourceUnavailable when they have the project but
+        not the resource.
         """
         for source in self.sources:
             try:

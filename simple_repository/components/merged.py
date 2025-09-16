@@ -102,3 +102,36 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
             files=tuple(files.values()),
             versions=versions,
         )
+
+    @override
+    async def get_resource(
+        self,
+        project_name: str,
+        resource_name: str,
+        *,
+        request_context: typing.Optional[model.RequestContext] = None,
+    ) -> model.Resource:
+        """
+        Retrieves a resource from any source that has it.
+        """
+        project_found = False
+        for source in self.sources:
+            try:
+                return await source.get_resource(
+                    project_name,
+                    resource_name,
+                    request_context=request_context,
+                )
+            except errors.PackageNotFoundError:
+                # Try the next source
+                continue
+            except errors.ResourceUnavailable:
+                project_found = True
+                # Try the next source
+                continue
+
+        # No source has the resource
+        if not project_found:
+            raise errors.PackageNotFoundError(project_name)
+        else:
+            raise errors.ResourceUnavailable(resource_name)
