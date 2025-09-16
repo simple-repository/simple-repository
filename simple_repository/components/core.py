@@ -165,14 +165,23 @@ class SimpleRepository(metaclass=SimpleRepositoryMeta):
 
         Raises
         ------
-        error.ResourceUnavailable:
-            When no such resource exists.
+        errors.PackageNotFoundError:
+            When the project does not exist in this repository.
+        errors.ResourceUnavailable:
+            When the project exists but the specific resource does not exist.
         model.NotModified:
             When sufficient request context is provided, it is possible for the
             repository to raise a NotModified exception to indicate that the
             result that corresponds to the given cache headers is still valid.
         errors.SourceRepositoryUnavailable:
             When the upstream repository is not available.
+
+        Notes
+        -----
+
+        Repositories should distinguish between two failure cases:
+        1. Project does not exist: raise PackageNotFoundError
+        2. Project exists but resource does not exist: raise ResourceUnavailable
 
         """
         raise NotImplementedError()

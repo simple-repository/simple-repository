@@ -30,6 +30,13 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     not_to_cache_resource = model.HttpResource("url/uncacheable-1.0-any.whl", to_cache=False)
     not_to_cache_resource.context["etag"] = "etag"
     source = FakeRepository(
+        project_pages=[
+            model.ProjectDetail(model.Meta("1.0"), "http", files=()),
+            model.ProjectDetail(model.Meta("1.0"), "local", files=()),
+            model.ProjectDetail(model.Meta("1.0"), "http-no-etag", files=()),
+            model.ProjectDetail(model.Meta("1.0"), "uncacheable", files=()),
+            model.ProjectDetail(model.Meta("1.0"), "resource", files=()),
+        ],
         resources={
             "http-1.0-any.whl": http_resource,
             "local-1.0.tar.gz": model.LocalResource(pathlib.Path("path")),
@@ -291,7 +298,12 @@ async def test_get_resource__no_cache_created_when_to_cache_is_false(
     resource.context["etag"] = "etag"
 
     repository = ResourceCacheRepository(
-        source=FakeRepository(resources={"resource-1.0-any.whl": resource}),
+        source=FakeRepository(
+            project_pages=[
+                model.ProjectDetail(model.Meta("1.0"), "resource", files=()),
+            ],
+            resources={"resource-1.0-any.whl": resource},
+        ),
         cache_path=tmp_path,
         http_client=mock.MagicMock(),
     )
