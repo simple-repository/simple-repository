@@ -47,6 +47,9 @@ async def test_get_project_list() -> None:
 async def test_get_resource() -> None:
     repository = RepositoryContainer(
         FakeRepository(
+            project_pages=[
+                model.ProjectDetail(model.Meta("1.0"), "numpy", files=()),
+            ],
             resources={
                 "numpy.whl": model.HttpResource("numpy_url"),
             },

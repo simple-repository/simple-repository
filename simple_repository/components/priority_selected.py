@@ -114,30 +114,24 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
     ) -> model.Resource:
         """Retrieves a resource from the first source that has the project.
 
-        This follows the same first-seen policy as get_project_page - once we find
-        the first repository that has the project page, we only look for the resource
-        in that repository.
+        This follows the same first-seen policy as get_project_page. Repositories
+        are expected to raise PackageNotFoundError when they don't have the project,
+        and ResourceUnavailable when they have the project but not the resource.
         """
         for source in self.sources:
             try:
-                # First check if this source has the project page
-                await source.get_project_page(
-                    project_name,
-                    request_context=request_context,
-                )
-                # If we get here, this source has the project, so try to get the resource
                 return await source.get_resource(
                     project_name,
                     resource_name,
                     request_context=request_context,
                 )
             except errors.PackageNotFoundError:
-                # This source doesn't have the project page, try next source
+                # This source doesn't have the project, try next source
                 continue
             except errors.ResourceUnavailable:
-                # This source has the project page but not the specific resource
+                # This source has the project but not the specific resource
                 # Following first-seen policy, we don't check other sources
                 raise
 
-        # No source has the project page
-        raise errors.ResourceUnavailable(resource_name)
+        # No source has the project
+        raise errors.PackageNotFoundError(project_name)

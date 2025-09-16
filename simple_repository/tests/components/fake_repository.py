@@ -54,6 +54,13 @@ class FakeRepository(core.SimpleRepository):
         *,
         request_context: model.RequestContext = model.RequestContext.DEFAULT,
     ) -> model.Resource:
+        # Check if we have this project first
+        try:
+            await self.get_project_page(project_name, request_context=request_context)
+        except errors.PackageNotFoundError:
+            raise
+
+        # Look for the specific resource
         resource = self.resources.get(resource_name)
         if resource:
             return resource

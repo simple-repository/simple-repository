@@ -212,14 +212,28 @@ async def test_get_resource__resource_exists_but_not_package() -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_resource__subresource() -> None:
+async def test_get_resource__subresource_exists_in_lower_priority() -> None:
     group_repository = PrioritySelectedProjectsRepository([
         FakeRepository(
+            project_pages=[
+                model.ProjectDetail(
+                    meta=model.Meta("1.0"),
+                    name="numpy",
+                    files=(),
+                ),
+            ],
             resources={
                 "numpy.whl": model.HttpResource("url"),
             },
         ),
         FakeRepository(
+            project_pages=[
+                model.ProjectDetail(
+                    meta=model.Meta("1.0"),
+                    name="numpy",
+                    files=(),
+                ),
+            ],
             resources={
                 "numpy.whl": model.HttpResource("undesirable1"),
                 "numpy.whl.metadata": model.HttpResource("undesirable2"),
@@ -264,10 +278,10 @@ async def test_get_resource__first_repo_has_project_but_missing_resource() -> No
 
 
 @pytest.mark.asyncio
-async def test_get_resource_failed() -> None:
+async def test_get_resource__no_package() -> None:
     group_repository = PrioritySelectedProjectsRepository([
         FakeRepository() for _ in range(3)
     ])
 
-    with pytest.raises(errors.ResourceUnavailable, match="numpy.whl"):
+    with pytest.raises(errors.PackageNotFoundError, match="numpy"):
         await group_repository.get_resource("numpy", "numpy.whl")
