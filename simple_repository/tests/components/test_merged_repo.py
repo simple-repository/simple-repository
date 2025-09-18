@@ -23,7 +23,7 @@ async def test_get_project_page() -> None:
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.1'),
+                        model.Meta("1.1"),
                         "numpy",
                         files=(
                             model.File("numpy-1.1.whl", "url1", {}, size=1),
@@ -35,7 +35,7 @@ async def test_get_project_page() -> None:
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.0'),
+                        model.Meta("1.0"),
                         "numpy",
                         files=(
                             model.File("numpy-1.1.whl", "url2", {}),
@@ -50,7 +50,7 @@ async def test_get_project_page() -> None:
     resp = await repo.get_project_page("numpy")
 
     assert resp == model.ProjectDetail(
-        model.Meta('1.0'),
+        model.Meta("1.0"),
         "numpy",
         files=(
             model.File("numpy-1.1.whl", "url1", {}, size=1),
@@ -68,7 +68,7 @@ async def test_get_project_page__versions() -> None:
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.1'),
+                        model.Meta("1.1"),
                         "numpy",
                         files=(
                             model.File("numpy-1.1.whl", "url1", {}, size=1),
@@ -81,7 +81,7 @@ async def test_get_project_page__versions() -> None:
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.2'),
+                        model.Meta("1.2"),
                         "numpy",
                         files=(
                             model.File("numpy-1.1.whl", "url2", {}, size=1),
@@ -97,7 +97,7 @@ async def test_get_project_page__versions() -> None:
     resp = await repo.get_project_page("numpy")
 
     assert resp == model.ProjectDetail(
-        model.Meta('1.1'),
+        model.Meta("1.1"),
         "numpy",
         files=(
             model.File("numpy-1.1.whl", "url1", {}, size=1),
@@ -110,11 +110,13 @@ async def test_get_project_page__versions() -> None:
 
 @pytest.mark.asyncio
 async def test_get_project_page_failed() -> None:
-    repo = MergedRepository([
-        FakeRepository(),
-        FakeRepository(),
-        FakeRepository(),
-    ])
+    repo = MergedRepository(
+        [
+            FakeRepository(),
+            FakeRepository(),
+            FakeRepository(),
+        ],
+    )
 
     with pytest.raises(
         errors.PackageNotFoundError,
@@ -125,56 +127,62 @@ async def test_get_project_page_failed() -> None:
 
 @pytest.fixture
 def resource_repo_t1() -> SimpleRepository:
-    repo = MergedRepository([
-        FakeRepository(
-            project_pages=[
-                model.ProjectDetail(
-                    model.Meta("1.0"),
-                    "numpy",
-                    files=(),
-                ),
-            ],
-            # First repo has project page but no resources
-        ),
-        FakeRepository(
-            project_pages=[
-                model.ProjectDetail(
-                    model.Meta("1.0"),
-                    "numpy",
-                    files=(),
-                ),
-            ],
-            resources={
-                "numpy-1.0.whl": model.HttpResource("from_second_repo"),
-            },
-        ),
-        FakeRepository(
-            project_pages=[
-                model.ProjectDetail(
-                    model.Meta("1.0"),
-                    "numpy",
-                    files=(),
-                ),
-            ],
-            resources={
-                "numpy-1.0.whl": model.HttpResource("from_third_repo"),
-                "numpy-1.1.whl": model.HttpResource("from_third_repo"),
-                "numpy-1.0.whl.metadata": model.HttpResource("from_third_repo"),
-            },
-        ),
-    ])
+    repo = MergedRepository(
+        [
+            FakeRepository(
+                project_pages=[
+                    model.ProjectDetail(
+                        model.Meta("1.0"),
+                        "numpy",
+                        files=(),
+                    ),
+                ],
+                # First repo has project page but no resources
+            ),
+            FakeRepository(
+                project_pages=[
+                    model.ProjectDetail(
+                        model.Meta("1.0"),
+                        "numpy",
+                        files=(),
+                    ),
+                ],
+                resources={
+                    "numpy-1.0.whl": model.HttpResource("from_second_repo"),
+                },
+            ),
+            FakeRepository(
+                project_pages=[
+                    model.ProjectDetail(
+                        model.Meta("1.0"),
+                        "numpy",
+                        files=(),
+                    ),
+                ],
+                resources={
+                    "numpy-1.0.whl": model.HttpResource("from_third_repo"),
+                    "numpy-1.1.whl": model.HttpResource("from_third_repo"),
+                    "numpy-1.0.whl.metadata": model.HttpResource("from_third_repo"),
+                },
+            ),
+        ],
+    )
     return repo
 
 
 @pytest.mark.asyncio
-async def test_get_resource__wrong_project_name(resource_repo_t1: SimpleRepository) -> None:
+async def test_get_resource__wrong_project_name(
+    resource_repo_t1: SimpleRepository,
+) -> None:
     # Should find resource from second repo (first one that has it).
     resource = await resource_repo_t1.get_resource("numpy", "numpy-1.0.whl")
     assert resource == model.HttpResource("from_second_repo")
 
 
 @pytest.mark.asyncio
-async def test_get_resource__searches_all_sources(resource_repo_t1: SimpleRepository) -> None:
+async def test_get_resource__searches_all_sources(
+    resource_repo_t1: SimpleRepository,
+) -> None:
     # Should find resource from second repo even though first repo exists
     resource = await resource_repo_t1.get_resource("numpy", "numpy-1.0.whl")
     assert resource == model.HttpResource("from_second_repo")
@@ -199,30 +207,30 @@ async def test_get_project_page__merges_private_metadata() -> None:
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.0'),
+                        model.Meta("1.0"),
                         "numpy",
-                        files=(
-                            model.File("numpy-1.1.whl", "url1", {}),
+                        files=(model.File("numpy-1.1.whl", "url1", {}),),
+                        private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+                            {
+                                "_source_repo": "repo1",
+                                "_priority": "1",
+                            },
                         ),
-                        private_metadata=model.PrivateMetadataMapping.from_any_mapping({
-                            '_source_repo': 'repo1',
-                            '_priority': '1',
-                        }),
                     ),
                 ],
             ),
             FakeRepository(
                 project_pages=[
                     model.ProjectDetail(
-                        model.Meta('1.0'),
+                        model.Meta("1.0"),
                         "numpy",
-                        files=(
-                            model.File("numpy-1.2.whl", "url2", {}),
+                        files=(model.File("numpy-1.2.whl", "url2", {}),),
+                        private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+                            {
+                                "_source_repo": "repo2",
+                                "_build_info": "ci-123",
+                            },
                         ),
-                        private_metadata=model.PrivateMetadataMapping.from_any_mapping({
-                            '_source_repo': 'repo2',
-                            '_build_info': 'ci-123',
-                        }),
                     ),
                 ],
             ),
@@ -232,6 +240,8 @@ async def test_get_project_page__merges_private_metadata() -> None:
     resp = await repo.get_project_page("numpy")
 
     # Should have merged private metadata from both repositories (first wins, like files)
-    assert resp.private_metadata['_source_repo'] == 'repo1'  # First repo wins
-    assert resp.private_metadata['_priority'] == '1'         # From first repo
-    assert resp.private_metadata['_build_info'] == 'ci-123'  # From second repo (unique key)
+    assert resp.private_metadata["_source_repo"] == "repo1"  # First repo wins
+    assert resp.private_metadata["_priority"] == "1"  # From first repo
+    assert (
+        resp.private_metadata["_build_info"] == "ci-123"
+    )  # From second repo (unique key)

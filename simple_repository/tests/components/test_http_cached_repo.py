@@ -118,7 +118,9 @@ async def test_get_project_page__cached(
     httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository._save_to_cache(
-        "https://example.com/simple/project/", "stored-etag,text/html," + """
+        "https://example.com/simple/project/",
+        "stored-etag,text/html,"
+        + """
         <a href="test1.whl#hash=test_hash">test1.whl</a>
         <a href="http://test2.whl">test2.whl</a>
     """,
@@ -152,7 +154,9 @@ async def test_get_project_list__cached(
     httpx_mock: pytest_httpx.HTTPXMock,
 ) -> None:
     repository._save_to_cache(
-        "https://example.com/simple/", "stored-etag,text/html," + """
+        "https://example.com/simple/",
+        "stored-etag,text/html,"
+        + """
         <a href="/p1/">p1</a>
         <a href="/p2/">p2</a>
     """,
@@ -164,10 +168,12 @@ async def test_get_project_list__cached(
         meta=model.Meta(
             api_version="1.0",
         ),
-        projects=frozenset([
-            model.ProjectListElement(name="p1"),
-            model.ProjectListElement(name="p2"),
-        ]),
+        projects=frozenset(
+            [
+                model.ProjectListElement(name="p1"),
+                model.ProjectListElement(name="p2"),
+            ],
+        ),
     )
 
 
@@ -183,4 +189,7 @@ def test_update_access_time(repository: CachedHttpRepository) -> None:
     ):
         repository._get_from_cache("url")
 
-    assert os.path.getmtime(repository._cache_path / "url") == datetime.fromisoformat("2006-07-09").timestamp()
+    assert (
+        os.path.getmtime(repository._cache_path / "url")
+        == datetime.fromisoformat("2006-07-09").timestamp()
+    )

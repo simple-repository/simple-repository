@@ -27,7 +27,10 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
     http_resource = model.HttpResource("url/http-1.0-any.whl")
     http_resource.context["etag"] = "etag"
 
-    not_to_cache_resource = model.HttpResource("url/uncacheable-1.0-any.whl", to_cache=False)
+    not_to_cache_resource = model.HttpResource(
+        "url/uncacheable-1.0-any.whl",
+        to_cache=False,
+    )
     not_to_cache_resource.context["etag"] = "etag"
     source = FakeRepository(
         project_pages=[
@@ -40,7 +43,9 @@ def repository(tmp_path: pathlib.Path) -> ResourceCacheRepository:
         resources={
             "http-1.0-any.whl": http_resource,
             "local-1.0.tar.gz": model.LocalResource(pathlib.Path("path")),
-            "http_no_etag-1.0-any.whl": model.HttpResource("url/http_no_etag-1.0-any.whl"),
+            "http_no_etag-1.0-any.whl": model.HttpResource(
+                "url/http_no_etag-1.0-any.whl",
+            ),
             "uncacheable-1.0-any.whl": not_to_cache_resource,
         },
     )
@@ -73,7 +78,9 @@ async def test_get_resource__cache_hit(repository: ResourceCacheRepository) -> N
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss__wrong_etag(
+    repository: ResourceCacheRepository,
+) -> None:
     (repository._cache_path / "http").mkdir()
     cached_file = repository._cache_path / "http" / "http-1.0-any.whl"
     cached_file.write_text("invalid cached content")
@@ -96,12 +103,18 @@ async def test_get_resource__cache_miss__wrong_etag(repository: ResourceCacheRep
     # The cache returns a LocalResource pointing to the downloaded file.
     assert isinstance(response, model.LocalResource)
     assert response.path == repository._cache_path / "http" / "http-1.0-any.whl"
-    assert (repository._cache_path / "http" / "http-1.0-any.whl.info").read_text() == "etag"
-    assert (repository._cache_path / "http" / "http-1.0-any.whl").read_text() != "invalid cached content"
+    assert (
+        repository._cache_path / "http" / "http-1.0-any.whl.info"
+    ).read_text() == "etag"
+    assert (
+        repository._cache_path / "http" / "http-1.0-any.whl"
+    ).read_text() != "invalid cached content"
 
 
 @pytest.mark.asyncio
-async def test_get_resource__cache_miss__no_etag(repository: ResourceCacheRepository) -> None:
+async def test_get_resource__cache_miss__no_etag(
+    repository: ResourceCacheRepository,
+) -> None:
     assert not (repository._cache_path / "http" / "http-1.0-any.whl.info").is_file()
     assert not (repository._cache_path / "http" / "http-1.0-any.whl").is_file()
 
@@ -266,12 +279,17 @@ async def test_get_resource__no_cache_created_when_no_upstream_etag_exists(
     # otherwise a LocalResource would have been returned
     # No cache file or info file gets created and an http resource is returned.
     assert isinstance(resource, model.HttpResource)
-    assert not (repository._cache_path / "http-no-etag" / "http_no_etag-1.0-any.whl").is_file()
-    assert not (repository._cache_path / "http-no-etag" / "http_no_etag-1.0-any.whl.info").is_file()
+    assert not (
+        repository._cache_path / "http-no-etag" / "http_no_etag-1.0-any.whl"
+    ).is_file()
+    assert not (
+        repository._cache_path / "http-no-etag" / "http_no_etag-1.0-any.whl.info"
+    ).is_file()
 
 
 @pytest.mark.parametrize(
-    "resource", [
+    "resource",
+    [
         model.HttpResource(url="url", to_cache=False),
         model.LocalResource(path=pathlib.Path("."), to_cache=False),
         model.TextResource(text="text", to_cache=False),
@@ -304,7 +322,9 @@ async def test_get_resource__no_cache_created_when_to_cache_is_false(
     # No cache file or info file gets created and an same resource is returned.
     assert resource == result
     assert not (repository._cache_path / "resource" / "resource-1.0-any.whl").is_file()
-    assert not (repository._cache_path / "resource" / "resource-1.0-any.whl.info").is_file()
+    assert not (
+        repository._cache_path / "resource" / "resource-1.0-any.whl.info"
+    ).is_file()
 
 
 @pytest.mark.asyncio
@@ -387,7 +407,10 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     ):
         repository._update_last_access(cached_info)
 
-    assert os.path.getatime(cached_info) == datetime.fromisoformat("2006-07-09").timestamp()
+    assert (
+        os.path.getatime(cached_info)
+        == datetime.fromisoformat("2006-07-09").timestamp()
+    )
 
     with mock.patch(
         "simple_repository.components.resource_cache.datetime",
@@ -399,7 +422,10 @@ def test_update_last_access(repository: ResourceCacheRepository) -> None:
     ):
         repository._update_last_access(cached_info)
 
-    assert os.path.getatime(cached_info) == datetime.fromisoformat("2025-07-09").timestamp()
+    assert (
+        os.path.getatime(cached_info)
+        == datetime.fromisoformat("2025-07-09").timestamp()
+    )
 
 
 @pytest.mark.asyncio
@@ -407,7 +433,7 @@ async def test_update_last_access__cache_hit_called(
     repository: ResourceCacheRepository,
 ) -> None:
     (repository._cache_path / "http").mkdir()
-    cached_file = (repository._cache_path / "http" / "http-1.0-any.whl")
+    cached_file = repository._cache_path / "http" / "http-1.0-any.whl"
     cached_file.touch()
     cached_info_file = repository._cache_path / "http" / "http-1.0-any.whl.info"
     cached_info_file.write_text("etag")

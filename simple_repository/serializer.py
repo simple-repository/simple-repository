@@ -21,11 +21,9 @@ from ._typing_compat import Protocol
 
 
 class Serializer(Protocol):
-    def serialize_project_page(self, page: model.ProjectDetail) -> str:
-        ...
+    def serialize_project_page(self, page: model.ProjectDetail) -> str: ...
 
-    def serialize_project_list(self, page: model.ProjectList) -> str:
-        ...
+    def serialize_project_list(self, page: model.ProjectList) -> str: ...
 
 
 @singledispatch
@@ -41,6 +39,7 @@ def to_json_serializable(obj: typing.Any) -> typing.Any:
 
 # Register the obvious JSON types.
 for input_type in [bool, int, str, float, type(None), dict, tuple, list]:
+
     @to_json_serializable.register(input_type)
     def _(obj: typing.Any) -> typing.Any:
         return obj
@@ -73,15 +72,15 @@ class SerializerJsonV1(Serializer):
         return json.dumps(project_page_dict, default=to_json_serializable)
 
     def _update_with_serialized_private_attributes(
-            self,
-            model: typing.Union[
-                model.File,
-                model.Meta,
-                model.ProjectDetail,
-                model.ProjectList,
-                model.ProjectListElement,
-            ],
-            target: typing.Dict[str, typing.Any],
+        self,
+        model: typing.Union[
+            model.File,
+            model.Meta,
+            model.ProjectDetail,
+            model.ProjectList,
+            model.ProjectListElement,
+        ],
+        target: typing.Dict[str, typing.Any],
     ) -> None:
         for name, value in model.private_metadata.items():
             target[name] = value
@@ -93,10 +92,10 @@ class SerializerJsonV1(Serializer):
 
     def serialize_project_list(self, page: model.ProjectList) -> str:
         list_dict = {
-           "meta": self._standardize_meta(page.meta),
-           "projects": [
+            "meta": self._standardize_meta(page.meta),
+            "projects": [
                 self._standardize_project_list(elem) for elem in page.projects
-           ],
+            ],
         }
         # Include the private metadata verbatim, as per PEP-700:
         # > Keys (at any level) with a leading underscore are reserved as
@@ -105,8 +104,8 @@ class SerializerJsonV1(Serializer):
         return json.dumps(list_dict, default=to_json_serializable)
 
     def _standardize_project_list(
-            self,
-            project_list: model.ProjectListElement,
+        self,
+        project_list: model.ProjectListElement,
     ) -> typing.Dict[str, typing.Any]:
         result = {"name": project_list.name}
         # Include the private metadata verbatim, as per PEP-700:
@@ -139,7 +138,9 @@ class SerializerJsonV1(Serializer):
         if version >= packaging.version.Version("1.1"):
             file_dict["size"] = file.size
             if file.upload_time is not None:
-                file_dict["upload-time"] = file.upload_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                file_dict["upload-time"] = file.upload_time.strftime(
+                    "%Y-%m-%dT%H:%M:%SZ",
+                )
 
         # Include the private metadata verbatim, as per PEP-700:
         # > Keys (at any level) with a leading underscore are reserved as
@@ -158,7 +159,7 @@ class SerializerHtmlV1(Serializer):
     <body>
     <h1>Links for {project_name}</h1>
 """
-    SIMPLE_PROJECT_LINK = '<a {attributes}>{file_name}</a><br/>\n'
+    SIMPLE_PROJECT_LINK = "<a {attributes}>{file_name}</a><br/>\n"
     SIMPLE_PROJECT_FOOTER = "</body>\n</html>"
     SIMPLE_INDEX_HEADER = """<!DOCTYPE html>
     <html>
@@ -216,7 +217,9 @@ class SerializerHtmlV1(Serializer):
         if file.requires_python:
             # From PEP 503: In the attribute value, < and > have to be HTML
             # encoded as &lt; and &gt;, respectively.
-            attributes.append(f'data-requires-python="{html.escape(file.requires_python)}"')
+            attributes.append(
+                f'data-requires-python="{html.escape(file.requires_python)}"',
+            )
 
         # From PEP 658: The repository SHOULD provide the hash of the Core Metadata file as the
         # data-dist-info-metadata attribute’s value using the syntax <hashname>=<hashvalue>,
@@ -232,7 +235,8 @@ class SerializerHtmlV1(Serializer):
                 attributes.append('data-core-metadata="true"')
             else:
                 hash_fun = (
-                    "sha256" if "sha256" in file.dist_info_metadata
+                    "sha256"
+                    if "sha256" in file.dist_info_metadata
                     else next(iter(file.dist_info_metadata))
                 )
                 hash_value = file.dist_info_metadata[hash_fun]

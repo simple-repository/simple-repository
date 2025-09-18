@@ -10,13 +10,17 @@ from __future__ import annotations
 from dataclasses import replace
 import typing
 
-from . import core
 from .. import errors, model
 from .._typing_compat import override
+from . import core
 
 
 class DenyListRepository(core.RepositoryContainer):
-    def __init__(self, source: core.SimpleRepository, deny_list: typing.Tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        source: core.SimpleRepository,
+        deny_list: typing.Tuple[str, ...],
+    ) -> None:
         super().__init__(source)
         self._deny_list = deny_list
 
@@ -28,7 +32,9 @@ class DenyListRepository(core.RepositoryContainer):
     ) -> model.ProjectList:
         project_list = await super().get_project_list(request_context=request_context)
         projects = frozenset(
-            elem for elem in project_list.projects if elem.normalized_name not in self._deny_list
+            elem
+            for elem in project_list.projects
+            if elem.normalized_name not in self._deny_list
         )
         return replace(project_list, projects=projects)
 
@@ -41,7 +47,10 @@ class DenyListRepository(core.RepositoryContainer):
     ) -> model.ProjectDetail:
         if project_name in self._deny_list:
             raise errors.PackageNotFoundError(project_name)
-        return await super().get_project_page(project_name, request_context=request_context)
+        return await super().get_project_page(
+            project_name,
+            request_context=request_context,
+        )
 
     @override
     async def get_resource(
@@ -54,5 +63,7 @@ class DenyListRepository(core.RepositoryContainer):
         if project_name in self._deny_list:
             raise errors.ResourceUnavailable(resource_name)
         return await super().get_resource(
-            project_name, resource_name, request_context=request_context,
+            project_name,
+            resource_name,
+            request_context=request_context,
         )

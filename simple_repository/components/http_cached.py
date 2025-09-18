@@ -85,8 +85,7 @@ class CachedHttpRepository(http.HttpRepository):
             # If the connection to the source fails, and there is a cached page for
             # the requested URL, return the cached content, otherwise raise the error.
             error_logger.error(
-                f"Connection to {page_url} failed with"
-                f" the following error: {str(e)}",
+                f"Connection to {page_url} failed with the following error: {str(e)}",
             )
             if cached_content:
                 return cached_page, cached_content_type

@@ -19,10 +19,12 @@ if typing.TYPE_CHECKING:
 
 
 @pytest.fixture
-def private_meta_repo(source_repository: FakeRepository) -> PrivateMetadataSettingRepository:
+def private_meta_repo(
+    source_repository: FakeRepository,
+) -> PrivateMetadataSettingRepository:
     return PrivateMetadataSettingRepository(
         source=source_repository,
-        project_metadata={'_repository_source': 'PyPI', '_internal_id': '12345'},
+        project_metadata={"_repository_source": "PyPI", "_internal_id": "12345"},
     )
 
 
@@ -34,8 +36,8 @@ async def test__get_project_page__adds_metadata(
     project_page = await private_meta_repo.get_project_page("project1")
 
     assert project_page.name == "project1"
-    assert project_page.private_metadata['_repository_source'] == 'PyPI'
-    assert project_page.private_metadata['_internal_id'] == '12345'
+    assert project_page.private_metadata["_repository_source"] == "PyPI"
+    assert project_page.private_metadata["_internal_id"] == "12345"
 
 
 @pytest.mark.asyncio
@@ -47,21 +49,23 @@ async def test__get_project_page__merges_existing_metadata(
         meta=model.Meta("1.0"),
         name="project1",
         files=(),
-        private_metadata=model.PrivateMetadataMapping.from_any_mapping({
-            '_existing_key': 'existing_value',
-        }),
+        private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+            {
+                "_existing_key": "existing_value",
+            },
+        ),
     )
 
     repository = PrivateMetadataSettingRepository(
         source=source_repository,
-        project_metadata={'_repository_source': 'PyPI', '_internal_id': '12345'},
+        project_metadata={"_repository_source": "PyPI", "_internal_id": "12345"},
     )
 
     project_page = await repository.get_project_page("project1")
 
-    assert project_page.private_metadata['_existing_key'] == 'existing_value'
-    assert project_page.private_metadata['_repository_source'] == 'PyPI'
-    assert project_page.private_metadata['_internal_id'] == '12345'
+    assert project_page.private_metadata["_existing_key"] == "existing_value"
+    assert project_page.private_metadata["_repository_source"] == "PyPI"
+    assert project_page.private_metadata["_internal_id"] == "12345"
 
 
 @pytest.mark.asyncio
@@ -73,20 +77,22 @@ async def test__get_project_page__overwrites_conflicting_metadata(
         meta=model.Meta("1.0"),
         name="project1",
         files=(),
-        private_metadata=model.PrivateMetadataMapping.from_any_mapping({
-            '_repository_source': 'internal',
-        }),
+        private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+            {
+                "_repository_source": "internal",
+            },
+        ),
     )
 
     repository = PrivateMetadataSettingRepository(
         source=source_repository,
-        project_metadata={'_repository_source': 'PyPI'},
+        project_metadata={"_repository_source": "PyPI"},
     )
 
     project_page = await repository.get_project_page("project1")
 
     # Our metadata should overwrite the existing one
-    assert project_page.private_metadata['_repository_source'] == 'PyPI'
+    assert project_page.private_metadata["_repository_source"] == "PyPI"
 
 
 @pytest.mark.asyncio
@@ -113,17 +119,16 @@ async def test__get_resource__delegates_to_source(
 def test__init__validates_private_metadata_keys(
     source_repository: FakeRepository,
 ) -> None:
-
     # Valid keys (starting with underscore)
     repository = PrivateMetadataSettingRepository(
         source=source_repository,
-        project_metadata={'_valid_key': 'value'},
+        project_metadata={"_valid_key": "value"},
     )
-    assert repository._project_metadata['_valid_key'] == 'value'
+    assert repository._project_metadata["_valid_key"] == "value"
 
     # Invalid keys should raise ValueError
     with pytest.raises(ValueError, match="invalid for private metadata"):
         PrivateMetadataSettingRepository(
             source=source_repository,
-            project_metadata={'invalid_key': 'value'},  # Missing underscore prefix
+            project_metadata={"invalid_key": "value"},  # Missing underscore prefix
         )

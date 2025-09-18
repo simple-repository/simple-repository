@@ -8,7 +8,9 @@ def test__empty() -> None:
 
 
 def test__valid_names() -> None:
-    mapping = PrivateMetadataMapping.from_any_mapping({"_a": 1, "_b": {"not_private": 1}})
+    mapping = PrivateMetadataMapping.from_any_mapping(
+        {"_a": 1, "_b": {"not_private": 1}},
+    )
     assert list(mapping.keys()) == ["_a", "_b"]
     assert type(mapping["_b"]) is JSONMapping
 

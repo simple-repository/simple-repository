@@ -11,9 +11,9 @@ import dataclasses
 from datetime import datetime, timedelta
 import typing
 
-from . import core
 from .. import model
 from .._typing_compat import override
+from . import core
 
 
 class NewReleasesRemover(core.RepositoryContainer):
@@ -23,6 +23,7 @@ class NewReleasesRemover(core.RepositoryContainer):
     This component can be used only if the source repository exposes the upload
     date according to PEP-700: https://peps.python.org/pep-0700/.
     """
+
     def __init__(
         self,
         source: core.SimpleRepository,
@@ -76,10 +77,15 @@ class NewReleasesRemover(core.RepositoryContainer):
         date_format = "%Y-%m-%dT%H:%M:%SZ"
         serialized_quarantined_files = [
             {
-                'filename': file.filename,
-                'quarantine_release_time': quarantine_release_time.strftime(date_format),
-                'upload_time': typing.cast(datetime, file.upload_time).strftime(date_format),
-            } for file, quarantine_release_time in files_to_be_removed
+                "filename": file.filename,
+                "quarantine_release_time": quarantine_release_time.strftime(
+                    date_format,
+                ),
+                "upload_time": typing.cast(datetime, file.upload_time).strftime(
+                    date_format,
+                ),
+            }
+            for file, quarantine_release_time in files_to_be_removed
         ]
         # Note that we don't remove the version from the versions list on project page.
         # PEP-700 states that we are allowed to have a release without any files in it.
@@ -87,7 +93,8 @@ class NewReleasesRemover(core.RepositoryContainer):
             project_page,
             files=tuple(files_to_maintain),
             # Use a private attribute to give context of the files that have been quarantined.
-            private_metadata=project_page.private_metadata | {
-                '_quarantined_files': serialized_quarantined_files,
+            private_metadata=project_page.private_metadata
+            | {
+                "_quarantined_files": serialized_quarantined_files,
             },
         )

@@ -14,9 +14,9 @@ from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
-from . import core
 from .. import errors, model, parser, utils
 from .._typing_compat import override
+from . import core
 
 
 def _url_path_append(url: str, append_with: str) -> str:
@@ -30,11 +30,11 @@ def _url_path_append(url: str, append_with: str) -> str:
 
     split_url = list(urlsplit(url))
 
-    if not split_url[PATH_IDX].endswith('/'):
+    if not split_url[PATH_IDX].endswith("/"):
         # Add a trailing slash to the path.
-        split_url[PATH_IDX] += '/'
+        split_url[PATH_IDX] += "/"
 
-    if append_with.startswith('/'):
+    if append_with.startswith("/"):
         append_with = append_with[1:]
 
     split_url[PATH_IDX] += append_with
@@ -53,11 +53,13 @@ class HttpRepository(core.SimpleRepository):
     ) -> None:
         self._source_url = url
         self._http_client = http_client or httpx.AsyncClient()
-        self.downstream_content_types = ", ".join([
-            "application/vnd.pypi.simple.v1+json",
-            "application/vnd.pypi.simple.v1+html;q=0.2",
-            "text/html;q=0.01",
-        ])
+        self.downstream_content_types = ", ".join(
+            [
+                "application/vnd.pypi.simple.v1+json",
+                "application/vnd.pypi.simple.v1+html;q=0.2",
+                "text/html;q=0.01",
+            ],
+        )
         self._connection_timeout = connection_timeout
 
     async def _fetch_simple_page(
@@ -85,7 +87,7 @@ class HttpRepository(core.SimpleRepository):
         *,
         request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
-        page_url = _url_path_append(self._source_url, f'{project_name}/')
+        page_url = _url_path_append(self._source_url, f"{project_name}/")
         try:
             body, content_type = await self._fetch_simple_page(page_url)
         except httpx.HTTPError as e:
@@ -100,8 +102,9 @@ class HttpRepository(core.SimpleRepository):
             raise errors.SourceRepositoryUnavailable() from e
 
         if (
-            "application/vnd.pypi.simple.v1+html" in content_type or
-            "text/html" in content_type or not content_type
+            "application/vnd.pypi.simple.v1+html" in content_type
+            or "text/html" in content_type
+            or not content_type
         ):
             project_page = parser.parse_html_project_page(body, project_name)
         elif "application/vnd.pypi.simple.v1+json" in content_type:
@@ -130,8 +133,9 @@ class HttpRepository(core.SimpleRepository):
             raise errors.SourceRepositoryUnavailable() from e
 
         if (
-            "application/vnd.pypi.simple.v1+html" in content_type or
-            "text/html" in content_type or not content_type
+            "application/vnd.pypi.simple.v1+html" in content_type
+            or "text/html" in content_type
+            or not content_type
         ):
             return parser.parse_html_project_list(body)
         elif "application/vnd.pypi.simple.v1+json" in content_type:

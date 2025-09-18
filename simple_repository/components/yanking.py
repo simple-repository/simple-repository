@@ -16,19 +16,22 @@ import typing
 import aiosqlite
 import packaging.utils
 
-from . import core
-from .. import errors, model
+from .. import errors, model, utils
 from .. import packaging as _packaging
-from .. import utils
 from .._typing_compat import Protocol, override
+from . import core
 
 
 class YankProvider(Protocol):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
-        ...
+    async def yanked_versions(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]: ...
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
-        ...
+    async def yanked_files(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]: ...
 
 
 class SqliteYankProvider(YankProvider):
@@ -55,25 +58,33 @@ class SqliteYankProvider(YankProvider):
         )
         self._initialise_db = False
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_versions(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT version, reason FROM yanked_versions WHERE project_name = :project_name"
-        async with self._database.execute(query, {"project_name": project_page.name}) as cur:
+        async with self._database.execute(
+            query,
+            {"project_name": project_page.name},
+        ) as cur:
             result = await cur.fetchall()
-        return {
-            version: reason for version, reason in result
-        }
+        return {version: reason for version, reason in result}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_files(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         await self._init_db()
 
         query = "SELECT file_name, reason FROM yanked_releases WHERE project_name = :project_name"
-        async with self._database.execute(query, {"project_name": project_page.name}) as cur:
+        async with self._database.execute(
+            query,
+            {"project_name": project_page.name},
+        ) as cur:
             result = await cur.fetchall()
-        return {
-            filename: reason for filename, reason in result
-        }
+        return {filename: reason for filename, reason in result}
 
 
 class GlobYankProvider(YankProvider):
@@ -89,6 +100,7 @@ class GlobYankProvider(YankProvider):
             "tensorflow": ["*[!.whl]", "temporary"]
         }
     """
+
     def __init__(
         self,
         yank_config_file: pathlib.Path,
@@ -98,17 +110,24 @@ class GlobYankProvider(YankProvider):
             typing.Tuple[str, str],
         ] = self._load_config_json(yank_config_file)
 
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_versions(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         # TODO: Manage yanked_versions in this component
         return {}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_files(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         yanked_files = {}
         value = self._yank_config.get(project_page.name)
         if value:
             pattern, reason = value
             yanked_files = {
-                file.filename: reason for file in project_page.files
+                file.filename: reason
+                for file in project_page.files
                 if fnmatch.fnmatch(file.filename, pattern)
             }
 
@@ -123,15 +142,15 @@ class GlobYankProvider(YankProvider):
         config_dict: typing.Dict[str, typing.Tuple[str, str]] = {}
         for key, value in json_config.items():
             if (
-                not isinstance(key, str) or
-                not isinstance(value, list) or
-                len(value) != 2 or
-                not all(isinstance(elem, str) for elem in value)
+                not isinstance(key, str)
+                or not isinstance(value, list)
+                or len(value) != 2
+                or not all(isinstance(elem, str) for elem in value)
             ):
                 raise errors.InvalidConfigurationError(
-                    f'Invalid yank configuration file. {str(json_file)} must'
-                    ' contain a dictionary mapping a project name to a tuple'
-                    ' containing a glob pattern and a yank reason.',
+                    f"Invalid yank configuration file. {str(json_file)} must"
+                    " contain a dictionary mapping a project name to a tuple"
+                    " containing a glob pattern and a yank reason.",
                 )
             config_dict[packaging.utils.canonicalize_name(key)] = (value[0], value[1])
 
@@ -139,7 +158,7 @@ class GlobYankProvider(YankProvider):
 
 
 def update_yanked_attribute(file: model.File, reason: str) -> model.File:
-    if reason == '':
+    if reason == "":
         yanked: typing.Union[bool, str] = True
     else:
         yanked = html.escape(reason)
@@ -153,6 +172,7 @@ class YankRepository(core.RepositoryContainer):
     The information related to which version or file of a project are yanked
     comes from a provider that specialized the protocol YankProvider.
     """
+
     def __init__(
         self,
         source: core.SimpleRepository,
@@ -204,7 +224,9 @@ class YankRepository(core.RepositoryContainer):
                     try:
                         version = _packaging.extract_package_version(
                             filename=file.filename,
-                            project_name=packaging.utils.canonicalize_name(project_page.name),
+                            project_name=packaging.utils.canonicalize_name(
+                                project_page.name,
+                            ),
                         )
                     except ValueError:
                         pass

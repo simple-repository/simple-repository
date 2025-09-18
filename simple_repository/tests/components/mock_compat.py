@@ -12,4 +12,4 @@ if sys.version_info >= (3, 8):
 else:
     from mock import AsyncMock
 
-__all__ = ['AsyncMock']
+__all__ = ["AsyncMock"]

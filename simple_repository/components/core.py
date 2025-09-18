@@ -14,6 +14,7 @@ from .._typing_compat import override
 
 if typing.TYPE_CHECKING:
     from .._typing_compat import TypeAlias
+
     WrappedFunction: TypeAlias = typing.Callable[..., typing.Any]
 
 
@@ -158,6 +159,7 @@ class RepositoryContainer(SimpleRepository):
     `SimpleRepository`. If not overridden, the methods provided by this class
     will delegate to the corresponding methods of the source repository.
     """
+
     def __init__(self, source: SimpleRepository) -> None:
         self.source = source
 
@@ -168,7 +170,10 @@ class RepositoryContainer(SimpleRepository):
         *,
         request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
-        return await self.source.get_project_page(project_name, request_context=request_context)
+        return await self.source.get_project_page(
+            project_name,
+            request_context=request_context,
+        )
 
     @override
     async def get_project_list(

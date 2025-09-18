@@ -15,8 +15,8 @@ from .. import model
 
 
 def test_ProjectListElement__normalized_name() -> None:
-    prj = model.ProjectListElement('some-.name')
-    assert prj.normalized_name == 'some-name'
+    prj = model.ProjectListElement("some-.name")
+    assert prj.normalized_name == "some-name"
 
 
 def test_ProjectDetail__normalized_name() -> None:
@@ -81,7 +81,8 @@ def test_ProjectDetail__post_init_v1_1() -> None:
         ),
     )
     assert project_detail.versions == {
-        "1.0", "2.0",
+        "1.0",
+        "2.0",
     }
 
 
@@ -103,11 +104,11 @@ def test_ProjectDetail__versions_subset() -> None:
                 size=1,
             ),
         ),
-        versions=frozenset({'1.0'}),
+        versions=frozenset({"1.0"}),
     )
     # When we have a subset of versions specified (not spec compliant), we don't
     # do any magic, but we also don't raise.
-    assert detail.versions == {'1.0'}
+    assert detail.versions == {"1.0"}
 
 
 def test_ProjectDetail__manual_versions() -> None:
@@ -131,12 +132,12 @@ def test_ProjectDetail__manual_versions() -> None:
                 size=1,
             ),
         ),
-        versions=frozenset({'1.0', '2.0', "1.2.3"}),
+        versions=frozenset({"1.0", "2.0", "1.2.3"}),
     )
     # Versions should persist with other replacement.
     pd1 = dataclasses.replace(project_detail, files=project_detail.files[:1])
 
-    assert pd1.versions == {'1.0', '2.0', "1.2.3"}
+    assert pd1.versions == {"1.0", "2.0", "1.2.3"}
 
     # And we should be able to get it to be generated again by setting it to None.
     pd2 = dataclasses.replace(project_detail, versions=None)
@@ -148,13 +149,13 @@ def test__File__arbitrary_private_metadata() -> None:
         filename="pippo",
         url="url",
         hashes={},
-        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+        private_metadata=model.PrivateMetadataMapping(dict(_foo="bar")),
     )
-    assert dict(file.private_metadata) == {'_foo': 'bar'}
+    assert dict(file.private_metadata) == {"_foo": "bar"}
     # Ensure that the private attributes survives additional public attribute
     # changes.
-    new_file = dataclasses.replace(file, filename='bar')
-    assert dict(new_file.private_metadata) == {'_foo': 'bar'}
+    new_file = dataclasses.replace(file, filename="bar")
+    assert dict(new_file.private_metadata) == {"_foo": "bar"}
 
 
 def test__File__eq__private_metadata() -> None:
@@ -162,7 +163,7 @@ def test__File__eq__private_metadata() -> None:
         filename="pippo",
         url="url",
         hashes={},
-        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+        private_metadata=model.PrivateMetadataMapping(dict(_foo="bar")),
     )
     file2 = model.File(
         filename="pippo",
@@ -179,7 +180,7 @@ def test__File__hash__private_metadata() -> None:
         filename="pippo",
         url="url",
         hashes={},
-        private_metadata=model.PrivateMetadataMapping(dict(_foo='bar')),
+        private_metadata=model.PrivateMetadataMapping(dict(_foo="bar")),
     )
     file2 = model.File(
         filename="pippo",

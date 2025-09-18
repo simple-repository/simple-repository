@@ -36,7 +36,9 @@ def select_response_format(content_type: str) -> Format:
         )
     # Requested content-types sorted by q value
     sorted_formats = sorted(
-        requested_formats, key=lambda f: f[1], reverse=True,
+        requested_formats,
+        key=lambda f: f[1],
+        reverse=True,
     )
     for form, _ in sorted_formats:
         if form == "*/*":

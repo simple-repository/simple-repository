@@ -41,7 +41,7 @@ async def test_glob_provider__yanked_files(
     provider = GlobYankProvider(yank_config_file=file)
 
     res = await provider.yanked_files(project_page)
-    assert {'project-1.0.whl': 'bad'} == res
+    assert {"project-1.0.whl": "bad"} == res
 
 
 @pytest.mark.asyncio
@@ -61,8 +61,13 @@ async def test_glob_provider__yanked_versions(
 
 
 @pytest.mark.parametrize(
-    "json_string", [
-        "42", "true", '["a", "b"]', "null", '"ciao"',
+    "json_string",
+    [
+        "42",
+        "true",
+        '["a", "b"]',
+        "null",
+        '"ciao"',
     ],
 )
 def test_load_config_wrong_type(
@@ -75,9 +80,7 @@ def test_load_config_wrong_type(
     )
     with pytest.raises(
         errors.InvalidConfigurationError,
-        match=(
-            f"Invalid configuration file. {str(file)} must contain a dictionary."
-        ),
+        match=(f"Invalid configuration file. {str(file)} must contain a dictionary."),
     ):
         GlobYankProvider(yank_config_file=file)
 
@@ -92,9 +95,9 @@ def test_load_config_wrong_format(
     with pytest.raises(
         errors.InvalidConfigurationError,
         match=(
-            f'Invalid yank configuration file. {str(file)} must'
-            ' contain a dictionary mapping a project name to a tuple'
-            ' containing a glob pattern and a yank reason.'
+            f"Invalid yank configuration file. {str(file)} must"
+            " contain a dictionary mapping a project name to a tuple"
+            " containing a glob pattern and a yank reason."
         ),
     ):
         GlobYankProvider(yank_config_file=file)
@@ -105,7 +108,7 @@ def test_load_config_malformed_json(
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
-        data='a',
+        data="a",
     )
     with pytest.raises(
         errors.InvalidConfigurationError,
@@ -152,8 +155,16 @@ async def test_sqlite_provider__yanked_files(
             "INSERT INTO yanked_releases (project_name, file_name, reason)"
             " VALUES(:project_name, :filename, :reason)",
             [
-                {"project_name": "project", "filename": "project-1.0.whl", "reason": "reason1"},
-                {"project_name": "project", "filename": "project-2.0.whl", "reason": "reason2"},
+                {
+                    "project_name": "project",
+                    "filename": "project-1.0.whl",
+                    "reason": "reason1",
+                },
+                {
+                    "project_name": "project",
+                    "filename": "project-2.0.whl",
+                    "reason": "reason2",
+                },
             ],
         )
 

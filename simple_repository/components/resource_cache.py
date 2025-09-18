@@ -17,9 +17,9 @@ import uuid
 
 import httpx
 
-from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
+from . import core
 
 
 class ResourceCacheRepository(core.RepositoryContainer):
@@ -31,6 +31,7 @@ class ResourceCacheRepository(core.RepositoryContainer):
     the right context, this can be used for example to maintain a functional
     repository for previously seen responses when PyPI.org is down.
     """
+
     def __init__(
         self,
         source: core.SimpleRepository,
@@ -68,16 +69,18 @@ class ResourceCacheRepository(core.RepositoryContainer):
 
         # Ensures that the requested resource is contained
         # in the cache directory to avoid path traversal.
-        if (
-            not utils.is_relative_to(resource_path, self._cache_path) or
-            not utils.is_relative_to(project_dir, self._cache_path)
-        ):
+        if not utils.is_relative_to(
+            resource_path,
+            self._cache_path,
+        ) or not utils.is_relative_to(project_dir, self._cache_path):
             raise ValueError(f"{resource_path} is not contained in {self._cache_path}")
 
         project_dir.mkdir(exist_ok=True)
 
         # Require the resource upstream, if available use the cached etag.
-        cache_etag = resource_info_path.read_text() if resource_info_path.is_file() else None
+        cache_etag = (
+            resource_info_path.read_text() if resource_info_path.is_file() else None
+        )
         if cache_etag:
             context: typing.Mapping[str, typing.Any] = {
                 **request_context.context,
@@ -103,7 +106,9 @@ class ResourceCacheRepository(core.RepositoryContainer):
             return self._cached_resource(
                 resource_path=resource_path,
                 resource_info_path=resource_info_path,
-                context=model.Context(etag=cache_etag) if cache_etag else model.Context(),
+                context=model.Context(etag=cache_etag)
+                if cache_etag
+                else model.Context(),
             )
         except errors.SourceRepositoryUnavailable:
             if not self._fallback_to_cache:

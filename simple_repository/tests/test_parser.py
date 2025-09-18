@@ -16,7 +16,7 @@ from .. import model, parser
 
 
 def test_parse_json_project_page() -> None:
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.0"
@@ -50,7 +50,7 @@ def test_parse_json_project_page() -> None:
             }
         ]
 
-    }'''
+    }"""
 
     result = parser.parse_json_project_page(page)
 
@@ -88,7 +88,7 @@ def test_parse_json_project_page() -> None:
 
 
 def test_parse_html_project_page() -> None:
-    page = '''
+    page = """
         <a href="holygrail-1.0.tar.gz#sha256=..."
             data-requires-python="&gt;=3.7"
         >holygrail-1.0.tar.gz</a>
@@ -101,7 +101,7 @@ def test_parse_html_project_page() -> None:
 
         <a>bad-project.whl</a>
         <a href="bad-project.whl></a>
-    '''
+    """
 
     result = parser.parse_html_project_page(page, "holygrail")
 
@@ -132,7 +132,7 @@ def test_parse_html_project_page() -> None:
 def test_parse_json_project_page__additional_versions() -> None:
     # Check that if we receive the versions flag (PEP-700), we persist it.
     # It shouldn't always be auto-computed.
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.0"
@@ -146,7 +146,7 @@ def test_parse_json_project_page__additional_versions() -> None:
             }
         ],
         "versions": ["1.0", "2.0"]
-    }'''
+    }"""
 
     result = parser.parse_json_project_page(page)
 
@@ -167,18 +167,18 @@ def test_parse_json_project_page__additional_versions() -> None:
 @pytest.mark.parametrize(
     "fragment_attr, hashes",
     [
-        ('', {}),
-        ('#', {}),
-        ('#a=2', {'a': '2'}),
-        ('#a=2&b', {'a': '2&b'}),
-        ('#argh!', {}),
+        ("", {}),
+        ("#", {}),
+        ("#a=2", {"a": "2"}),
+        ("#a=2&b", {"a": "2&b"}),
+        ("#argh!", {}),
     ],
 )
 def test_parse_html_project_page_URL_fragment(
     fragment_attr: str,
     hashes: typing.Dict[str, str],
 ) -> None:
-    page = f'''<a href="holygrail-1.0.tar.gz{fragment_attr}">holygrail-1.0.tar.gz</a>'''
+    page = f"""<a href="holygrail-1.0.tar.gz{fragment_attr}">holygrail-1.0.tar.gz</a>"""
 
     result = parser.parse_html_project_page(page, "holygrail")
 
@@ -198,22 +198,22 @@ def test_parse_html_project_page_URL_fragment(
 @pytest.mark.parametrize(
     "yank_attr, yank_value",
     [
-        ('data-yanked', True),
+        ("data-yanked", True),
         ('data-yanked=""', True),
         ('data-yanked="reason"', "reason"),
         ('data-yanked="false"', "false"),
-        ('', None),
+        ("", None),
     ],
 )
 def test_parse_html_project_page_yank(
     yank_attr: str,
     yank_value: typing.Union[bool, str, None],
 ) -> None:
-    page = f'''
+    page = f"""
         <a href="holygrail-1.0.tar.gz"
             {yank_attr}
         >holygrail-1.0.tar.gz</a>
-    '''
+    """
 
     result = parser.parse_html_project_page(page, "holygrail")
 
@@ -234,27 +234,27 @@ def test_parse_html_project_page_yank(
 @pytest.mark.parametrize(
     "metadata_attr, metadata_value",
     [
-        ('data-dist-info-metadata', None),
+        ("data-dist-info-metadata", None),
         ('data-dist-info-metadata="true"', None),
         ('data-dist-info-metadata="something incompatible"', None),
         ('data-dist-info-metadata="sha=..."', None),
-        ('data-core-metadata', True),
+        ("data-core-metadata", True),
         ('data-core-metadata="true"', True),
         ('data-core-metadata="something incompatible"', True),
         ('data-core-metadata="sha=..."', {"sha": "..."}),
         ('data-core-metadata="sha=..." data-dist-info-metadata="true"', {"sha": "..."}),
-        ('', None),
+        ("", None),
     ],
 )
 def test_parse_html_project_page_metadata(
     metadata_attr: str,
     metadata_value: typing.Union[bool, typing.Dict[str, str], None],
 ) -> None:
-    page = f'''
+    page = f"""
         <a href="holygrail-1.0.tar.gz"
             {metadata_attr}
         >holygrail-1.0.tar.gz</a>
-    '''
+    """
 
     result = parser.parse_html_project_page(page, "holygrail")
 
@@ -277,16 +277,19 @@ def test_parse_html_project_page_metadata(
     [
         ('data-gpg-sig="true"', True),
         ('data-gpg-sig="false"', False),
-        ('', None),
+        ("", None),
         ('data-gpg-sig="invalid"', None),
     ],
 )
-def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
-    page = f'''
+def test_parse_html_project_page_gpg(
+    gpg_attr: str,
+    gpg_value: typing.Optional[bool],
+) -> None:
+    page = f"""
         <a href="holygrail-1.0.tar.gz"
             {gpg_attr}
         >holygrail-1.0.tar.gz</a>
-    '''
+    """
 
     result = parser.parse_html_project_page(page, "holygrail")
 
@@ -305,7 +308,7 @@ def test_parse_html_project_page_gpg(gpg_attr: str, gpg_value: typing.Optional[b
 
 
 def test_parse_json_project_list() -> None:
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.0"
@@ -318,21 +321,23 @@ def test_parse_json_project_list() -> None:
                 "name": "my_project"
             }
         ]
-    }'''
+    }"""
 
     result = parser.parse_json_project_list(page)
 
     assert result == model.ProjectList(
         model.Meta("1.0"),
-        frozenset([
-            model.ProjectListElement("gym"),
-            model.ProjectListElement("my_project"),
-        ]),
+        frozenset(
+            [
+                model.ProjectListElement("gym"),
+                model.ProjectListElement("my_project"),
+            ],
+        ),
     )
 
 
 def test_parse_json_project_list__private_metadata() -> None:
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.0",
@@ -349,41 +354,51 @@ def test_parse_json_project_list__private_metadata() -> None:
         ],
         "unexpected": "we don't expose",
         "_extra_list": 123
-    }'''
+    }"""
 
     result = parser.parse_json_project_list(page)
 
     assert result == model.ProjectList(
-        model.Meta("1.0", private_metadata=model.PrivateMetadataMapping(dict(_extra_meta=123))),
-        frozenset([
-            model.ProjectListElement(
-                "gym", private_metadata=model.PrivateMetadataMapping(dict(_extra_project=123)),
-            ),
-            model.ProjectListElement("my_project"),
-        ]),
+        model.Meta(
+            "1.0",
+            private_metadata=model.PrivateMetadataMapping(dict(_extra_meta=123)),
+        ),
+        frozenset(
+            [
+                model.ProjectListElement(
+                    "gym",
+                    private_metadata=model.PrivateMetadataMapping(
+                        dict(_extra_project=123),
+                    ),
+                ),
+                model.ProjectListElement("my_project"),
+            ],
+        ),
         private_metadata=model.PrivateMetadataMapping(dict(_extra_list=123)),
     )
 
 
 def test_parse_html_project_list() -> None:
-    page = '''
+    page = """
         <a href="url">gym</a>
         <a href="url">my_project</a>
-    '''
+    """
 
     result = parser.parse_html_project_list(page)
 
     assert result == model.ProjectList(
         model.Meta("1.0"),
-        frozenset([
-            model.ProjectListElement("gym"),
-            model.ProjectListElement("my_project"),
-        ]),
+        frozenset(
+            [
+                model.ProjectListElement("gym"),
+                model.ProjectListElement("my_project"),
+            ],
+        ),
     )
 
 
 def test_parse_json_project_page__v_1_1() -> None:
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.1"
@@ -405,7 +420,7 @@ def test_parse_json_project_page__v_1_1() -> None:
                 "upload-time": "2000-01-01T00:00:00Z"
             }
         ]
-    }'''
+    }"""
 
     result = parser.parse_json_project_page(page)
 
@@ -432,7 +447,7 @@ def test_parse_json_project_page__v_1_1() -> None:
 
 
 def test_parse_json_project_page__private() -> None:
-    page = '''
+    page = """
     {
         "meta": {
             "api-version": "1.1",
@@ -457,12 +472,15 @@ def test_parse_json_project_page__private() -> None:
             }
         ],
         "_extra_project_page": 123
-    }'''
+    }"""
 
     result = parser.parse_json_project_page(page)
 
     assert result == model.ProjectDetail(
-        model.Meta("1.1", private_metadata=model.PrivateMetadataMapping(dict(_extra_meta=123))),
+        model.Meta(
+            "1.1",
+            private_metadata=model.PrivateMetadataMapping(dict(_extra_meta=123)),
+        ),
         "holygrail",
         (
             model.File(

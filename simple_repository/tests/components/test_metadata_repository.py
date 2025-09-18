@@ -28,7 +28,9 @@ def repository() -> MetadataInjectorRepository:
         source=FakeRepository(
             project_pages=[
                 model.ProjectDetail(
-                    model.Meta("1.0"), "numpy", files=(
+                    model.Meta("1.0"),
+                    "numpy",
+                    files=(
                         model.File("numpy-1.0-any.whl", "url", {}),
                         model.File("numpy-1.0.tar.gz", "url", {}),
                     ),
@@ -52,16 +54,29 @@ def repository() -> MetadataInjectorRepository:
 
 def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
     project_page = model.ProjectDetail(
-       model.Meta("1.0"),
-       "numpy",
-       (
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=None),
-            model.File("numpy-1.0-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata=False),
+        model.Meta("1.0"),
+        "numpy",
+        (
+            model.File(
+                "numpy-1.0-any.whl",
+                "/numpy-1.0-any.whl",
+                {},
+                dist_info_metadata=None,
+            ),
+            model.File(
+                "numpy-1.0-any.whl",
+                "/numpy-1.0-any.whl",
+                {},
+                dist_info_metadata=False,
+            ),
             model.File("numpy-1.0-any.tar.gz", "/numpy-1.0-any.tar.gz", {}),
             model.File(
-                "numpy-1.1-any.whl", "/numpy-1.0-any.whl", {}, dist_info_metadata={"sha": "..."},
+                "numpy-1.1-any.whl",
+                "/numpy-1.0-any.whl",
+                {},
+                dist_info_metadata={"sha": "..."},
             ),
-       ),
+        ),
     )
     result = repository._add_metadata_attribute(project_page)
 
@@ -72,60 +87,77 @@ def test_add_metadata_attribute(repository: MetadataInjectorRepository) -> None:
 
 
 @pytest.mark.parametrize(
-    "namelist, metadata_name", [
+    "namelist, metadata_name",
+    [
         (
             [
                 "my_package/files",
                 "not_my_package-0.0.1.dist-info/METADATA",
                 "my_package-0.0.1.dist-info/METADATA",
-            ], "my_package-0.0.1.dist-info/METADATA",
+            ],
+            "my_package-0.0.1.dist-info/METADATA",
         ),
         (
             [
                 "my_package/files",
                 "my_package-0.0.1.dist-info/METADATA",
                 "My_Package-0.0.1.dist-info/METADATA",
-            ], "my_package-0.0.1.dist-info/METADATA",
+            ],
+            "my_package-0.0.1.dist-info/METADATA",
         ),
         (
             [
                 "my_package/files",
                 "My_Package-0.0.1.dist-info/METADATA",
-            ], "My_Package-0.0.1.dist-info/METADATA",
+            ],
+            "My_Package-0.0.1.dist-info/METADATA",
         ),
         (
             [
                 "my_package/files",
                 "my.package-0.0.1.dist-info/METADATA",
-            ], "my.package-0.0.1.dist-info/METADATA",
+            ],
+            "my.package-0.0.1.dist-info/METADATA",
         ),
         (
             [
                 "my_package/files",
                 "my-package-0.0.1.dist-info/METADATA",
-            ], "my-package-0.0.1.dist-info/METADATA",
+            ],
+            "my-package-0.0.1.dist-info/METADATA",
         ),
     ],
 )
-def test_get_metadata_from_package(repository: MetadataInjectorRepository, namelist: typing.List[str], metadata_name: str) -> None:
+def test_get_metadata_from_package(
+    repository: MetadataInjectorRepository,
+    namelist: typing.List[str],
+    metadata_name: str,
+) -> None:
     ziparchive = mock.MagicMock(spec=zipfile.ZipFile)
     ziparchive_ctx = ziparchive.__enter__.return_value
     read_method = ziparchive_ctx.read
     ziparchive_ctx.namelist.return_value = namelist
 
-    with mock.patch('zipfile.ZipFile', return_value=ziparchive):
-        repository._get_metadata_from_package(pathlib.Path('my_package') / 'my_package-0.0.1-anylinux.whl')
+    with mock.patch("zipfile.ZipFile", return_value=ziparchive):
+        repository._get_metadata_from_package(
+            pathlib.Path("my_package") / "my_package-0.0.1-anylinux.whl",
+        )
 
         read_method.assert_called_once_with(metadata_name)
 
 
-def test_get_metadata_from_package__not_wheel(repository: MetadataInjectorRepository) -> None:
+def test_get_metadata_from_package__not_wheel(
+    repository: MetadataInjectorRepository,
+) -> None:
     with pytest.raises(ValueError, match="Package provided is not a wheel"):
-        repository._get_metadata_from_package(pathlib.Path('my_package') / 'package.tar.gz')
+        repository._get_metadata_from_package(
+            pathlib.Path("my_package") / "package.tar.gz",
+        )
 
 
 @pytest.mark.parametrize(
-    "namelist", [
+    "namelist",
+    [
         [
             "my_package/files",
             "not_my_package-0.0.1.dist-info/METADATA",
@@ -140,19 +172,23 @@ def test_get_metadata_from_package__not_wheel(repository: MetadataInjectorReposi
         ],
     ],
 )
-def test_get_metadata_from_package__missing_metadata(repository: MetadataInjectorRepository, namelist: typing.List[str]) -> None:
+def test_get_metadata_from_package__missing_metadata(
+    repository: MetadataInjectorRepository,
+    namelist: typing.List[str],
+) -> None:
     m_zipfile_cls = mock.MagicMock(spec=zipfile.ZipFile)
     m_zipfile_cls.return_value.__enter__.return_value.namelist.return_value = [
         "not_my_package-0.0.1.dist-info/METADATA",
     ]
 
-    with mock.patch('zipfile.ZipFile', spec=zipfile.ZipFile, new=m_zipfile_cls):
+    with mock.patch("zipfile.ZipFile", spec=zipfile.ZipFile, new=m_zipfile_cls):
         with pytest.raises(
             errors.InvalidPackageError,
             match="Provided wheel doesn't contain a metadata file.",
         ):
             repository._get_metadata_from_package(
-                package_path=pathlib.Path('my_package') / 'my_package-0.0.1-anylinux.whl',
+                package_path=pathlib.Path("my_package")
+                / "my_package-0.0.1-anylinux.whl",
             )
 
 
@@ -199,20 +235,24 @@ async def test_get_resource__not_valid_resource() -> None:
     source_repo = mock.Mock(spec=core.SimpleRepository)
     source_repo.get_resource = AsyncMock(
         side_effect=[
-            errors.ResourceUnavailable('name'),
-            model.TextResource(text='/etc/passwd'),
+            errors.ResourceUnavailable("name"),
+            model.TextResource(text="/etc/passwd"),
         ],
     )
     repo = MetadataInjectorRepository(
         source=typing.cast(core.SimpleRepository, source_repo),
         http_client=AsyncMock(),
     )
-    with pytest.raises(errors.ResourceUnavailable, match='Unable to fetch the resource needed to extract the metadata'):
+    with pytest.raises(
+        errors.ResourceUnavailable,
+        match="Unable to fetch the resource needed to extract the metadata",
+    ):
         await repo.get_resource("numpy", "numpy-1.0-any.whl.metadata")
 
 
 @pytest.mark.parametrize(
-    "resource_name", ["numpy-1.0-any.whl", "numpy-1.0.tar.gz"],
+    "resource_name",
+    ["numpy-1.0-any.whl", "numpy-1.0.tar.gz"],
 )
 @pytest.mark.asyncio
 async def test_get_resource__not_metadata(
@@ -232,7 +272,10 @@ async def test_download_metadata(
         repository,
         "_get_metadata_from_package",
     ) as get_metadata_from_package_mock:
-        with mock.patch("simple_repository.utils.download_file", new_callable=AsyncMock) as download_file_mock:
+        with mock.patch(
+            "simple_repository.utils.download_file",
+            new_callable=AsyncMock,
+        ) as download_file_mock:
             await repository._download_metadata("name", "url", httpx.AsyncClient())
 
     get_metadata_from_package_mock.assert_called_once()

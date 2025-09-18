@@ -29,10 +29,12 @@ def repository(source_repository: FakeRepository) -> AllowListRepository:
 @pytest.mark.asyncio
 async def test__get_project_list(repository: AllowListRepository) -> None:
     project_list = await repository.get_project_list()
-    assert project_list.projects == frozenset([
-        model.ProjectListElement("project1"),
-        model.ProjectListElement("project2"),
-    ])
+    assert project_list.projects == frozenset(
+        [
+            model.ProjectListElement("project1"),
+            model.ProjectListElement("project2"),
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -45,7 +47,9 @@ async def test__get_project_page__allow_listed(
 
 
 @pytest.mark.asyncio
-async def test__get_project_page__not_allow_listed(repository: AllowListRepository) -> None:
+async def test__get_project_page__not_allow_listed(
+    repository: AllowListRepository,
+) -> None:
     with pytest.raises(errors.PackageNotFoundError):
         await repository.get_project_page("project3")
 
