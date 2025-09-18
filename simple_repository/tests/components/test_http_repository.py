@@ -474,3 +474,51 @@ async def test_get_resource_metadata__unavailable(
     ):
         with pytest.raises(errors.ResourceUnavailable, match="numpy-2.0.whl.metadata"):
             await repository.get_resource("numpy", "numpy-2.0.whl.metadata")
+
+
+@pytest.mark.asyncio
+async def test_get_resource__authentication_preserved_in_head_request(
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
+    # Verify that if we use auth in the http client, it will be honoured in
+    # the right places such that you can be sure to be authenticated for
+    # subsequent get_resource requests.
+    auth = httpx.BasicAuth("test_user", "test_password")
+    http_client = httpx.AsyncClient(auth=auth)
+    repository = HttpRepository(
+        url="https://example.com/simple/",
+        http_client=http_client,
+    )
+
+    project_page_html = """
+        <html><body>
+            <a href="http://files.example.com/numpy-2.0.whl">numpy-2.0.whl</a><br/>
+        </body></html>
+    """
+
+    def check_auth_header(request: httpx.Request) -> httpx.Response:
+        assert "Authorization" in request.headers
+        assert (
+            request.headers["Authorization"] == "Basic dGVzdF91c2VyOnRlc3RfcGFzc3dvcmQ="
+        )  # base64 of "test_user:test_password"
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                content=project_page_html,
+                headers={"content-type": "text/html"},
+            )
+        elif request.method == "HEAD":
+            return httpx.Response(200, headers={"ETag": "test_etag"})
+        return httpx.Response(404)
+
+    # Register callback for both the main repository domain and the file domain
+    httpx_mock.add_callback(check_auth_header, url="https://example.com/simple/numpy/")
+    httpx_mock.add_callback(
+        check_auth_header,
+        url="http://files.example.com/numpy-2.0.whl",
+    )
+
+    resp = await repository.get_resource("numpy", "numpy-2.0.whl")
+    assert isinstance(resp, model.HttpResource)
+    assert resp.url == "http://files.example.com/numpy-2.0.whl"
+    assert resp.context.get("etag") == "test_etag"
