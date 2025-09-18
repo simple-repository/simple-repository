@@ -50,11 +50,13 @@ async def test_get_project_list(simple_dir: pathlib.Path) -> None:
 
     assert project_list == model.ProjectList(
         meta=model.Meta("1.0"),
-        projects=frozenset([
-            model.ProjectListElement("numpy"),
-            model.ProjectListElement("tensorflow"),
-            model.ProjectListElement("pandas"),
-        ]),
+        projects=frozenset(
+            [
+                model.ProjectListElement("numpy"),
+                model.ProjectListElement("tensorflow"),
+                model.ProjectListElement("pandas"),
+            ],
+        ),
     )
 
 
@@ -105,7 +107,8 @@ async def test_get_resource__project_not_found(simple_dir: pathlib.Path) -> None
 
 
 @pytest.mark.parametrize(
-    ("project, resource"), [
+    ("project, resource"),
+    [
         ("numpy", "../../../etc/password"),
         ("tensorflow", "../numpy/numpy-1.0.tar.gz"),
     ],
@@ -121,7 +124,7 @@ async def test_get_resource__path_traversal(
     )
     with pytest.raises(
         ValueError,
-        match=f"{(simple_dir / project /resource).resolve()} is not contained in {repo._index_path / project}",
+        match=f"{(simple_dir / project / resource).resolve()} is not contained in {repo._index_path / project}",
     ):
         await repo.get_resource(project, resource)
 
@@ -137,25 +140,25 @@ async def test_get_project_page(simple_dir: pathlib.Path) -> None:
         name="numpy",
         files=(
             model.File(
-                filename='numpy-1.0-any.whl',
-                url="file://" + str(simple_dir / 'numpy/numpy-1.0-any.whl'),
+                filename="numpy-1.0-any.whl",
+                url="file://" + str(simple_dir / "numpy/numpy-1.0-any.whl"),
                 # On the fly hashes currently disabled for local repository.
                 hashes={
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 },
                 upload_time=datetime.utcfromtimestamp(
-                        os.path.getmtime(simple_dir / "numpy" / "numpy-1.0-any.whl"),
+                    os.path.getmtime(simple_dir / "numpy" / "numpy-1.0-any.whl"),
                 ),
                 size=os.stat(simple_dir / "numpy" / "numpy-1.0-any.whl").st_size,
             ),
             model.File(
-                filename='numpy-1.1.tar.gz',
-                url="file://" + str(simple_dir / 'numpy/numpy-1.1.tar.gz'),
+                filename="numpy-1.1.tar.gz",
+                url="file://" + str(simple_dir / "numpy/numpy-1.1.tar.gz"),
                 hashes={
                     # "sha256": sha256sum(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 },
                 upload_time=datetime.utcfromtimestamp(
-                        os.path.getmtime(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
+                    os.path.getmtime(simple_dir / "numpy" / "numpy-1.1.tar.gz"),
                 ),
                 size=os.stat(simple_dir / "numpy" / "numpy-1.1.tar.gz").st_size,
             ),

@@ -30,9 +30,9 @@ else:
     from typing_extensions import TypeAlias
 
 __all__ = [
-    'override',
-    'Self',
-    'TypedDict',
-    'TypeAlias',
-    'Protocol',
+    "override",
+    "Self",
+    "TypedDict",
+    "TypeAlias",
+    "Protocol",
 ]

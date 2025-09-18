@@ -14,9 +14,9 @@ import typing
 
 import packaging.utils
 
-from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
+from . import core
 
 
 class LocalRepository(core.SimpleRepository):
@@ -28,6 +28,7 @@ class LocalRepository(core.SimpleRepository):
     Each file in a project page is mapped to a URL with the
     following structure: file:// index_path / project_name / file_name.
     """
+
     def __init__(
         self,
         index_path: pathlib.Path,
@@ -97,10 +98,10 @@ class LocalRepository(core.SimpleRepository):
         resource_uri = (repository_uri / resource_name).resolve()
 
         # Validate both paths for security (path traversal prevention)
-        if (
-            not utils.is_relative_to(repository_uri, self._index_path) or
-            not utils.is_relative_to(resource_uri, repository_uri)
-        ):
+        if not utils.is_relative_to(
+            repository_uri,
+            self._index_path,
+        ) or not utils.is_relative_to(resource_uri, repository_uri):
             raise ValueError(
                 f"{resource_uri} is not contained in {repository_uri}",
             )
@@ -115,7 +116,9 @@ class LocalRepository(core.SimpleRepository):
 
         # Calculating on the fly the hash of the whole package can be too slow.
         # "mtime + size" provide a good approximation to detect if the package has been changed.
-        etag_base = str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
+        etag_base = (
+            str(resource_uri.stat().st_mtime) + "-" + str(resource_uri.stat().st_size)
+        )
         digest = utils.hash_md5(etag_base.encode())
         etag = f'"{digest}"'
 

@@ -17,11 +17,11 @@ import zipfile
 import httpx
 import packaging.utils
 
-from . import core
 from .. import errors, model, utils
 from .._typing_compat import override
+from . import core
 
-metadata_regex = re.compile(r'^(.*)-.*\.dist-info/METADATA$')
+metadata_regex = re.compile(r"^(.*)-.*\.dist-info/METADATA$")
 
 
 class MetadataInjectorRepository(core.RepositoryContainer):
@@ -29,6 +29,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
     sets the dist-info metadata for all wheels packages in a project page.
     Metadata is extracted from the wheels on the fly and cached for later use.
     """
+
     def __init__(
         self,
         source: core.SimpleRepository,
@@ -45,7 +46,10 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         return self._add_metadata_attribute(
-            await super().get_project_page(project_name, request_context=request_context),
+            await super().get_project_page(
+                project_name,
+                request_context=request_context,
+            ),
         )
 
     @override
@@ -75,7 +79,8 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         # Get hold of the actual artefact from which we want to extract
         # the metadata.
         resource = await self.get_resource(
-            project_name, utils.remove_suffix(resource_name, ".metadata"),
+            project_name,
+            utils.remove_suffix(resource_name, ".metadata"),
             request_context=request_context,
         )
         if isinstance(resource, model.HttpResource):
@@ -111,7 +116,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         return metadata_resource
 
     def _get_metadata_from_wheel(self, package_path: pathlib.Path) -> str:
-        package_tokens = package_path.name.split('-')
+        package_tokens = package_path.name.split("-")
         if len(package_tokens) < 2:
             raise ValueError(
                 f"Filename {package_path.name} is not normalized according to PEP-427",
@@ -121,12 +126,15 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         # respecting what is strictly described in PEP-427, for reference see:
         # https://packaging.python.org/en/latest/specifications/binary-distribution-format/
         try:
-            with zipfile.ZipFile(package_path, 'r') as ziparchive:
+            with zipfile.ZipFile(package_path, "r") as ziparchive:
                 for file in ziparchive.namelist():
                     match = metadata_regex.match(file)
                     if not match:
                         continue
-                    if packaging.utils.canonicalize_name(match.group(1)) == distribution:
+                    if (
+                        packaging.utils.canonicalize_name(match.group(1))
+                        == distribution
+                    ):
                         return ziparchive.read(file).decode()
                 raise errors.InvalidPackageError(
                     "Provided wheel doesn't contain a metadata file.",
@@ -137,7 +145,7 @@ class MetadataInjectorRepository(core.RepositoryContainer):
             ) from e
 
     def _get_metadata_from_package(self, package_path: pathlib.Path) -> str:
-        if package_path.name.endswith('.whl'):
+        if package_path.name.endswith(".whl"):
             return self._get_metadata_from_wheel(package_path)
         raise ValueError("Package provided is not a wheel")
 
@@ -159,7 +167,11 @@ class MetadataInjectorRepository(core.RepositoryContainer):
         """Add the data-core-metadata to all the packages distributed as wheels"""
         files = []
         for file in project_page.files:
-            if file.url and file.filename.endswith(".whl") and not file.dist_info_metadata:
+            if (
+                file.url
+                and file.filename.endswith(".whl")
+                and not file.dist_info_metadata
+            ):
                 file = dataclasses.replace(file, dist_info_metadata=True)
             files.append(file)
         project_page = dataclasses.replace(project_page, files=tuple(files))

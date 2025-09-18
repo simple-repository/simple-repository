@@ -13,9 +13,9 @@ import typing
 import packaging.utils
 import packaging.version
 
-from . import core
 from .. import errors, model
 from .._typing_compat import override
+from . import core
 
 
 class PrioritySelectedProjectsRepository(core.SimpleRepository):
@@ -28,6 +28,7 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
     requested is normalized, to absolutely prevent against dependency
     confusion attacks from sources later in the sequence.
     """
+
     def __init__(self, sources: typing.Sequence[core.SimpleRepository]) -> None:
         if len(sources) < 2:
             raise ValueError(
@@ -67,7 +68,9 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
         request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectList:
         """Retrieves a combined list of projects from all the sources."""
-        results: typing.List[typing.Union[model.ProjectList, BaseException]] = await asyncio.gather(
+        results: typing.List[
+            typing.Union[model.ProjectList, BaseException]
+        ] = await asyncio.gather(
             *(
                 source.get_project_list(request_context=request_context)
                 for source in self.sources
@@ -75,18 +78,20 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
             return_exceptions=True,
         )
 
-        project_lists = [item for item in results if isinstance(item, model.ProjectList)]
+        project_lists = [
+            item for item in results if isinstance(item, model.ProjectList)
+        ]
 
         if len(project_lists) != len(self.sources):
             # TODO: Use an exception group to raise
             # multiple exceptions together.
-            any_exception = next(item for item in results if isinstance(item, BaseException))
+            any_exception = next(
+                item for item in results if isinstance(item, BaseException)
+            )
             raise any_exception
 
         projects = set().union(
-            *(
-                index.projects for index in project_lists
-            ),
+            *(index.projects for index in project_lists),
         )
 
         # Downgrade the API version to the lowest available, as it will not be
@@ -100,7 +105,8 @@ class PrioritySelectedProjectsRepository(core.SimpleRepository):
             projects=frozenset(
                 model.ProjectListElement(
                     name=packaging.utils.canonicalize_name(p.name),
-                ) for p in projects
+                )
+                for p in projects
             ),
         )
 

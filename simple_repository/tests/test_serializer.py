@@ -28,7 +28,7 @@ def test_serialize_file_html() -> None:
     )
     expected = (
         '<a href="https://example.com/test.html#sha256=abc123" data-requires-python="&gt;=3.6"'
-        '>test.html</a><br/>\n'
+        ">test.html</a><br/>\n"
     )
     assert serializer._serialize_file(file) == expected
 
@@ -37,10 +37,7 @@ def test_serialize_file_html() -> None:
         url="https://example.com/test.html",
         hashes={},
     )
-    expected = (
-        '<a href="https://example.com/test.html"'
-        '>test.html</a><br/>\n'
-    )
+    expected = '<a href="https://example.com/test.html">test.html</a><br/>\n'
     assert serializer._serialize_file(file) == expected
 
 
@@ -49,17 +46,15 @@ def test_serialize_file_html() -> None:
     [
         (' data-yanked=""', True),
         (' data-yanked="reason"', "reason"),
-        ('', None),
-        ('', False),
+        ("", None),
+        ("", False),
     ],
 )
 def test_serialize_file_html_yank(
     yank_attr: str,
     yank_value: typing.Union[bool, str, None],
 ) -> None:
-    serializer = SerializerHtmlV1(
-
-    )
+    serializer = SerializerHtmlV1()
     file = model.File(
         filename="test.html",
         url="https://example.com/test.html",
@@ -67,9 +62,7 @@ def test_serialize_file_html_yank(
         yanked=yank_value,
     )
     expected = (
-        '<a href="https://example.com/test.html"'
-        f'{yank_attr}'
-        '>test.html</a><br/>\n'
+        f'<a href="https://example.com/test.html"{yank_attr}>test.html</a><br/>\n'
     )
     assert serializer._serialize_file(file) == expected
 
@@ -79,8 +72,8 @@ def test_serialize_file_html_yank(
     [
         (' data-core-metadata="true"', True),
         (' data-core-metadata="sha=..."', {"sha": "..."}),
-        ('', None),
-        ('', False),
+        ("", None),
+        ("", False),
     ],
 )
 def test_serialize_file_html_metadata(
@@ -96,9 +89,7 @@ def test_serialize_file_html_metadata(
         dist_info_metadata=metadata_value,
     )
     expected = (
-        '<a href="https://example.com/test.html"'
-        f'{metadata_attr}'
-        '>test.html</a><br/>\n'
+        f'<a href="https://example.com/test.html"{metadata_attr}>test.html</a><br/>\n'
     )
     assert serializer._serialize_file(file) == expected
 
@@ -108,10 +99,13 @@ def test_serialize_file_html_metadata(
     [
         (' data-gpg-sig="true"', True),
         (' data-gpg-sig="false"', False),
-        ('', None),
+        ("", None),
     ],
 )
-def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]) -> None:
+def test_serialize_file_html_gpg(
+    gpg_attr: str,
+    gpg_value: typing.Optional[bool],
+) -> None:
     serializer = SerializerHtmlV1()
 
     file = model.File(
@@ -120,11 +114,7 @@ def test_serialize_file_html_gpg(gpg_attr: str, gpg_value: typing.Optional[bool]
         hashes={},
         gpg_sig=gpg_value,
     )
-    expected = (
-        '<a href="https://example.com/test.html"'
-        f'{gpg_attr}'
-        '>test.html</a><br/>\n'
-    )
+    expected = f'<a href="https://example.com/test.html"{gpg_attr}>test.html</a><br/>\n'
     assert serializer._serialize_file(file) == expected
 
 
@@ -133,7 +123,11 @@ def test_serialize_project_page_html() -> None:
         meta=model.Meta(api_version="1.0"),
         name="test-project",
         files=(
-            model.File(filename="test.html", url="https://example.com/test.html", hashes={}),
+            model.File(
+                filename="test.html",
+                url="https://example.com/test.html",
+                hashes={},
+            ),
             model.File(filename="test.txt", url="test.txt", hashes={}),
         ),
     )
@@ -156,10 +150,12 @@ def test_serialize_project_page_html() -> None:
 def test_serialize_project_list_html() -> None:
     project_list = model.ProjectList(
         meta=model.Meta(api_version="1.0"),
-        projects=frozenset([
-            model.ProjectListElement(name="test-project-1"),
-            model.ProjectListElement(name="test-project-2"),
-        ]),
+        projects=frozenset(
+            [
+                model.ProjectListElement(name="test-project-1"),
+                model.ProjectListElement(name="test-project-2"),
+            ],
+        ),
     )
     expected_header = """<!DOCTYPE html>
     <html>
@@ -215,7 +211,7 @@ def test_serialize_project_page_json() -> None:
     serializer = SerializerJsonV1()
     res = serializer.serialize_project_page(page)
 
-    assert json.loads(res) == json.loads('''
+    assert json.loads(res) == json.loads("""
         {
             "meta": {
                 "api-version": "1.0"
@@ -245,28 +241,29 @@ def test_serialize_project_page_json() -> None:
                 }
             ]
         }
-    ''')
+    """)
 
 
 @pytest.mark.parametrize(
-    "version, serialization", [
+    "version, serialization",
+    [
         (
             "1.0",
-            '''[{
+            """[{
                 "filename": "test1-1.0.whl",
                 "url": "test1.whl",
                 "hashes": {}
-            }]''',
+            }]""",
         ),
         (
             "1.1",
-            '''[{
+            """[{
                 "filename": "test1-1.0.whl",
                 "url": "test1.whl",
                 "hashes": {},
                 "size": 1,
                 "upload-time": "2000-01-04T00:00:00Z"
-            }]''',
+            }]""",
         ),
     ],
 )
@@ -293,7 +290,7 @@ def test_serialize_project_page_json__v1_1_attrs(
 
 
 def test_serialize_project_page_json__private_attrs() -> None:
-    serialization = '''{
+    serialization = """{
       "meta": {
         "api-version": "1.1",
         "_meta_extra": "abc"
@@ -312,9 +309,12 @@ def test_serialize_project_page_json__private_attrs() -> None:
         }
       ],
       "_page_extra": 456
-    }'''
+    }"""
     page = model.ProjectDetail(
-        model.Meta("1.1", private_metadata=model.PrivateMetadataMapping(dict(_meta_extra="abc"))),
+        model.Meta(
+            "1.1",
+            private_metadata=model.PrivateMetadataMapping(dict(_meta_extra="abc")),
+        ),
         "project",
         files=(
             model.File(
@@ -335,43 +335,50 @@ def test_serialize_project_page_json__private_attrs() -> None:
 def test_serialize_project_list_json() -> None:
     page = model.ProjectList(
         model.Meta("1.0"),
-        projects=frozenset([
-            model.ProjectListElement("a"),
-        ]),
+        projects=frozenset(
+            [
+                model.ProjectListElement("a"),
+            ],
+        ),
     )
     serializer = SerializerJsonV1()
     res = serializer.serialize_project_list(page)
 
     assert res == json.dumps(
-        json.loads('''{
+        json.loads("""{
         "meta": {
             "api-version": "1.0"
         },
         "projects": [
             {"name": "a"}
         ]
-    }'''),
+    }"""),
     )
 
 
 def test_serialize_project_list_json__with_extra() -> None:
     page = model.ProjectList(
-        model.Meta("1.0", private_metadata=model.PrivateMetadataMapping(dict(_extra_meta="abc"))),
-        projects=frozenset([
-            model.ProjectListElement(
-                "a",
-                private_metadata=model.PrivateMetadataMapping.from_any_mapping(
-                    dict(_extra_list_element=123, _nested={"nested": True}),
+        model.Meta(
+            "1.0",
+            private_metadata=model.PrivateMetadataMapping(dict(_extra_meta="abc")),
+        ),
+        projects=frozenset(
+            [
+                model.ProjectListElement(
+                    "a",
+                    private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+                        dict(_extra_list_element=123, _nested={"nested": True}),
+                    ),
                 ),
-            ),
-        ]),
+            ],
+        ),
         private_metadata=model.PrivateMetadataMapping(dict(_extra_project_list=456)),
     )
     serializer = SerializerJsonV1()
     res = serializer.serialize_project_list(page)
 
     assert res == json.dumps(
-        json.loads('''{
+        json.loads("""{
         "meta": {
             "api-version": "1.0",
             "_extra_meta": "abc"
@@ -380,5 +387,5 @@ def test_serialize_project_list_json__with_extra() -> None:
             {"name": "a", "_extra_list_element": 123, "_nested": {"nested": true}}
         ],
         "_extra_project_list": 456
-    }'''),
+    }"""),
     )

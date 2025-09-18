@@ -29,6 +29,7 @@ Where additional context is added to a quote, it will be inline within square
 brackets, for example ``[additional context]``.
 
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -71,7 +72,9 @@ class File:
     # PEP-691: Limited to a len() of 1 in HTML
     # If the key is not "present", it will be None.
     # A maximum of one hash will be included the HTML serialization.
-    dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = None  # PEP-658
+    dist_info_metadata: typing.Union[bool, typing.Dict[str, str], None] = (
+        None  # PEP-658
+    )
 
     # PEP-691: An optional key that acts a boolean to indicate if the file has an
     #          associated GPG signature or not.
@@ -113,6 +116,7 @@ class Meta:
     """Responses metadata defined in PEP-629:
     https://peps.python.org/pep-0629/
     """
+
     api_version: str
 
     # PEP-700: Keys (at any level) with a leading underscore are reserved as private for
@@ -123,6 +127,7 @@ class Meta:
 @dataclasses.dataclass(frozen=True)
 class ProjectDetail:
     """Model of a project page as described in PEP-691"""
+
     meta: Meta
     name: str
     files: typing.Tuple[File, ...]
@@ -146,18 +151,20 @@ class ProjectDetail:
                         "SimpleAPI>=1.1 requires the size field to be set for all the files.",
                     )
             if self.versions is None:
-                versions = self.compute_versions_from_files(self.files, self._normalized_name)
+                versions = self.compute_versions_from_files(
+                    self.files,
+                    self._normalized_name,
+                )
                 object.__setattr__(self, "versions", versions)
 
     @classmethod
     def compute_versions_from_files(
-            cls,
-            files: typing.Tuple[File, ...],
-            normalized_name: str,
+        cls,
+        files: typing.Tuple[File, ...],
+        normalized_name: str,
     ) -> typing.FrozenSet[str]:
         return frozenset(
-            str(safe_version(file.filename, normalized_name))
-            for file in files
+            str(safe_version(file.filename, normalized_name)) for file in files
         )
 
     @property
@@ -181,6 +188,7 @@ class ProjectListElement:
 @dataclasses.dataclass(frozen=True)
 class ProjectList:
     """Model of the project list as described in PEP-691"""
+
     meta: Meta
     projects: typing.FrozenSet[ProjectListElement]
 
@@ -195,7 +203,10 @@ class RequestContext:
 
     def __init__(
         self,
-        context: typing.Union[JSONMapping, typing.Mapping[str, typing.Any]] = JSONMapping(),
+        context: typing.Union[
+            JSONMapping,
+            typing.Mapping[str, typing.Any],
+        ] = JSONMapping(),
     ) -> None:
         if not isinstance(context, JSONMapping):
             context = JSONMapping.from_any_mapping(context)

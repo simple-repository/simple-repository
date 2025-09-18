@@ -29,7 +29,8 @@ def create_project_detail(
             url="url",
             hashes={},
             upload_time=date,
-        ) for i, date in enumerate(dates)
+        )
+        for i, date in enumerate(dates)
     )
 
     return model.ProjectDetail(
@@ -47,8 +48,11 @@ def test_exclude_recent_distributions__old_files() -> None:
     now = datetime(2023, 1, 1)
     project_detail = create_project_detail(datetime(1926, 1, 1), datetime(2000, 1, 4))
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
-    assert dict(new_project_detail.private_metadata) == {'_quarantined_files': ()}
-    new_project_detail = dataclasses.replace(new_project_detail, private_metadata=model.PrivateMetadataMapping({}))
+    assert dict(new_project_detail.private_metadata) == {"_quarantined_files": ()}
+    new_project_detail = dataclasses.replace(
+        new_project_detail,
+        private_metadata=model.PrivateMetadataMapping({}),
+    )
     assert new_project_detail == project_detail
 
 
@@ -59,16 +63,28 @@ def test_exclude_recent_distributions__new_files() -> None:
     )
 
     now = datetime(2023, 1, 1)
-    project_detail = create_project_detail(now, now - timedelta(days=1, hours=6), now - timedelta(days=11))
+    project_detail = create_project_detail(
+        now,
+        now - timedelta(days=1, hours=6),
+        now - timedelta(days=11),
+    )
     new_project_detail = repository._exclude_recent_distributions(project_detail, now)
     assert new_project_detail != project_detail
     assert len(new_project_detail.files) == 1
     assert new_project_detail.files[0].upload_time == now - timedelta(days=11)
 
     assert dict(new_project_detail.private_metadata) == {
-        '_quarantined_files': (
-            {'filename': 'project-0.whl', 'quarantine_release_time': '2023-01-11T00:00:00Z', 'upload_time': '2023-01-01T00:00:00Z'},
-            {'filename': 'project-1.whl', 'quarantine_release_time': '2023-01-09T18:00:00Z', 'upload_time': '2022-12-30T18:00:00Z'},
+        "_quarantined_files": (
+            {
+                "filename": "project-0.whl",
+                "quarantine_release_time": "2023-01-11T00:00:00Z",
+                "upload_time": "2023-01-01T00:00:00Z",
+            },
+            {
+                "filename": "project-1.whl",
+                "quarantine_release_time": "2023-01-09T18:00:00Z",
+                "upload_time": "2022-12-30T18:00:00Z",
+            },
         ),
     }
 
@@ -103,7 +119,10 @@ async def test_get_project_page() -> None:
             project_page = await repository.get_project_page("project")
 
     source_project_page = await source.get_project_page("project")
-    mock_exclude_recent_distributions.assert_called_once_with(project_page=source_project_page, now=datetime(2000, 1, 4))
+    mock_exclude_recent_distributions.assert_called_once_with(
+        project_page=source_project_page,
+        now=datetime(2000, 1, 4),
+    )
     assert project_page == mock_project_detail
 
 

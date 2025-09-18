@@ -17,17 +17,25 @@ from .fake_repository import FakeRepository
 
 
 class FakeYankProvider(YankProvider):
-    async def yanked_versions(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_versions(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         return {"1.0": "reason"}
 
-    async def yanked_files(self, project_page: model.ProjectDetail) -> typing.Dict[str, str]:
+    async def yanked_files(
+        self,
+        project_page: model.ProjectDetail,
+    ) -> typing.Dict[str, str]:
         return {"project-1.0-any.whl": "reason"}
 
 
 @pytest.fixture
 def project_page() -> model.ProjectDetail:
     return model.ProjectDetail(
-        model.Meta("1.0"), name="project", files=(
+        model.Meta("1.0"),
+        name="project",
+        files=(
             model.File("project-1.0-any.whl", "url", {}),
             model.File("project-1.0.tar.gz", "url", {}),
             model.File("project-1.1.tar.gz", "url", {}),

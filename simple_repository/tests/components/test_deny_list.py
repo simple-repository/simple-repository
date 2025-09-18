@@ -29,10 +29,12 @@ def repository(source_repository: FakeRepository) -> DenyListRepository:
 @pytest.mark.asyncio
 async def test__get_project_list(repository: DenyListRepository) -> None:
     project_list = await repository.get_project_list()
-    assert project_list.projects == frozenset([
-        model.ProjectListElement("project1"),
-        model.ProjectListElement("project2"),
-    ])
+    assert project_list.projects == frozenset(
+        [
+            model.ProjectListElement("project1"),
+            model.ProjectListElement("project2"),
+        ],
+    )
 
 
 @pytest.mark.asyncio

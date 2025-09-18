@@ -14,18 +14,18 @@ from ...components import core
 
 
 class FakeRepository(core.SimpleRepository):
-
     def __init__(
         self,
-        project_list: model.ProjectList = model.ProjectList(model.Meta('1.0'), frozenset()),
+        project_list: model.ProjectList = model.ProjectList(
+            model.Meta("1.0"),
+            frozenset(),
+        ),
         project_pages: typing.Optional[typing.List[model.ProjectDetail]] = None,
         resources: typing.Optional[typing.Dict[str, model.Resource]] = None,
     ) -> None:
         self.project_list = project_list
         if project_pages:
-            self.project_pages = {
-                project.name: project for project in project_pages
-            }
+            self.project_pages = {project.name: project for project in project_pages}
         else:
             self.project_pages = {}
         self.resources = resources or {}

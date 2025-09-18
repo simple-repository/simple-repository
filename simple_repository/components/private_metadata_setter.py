@@ -10,9 +10,9 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from . import core
 from .. import model
 from .._typing_compat import override
+from . import core
 
 
 class PrivateMetadataSettingRepository(core.RepositoryContainer):
@@ -34,7 +34,9 @@ class PrivateMetadataSettingRepository(core.RepositoryContainer):
         project_metadata: typing.Mapping[str, typing.Any],
     ) -> None:
         super().__init__(source)
-        self._project_metadata = model.PrivateMetadataMapping.from_any_mapping(project_metadata)
+        self._project_metadata = model.PrivateMetadataMapping.from_any_mapping(
+            project_metadata,
+        )
 
     @override
     async def get_project_page(
@@ -44,7 +46,8 @@ class PrivateMetadataSettingRepository(core.RepositoryContainer):
         request_context: typing.Optional[model.RequestContext] = None,
     ) -> model.ProjectDetail:
         project_detail = await super().get_project_page(
-            project_name, request_context=request_context,
+            project_name,
+            request_context=request_context,
         )
 
         # Merge existing private metadata with our metadata

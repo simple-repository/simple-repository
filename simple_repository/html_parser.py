@@ -15,10 +15,10 @@ class HTMLElement:
     __slots__ = ("tag", "attrs", "content")
 
     def __init__(
-            self,
-            tag: str,
-            attrs: typing.Dict[str, typing.Optional[str]],
-            content: typing.Optional[str] = None,
+        self,
+        tag: str,
+        attrs: typing.Dict[str, typing.Optional[str]],
+        content: typing.Optional[str] = None,
     ) -> None:
         self.tag = tag
         self.attrs = attrs
@@ -26,7 +26,9 @@ class HTMLElement:
 
     def __str__(self) -> str:
         result = f"<{self.tag}"
-        result += "".join(f' {key}="{value if value else ""}"' for key, value in self.attrs.items())
+        result += "".join(
+            f' {key}="{value if value else ""}"' for key, value in self.attrs.items()
+        )
         result += f">{self.content}</{self.tag}>" if self.content else "/>"
         return result
 
@@ -36,7 +38,11 @@ class HTMLElement:
     def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, HTMLElement):
             return False
-        return self.tag == other.tag and self.attrs == other.attrs and self.content == other.content
+        return (
+            self.tag == other.tag
+            and self.attrs == other.attrs
+            and self.content == other.content
+        )
 
 
 class SimpleHTMLParser(html.parser.HTMLParser):

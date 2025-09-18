@@ -22,12 +22,13 @@ def parse_json_project_list(page: str) -> model.ProjectList:
         model.ProjectListElement(
             name=project.get("name"),
             private_metadata=_gather_private_attribs(project),
-        ) for project in project_dict["projects"]
+        )
+        for project in project_dict["projects"]
     )
     return model.ProjectList(
         meta=model.Meta(
             api_version=project_dict["meta"]["api-version"],
-            private_metadata=_gather_private_attribs(project_dict['meta']),
+            private_metadata=_gather_private_attribs(project_dict["meta"]),
         ),
         projects=projects,
         private_metadata=_gather_private_attribs(project_dict),
@@ -41,10 +42,7 @@ def parse_html_project_list(page: str) -> model.ProjectList:
         page = "<!DOCTYPE html>\n" + page
     parser.feed(page)
 
-    a_tags = (
-        element for element in parser.elements
-        if element.tag == "a"
-    )
+    a_tags = (element for element in parser.elements if element.tag == "a")
 
     projects = frozenset(
         model.ProjectListElement(
@@ -98,7 +96,7 @@ def parse_json_project_page(body: str) -> model.ProjectDetail:
                 private_metadata=_gather_private_attribs(file),
             ),
         )
-    versions = page_dict.get('versions', None)
+    versions = page_dict.get("versions", None)
     if versions is not None:
         versions = frozenset(versions)
 
@@ -122,9 +120,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
     parser.feed(page)
 
     files = []
-    a_tags = (
-        e for e in parser.elements if e.tag == "a"
-    )
+    a_tags = (e for e in parser.elements if e.tag == "a")
 
     for a_tag in a_tags:
         if (a_tag.content is None) or (a_tag.attrs.get("href") is None):
@@ -136,8 +132,8 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
         if fragment:
             # PEP-503: The URL SHOULD include a hash in the form of a URL fragment with
             #          the following syntax: #<hashname>=<hashvalue>
-            if '=' in fragment:
-                hash_name, hash_value = str(fragment).split('=', 1)
+            if "=" in fragment:
+                hash_name, hash_value = str(fragment).split("=", 1)
                 hashes[hash_name] = hash_value
 
         yanked: typing.Union[bool, str, None] = None
@@ -166,7 +162,9 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
                 metadata_attr_tokens = metadata_val.split("=", 1)
                 if len(metadata_attr_tokens) == 2:
                     # the value of data-core-metadata can be parsed as <hash_fun>=<hash_val>.
-                    dist_info_metadata = {metadata_attr_tokens[0]: metadata_attr_tokens[1]}
+                    dist_info_metadata = {
+                        metadata_attr_tokens[0]: metadata_attr_tokens[1],
+                    }
                 else:
                     # the value of data-core-metadata is a placeholder. It doesn't follow
                     # the SHOULD recommendation, but it is still indicating that the
@@ -221,7 +219,7 @@ def parse_html_project_page(page: str, project_name: str) -> model.ProjectDetail
 
 
 def _gather_private_attribs(
-        element: typing.Mapping[str, typing.Any],
+    element: typing.Mapping[str, typing.Any],
 ) -> model.PrivateMetadataMapping:
     return model.PrivateMetadataMapping.from_any_mapping(
         {name: value for name, value in element.items() if name.startswith("_")},

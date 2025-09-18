@@ -13,4 +13,4 @@ client interface, suitable for reuse in both client and server implementations
 from ._version import version as __version__  # noqa
 from .components.core import SimpleRepository  # noqa
 
-__all__ = ['__version__', 'SimpleRepository']
+__all__ = ["__version__", "SimpleRepository"]

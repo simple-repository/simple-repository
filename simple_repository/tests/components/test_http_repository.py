@@ -22,15 +22,48 @@ if typing.TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("base_url", "append_with", "target"), [
-        ["https://example.com/simple", "my_project", "https://example.com/simple/my_project"],
-        ["https://example.com/what/", "my_project", "https://example.com/what/my_project"],
-        ["http://example.com/what/", "my_project", "http://example.com/what/my_project"],
-        ["http://example.com/what/", "my_project/", "http://example.com/what/my_project/"],
-        ["http://example.com/what/", "/my_project/", "http://example.com/what/my_project/"],
-        ["http://example.com/what/", "/my_project", "http://example.com/what/my_project"],
-        ["https://example.com/simple?foo=bar", "my_project", "https://example.com/simple/my_project?foo=bar"],
-        ["https://example.com/simple?foo=bar", "my_project/", "https://example.com/simple/my_project/?foo=bar"],
+    ("base_url", "append_with", "target"),
+    [
+        [
+            "https://example.com/simple",
+            "my_project",
+            "https://example.com/simple/my_project",
+        ],
+        [
+            "https://example.com/what/",
+            "my_project",
+            "https://example.com/what/my_project",
+        ],
+        [
+            "http://example.com/what/",
+            "my_project",
+            "http://example.com/what/my_project",
+        ],
+        [
+            "http://example.com/what/",
+            "my_project/",
+            "http://example.com/what/my_project/",
+        ],
+        [
+            "http://example.com/what/",
+            "/my_project/",
+            "http://example.com/what/my_project/",
+        ],
+        [
+            "http://example.com/what/",
+            "/my_project",
+            "http://example.com/what/my_project",
+        ],
+        [
+            "https://example.com/simple?foo=bar",
+            "my_project",
+            "https://example.com/simple/my_project?foo=bar",
+        ],
+        [
+            "https://example.com/simple?foo=bar",
+            "my_project/",
+            "https://example.com/simple/my_project/?foo=bar",
+        ],
     ],
 )
 def test___url_path_append(base_url: str, append_with: str, target: str):
@@ -38,29 +71,34 @@ def test___url_path_append(base_url: str, append_with: str, target: str):
 
 
 @pytest.mark.parametrize(
-    ("base_url", "target"), [
+    ("base_url", "target"),
+    [
         ["https://example.com/simple", "https://example.com/simple/my_project/"],
         ["https://example.com/what/", "https://example.com/what/my_project/"],
         ["http://example.com/what/", "http://example.com/what/my_project/"],
-        ["https://example.com/simple?foo=bar", "https://example.com/simple/my_project/?foo=bar"],
+        [
+            "https://example.com/simple?foo=bar",
+            "https://example.com/simple/my_project/?foo=bar",
+        ],
     ],
 )
 @pytest.mark.asyncio
 async def test_http_repository__no_trailing_slash(base_url: str, target: str) -> None:
     repo = HttpRepository(url=base_url)
-    with mock.patch.object(repo, '_fetch_simple_page') as _fetch_simple_page:
-        _fetch_simple_page.side_effect = ValueError('some unhandled exception')
+    with mock.patch.object(repo, "_fetch_simple_page") as _fetch_simple_page:
+        _fetch_simple_page.side_effect = ValueError("some unhandled exception")
 
-        with pytest.raises(ValueError, match='some unhandled exception'):
-            await repo.get_project_page('my_project')
+        with pytest.raises(ValueError, match="some unhandled exception"):
+            await repo.get_project_page("my_project")
 
         _fetch_simple_page.assert_called_once_with(target)
 
 
 @pytest.mark.parametrize(
-    ("text", "header"), [
+    ("text", "header"),
+    [
         (
-            '''
+            """
         <html>
             <head><title>Test Page</title></head>
             <body>
@@ -68,10 +106,11 @@ async def test_http_repository__no_trailing_slash(base_url: str, target: str) ->
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
-        ''', "application/vnd.pypi.simple.v1+html",
+        """,
+            "application/vnd.pypi.simple.v1+html",
         ),
         (
-            '''
+            """
         <html>
             <head><title>Test Page</title></head>
             <body>
@@ -79,10 +118,11 @@ async def test_http_repository__no_trailing_slash(base_url: str, target: str) ->
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
-        ''', "",
+        """,
+            "",
         ),
         (
-            '''
+            """
         <html>
             <head><title>Test Page</title></head>
             <body>
@@ -90,10 +130,11 @@ async def test_http_repository__no_trailing_slash(base_url: str, target: str) ->
                 <a href="http://test2.whl">test2.whl</a>
             </body>
         </html>
-        ''', "text/html",
+        """,
+            "text/html",
         ),
         (
-            '''
+            """
         {
             "meta": {
                 "api-version": "1.0"
@@ -112,12 +153,17 @@ async def test_http_repository__no_trailing_slash(base_url: str, target: str) ->
                 }
             ]
         }
-        ''', "application/vnd.pypi.simple.v1+json",
+        """,
+            "application/vnd.pypi.simple.v1+json",
         ),
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_page(text: str, header: str, httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_project_page(
+    text: str,
+    header: str,
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(content=text, headers={"content-type": header})
 
@@ -143,16 +189,23 @@ async def test_get_project_page(text: str, header: str, httpx_mock: pytest_httpx
 
 
 @pytest.mark.asyncio
-async def test_get_project_page_unsupported_serialization(httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_project_page_unsupported_serialization(
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
-    httpx_mock.add_response(content="abc", headers={"content-type": "multipart/form-data"})
+    httpx_mock.add_response(
+        content="abc",
+        headers={"content-type": "multipart/form-data"},
+    )
 
     with pytest.raises(errors.UnsupportedSerialization):
         await repository.get_project_page("project")
 
 
 @pytest.mark.asyncio
-async def test_get_project_page__package_not_found(httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_project_page__package_not_found(
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=404)
 
@@ -161,10 +214,14 @@ async def test_get_project_page__package_not_found(httpx_mock: pytest_httpx.HTTP
 
 
 @pytest.mark.parametrize(
-    "status_code", [400, 401, 403, 500, 501],
+    "status_code",
+    [400, 401, 403, 500, 501],
 )
 @pytest.mark.asyncio
-async def test_get_project_page__bad_status_code(httpx_mock: pytest_httpx.HTTPXMock, status_code: int) -> None:
+async def test_get_project_page__bad_status_code(
+    httpx_mock: pytest_httpx.HTTPXMock,
+    status_code: int,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=status_code)
 
@@ -184,9 +241,10 @@ async def test_get_project_page__http_error(httpx_mock: pytest_httpx.HTTPXMock) 
 
 
 @pytest.mark.parametrize(
-    ("text", "header"), [
+    ("text", "header"),
+    [
         (
-            '''
+            """
         <html>
             <head><title>Test Page</title></head>
             <body>
@@ -194,10 +252,11 @@ async def test_get_project_page__http_error(httpx_mock: pytest_httpx.HTTPXMock) 
                 <a href="/p2/">p2</a>
             </body>
         </html>
-        ''', "text/html",
+        """,
+            "text/html",
         ),
         (
-            '''
+            """
         {
             "meta": {
                 "api-version": "1.0"
@@ -207,12 +266,17 @@ async def test_get_project_page__http_error(httpx_mock: pytest_httpx.HTTPXMock) 
                 {"name": "p2"}
             ]
         }
-        ''', "application/vnd.pypi.simple.v1+json",
+        """,
+            "application/vnd.pypi.simple.v1+json",
         ),
     ],
 )
 @pytest.mark.asyncio
-async def test_get_project_list(text: str, header: str, httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_project_list(
+    text: str,
+    header: str,
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(content=text, headers={"content-type": header})
 
@@ -221,18 +285,24 @@ async def test_get_project_list(text: str, header: str, httpx_mock: pytest_httpx
         meta=model.Meta(
             api_version="1.0",
         ),
-        projects=frozenset([
-            model.ProjectListElement(name="p1"),
-            model.ProjectListElement(name="p2"),
-        ]),
+        projects=frozenset(
+            [
+                model.ProjectListElement(name="p1"),
+                model.ProjectListElement(name="p2"),
+            ],
+        ),
     )
 
 
 @pytest.mark.parametrize(
-    "status_code", [400, 401, 403, 404, 500, 501],
+    "status_code",
+    [400, 401, 403, 404, 500, 501],
 )
 @pytest.mark.asyncio
-async def test_get_project_list__bad_status_code(httpx_mock: pytest_httpx.HTTPXMock, status_code: int) -> None:
+async def test_get_project_list__bad_status_code(
+    httpx_mock: pytest_httpx.HTTPXMock,
+    status_code: int,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_response(status_code=status_code)
 
@@ -274,7 +344,8 @@ def project_detail() -> model.ProjectDetail:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "source_etag", [None, "source_etag"],
+    "source_etag",
+    [None, "source_etag"],
 )
 async def test_get_resource(
     project_detail: model.ProjectDetail,
@@ -318,7 +389,10 @@ async def test_get_resource__not_modified(
 
 
 @pytest.mark.asyncio
-async def test_get_resource_unavailable(project_detail: model.ProjectDetail, httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_resource_unavailable(
+    project_detail: model.ProjectDetail,
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     with mock.patch.object(
         repository,
@@ -330,15 +404,24 @@ async def test_get_resource_unavailable(project_detail: model.ProjectDetail, htt
 
 
 @pytest.mark.asyncio
-async def test_get_resource_project_unavailable(httpx_mock: pytest_httpx.HTTPXMock) -> None:
+async def test_get_resource_project_unavailable(
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
-    with mock.patch.object(repository, "get_project_page", side_effect=errors.PackageNotFoundError("numpy")):
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        side_effect=errors.PackageNotFoundError("numpy"),
+    ):
         with pytest.raises(errors.PackageNotFoundError, match="numpy"):
             await repository.get_resource("numpy", "numpy-3.0.whl")
 
 
 @pytest.mark.asyncio
-async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, project_detail: model.ProjectDetail) -> None:
+async def test_get_resource__http_error(
+    httpx_mock: pytest_httpx.HTTPXMock,
+    project_detail: model.ProjectDetail,
+) -> None:
     repository = HttpRepository(url="https://example.com/simple/")
     httpx_mock.add_exception(httpx.HTTPError("error"), method="HEAD")
 
@@ -354,7 +437,8 @@ async def test_get_resource__http_error(httpx_mock: pytest_httpx.HTTPXMock, proj
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "source_etag", [None, "source_etag"],
+    "source_etag",
+    [None, "source_etag"],
 )
 async def test_get_resource_metadata(
     project_detail: model.ProjectDetail,

@@ -18,11 +18,13 @@ def source_repository() -> FakeRepository:
     return FakeRepository(
         project_list=model.ProjectList(
             meta=model.Meta("1.0"),
-            projects=frozenset([
-                model.ProjectListElement("project1"),
-                model.ProjectListElement("project2"),
-                model.ProjectListElement("project3"),
-            ]),
+            projects=frozenset(
+                [
+                    model.ProjectListElement("project1"),
+                    model.ProjectListElement("project2"),
+                    model.ProjectListElement("project3"),
+                ],
+            ),
         ),
         project_pages=[
             model.ProjectDetail(

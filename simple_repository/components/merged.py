@@ -12,9 +12,9 @@ import typing
 
 import packaging.version
 
-from . import priority_selected
 from .. import errors, model
 from .._typing_compat import override
+from . import priority_selected
 
 
 class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
@@ -106,7 +106,9 @@ class MergedRepository(priority_selected.PrioritySelectedProjectsRepository):
             name=project_pages[0].name,
             files=tuple(files.values()),
             versions=versions,
-            private_metadata=model.PrivateMetadataMapping.from_any_mapping(merged_metadata),
+            private_metadata=model.PrivateMetadataMapping.from_any_mapping(
+                merged_metadata,
+            ),
         )
 
     @override
