@@ -74,6 +74,7 @@ class HttpRepository(core.SimpleRepository):
             url=page_url,
             headers=headers,
             timeout=self._connection_timeout.total_seconds(),
+            follow_redirects=True,
         )
         response.raise_for_status()
         body = response.text
@@ -176,6 +177,7 @@ class HttpRepository(core.SimpleRepository):
             resp = await self._http_client.head(
                 url=resource.url,
                 timeout=self._connection_timeout.total_seconds(),
+                follow_redirects=True,
             )
             resp.raise_for_status()
         except httpx.HTTPError as e:

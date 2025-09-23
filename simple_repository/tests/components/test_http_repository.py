@@ -522,3 +522,38 @@ async def test_get_resource__authentication_preserved_in_head_request(
     assert isinstance(resp, model.HttpResource)
     assert resp.url == "http://files.example.com/numpy-2.0.whl"
     assert resp.context.get("etag") == "test_etag"
+
+
+@pytest.mark.asyncio
+async def test_get_resource__redirect_followed(
+    project_detail: model.ProjectDetail,
+    httpx_mock: pytest_httpx.HTTPXMock,
+) -> None:
+    repository = HttpRepository(url="https://example.com/simple/")
+
+    # Mock the HEAD request returning a redirect
+    httpx_mock.add_response(
+        url="http://my_url/numpy-2.0.whl",
+        method="HEAD",
+        status_code=302,
+        headers={"Location": "https://pypi.org/files/numpy-2.0.whl"},
+    )
+
+    # Mock the final HEAD response after redirect
+    httpx_mock.add_response(
+        url="https://pypi.org/files/numpy-2.0.whl",
+        method="HEAD",
+        status_code=200,
+        headers={"ETag": "test_etag"},
+    )
+
+    with mock.patch.object(
+        repository,
+        "get_project_page",
+        AsyncMock(return_value=project_detail),
+    ):
+        resp = await repository.get_resource("numpy", "numpy-2.0.whl")
+        assert isinstance(resp, model.HttpResource)
+        # Note that the URL in the resource remains un-redirected.
+        assert resp.url == "http://my_url/numpy-2.0.whl"
+        assert resp.context.get("etag") == "test_etag"
