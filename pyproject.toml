@@ -51,6 +51,9 @@ dev = [
 [tool.setuptools_scm]
 write_to = "simple_repository/_version.py"
 
+[tool.ruff.lint]
+extend-select = ["I"]
+
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
 
