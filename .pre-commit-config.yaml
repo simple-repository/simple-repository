@@ -24,7 +24,7 @@ repos:
     rev: v0.13.0
     hooks:
       - id: ruff-check
-        args: ["--fix", "--select=I"]
+        args: ["--fix"]
       - id: ruff-format
 
   - repo: https://github.com/codespell-project/codespell
