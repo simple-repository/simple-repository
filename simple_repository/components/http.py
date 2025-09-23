@@ -43,7 +43,13 @@ def _url_path_append(url: str, append_with: str) -> str:
 
 
 class HttpRepository(core.SimpleRepository):
-    """Proxy of a remote simple repository"""
+    """Proxy of a remote simple repository
+
+    By default, creates an HTTP client that follows redirects. When providing
+    a custom http_client, it's recommended to configure it with
+    `follow_redirects=True` to handle cases where repository servers redirect
+    requests.
+    """
 
     def __init__(
         self,
@@ -52,7 +58,7 @@ class HttpRepository(core.SimpleRepository):
         connection_timeout: timedelta = timedelta(seconds=15),
     ) -> None:
         self._source_url = url
-        self._http_client = http_client or httpx.AsyncClient()
+        self._http_client = http_client or httpx.AsyncClient(follow_redirects=True)
         self.downstream_content_types = ", ".join(
             [
                 "application/vnd.pypi.simple.v1+json",
@@ -74,7 +80,6 @@ class HttpRepository(core.SimpleRepository):
             url=page_url,
             headers=headers,
             timeout=self._connection_timeout.total_seconds(),
-            follow_redirects=True,
         )
         response.raise_for_status()
         body = response.text
@@ -177,7 +182,6 @@ class HttpRepository(core.SimpleRepository):
             resp = await self._http_client.head(
                 url=resource.url,
                 timeout=self._connection_timeout.total_seconds(),
-                follow_redirects=True,
             )
             resp.raise_for_status()
         except httpx.HTTPError as e:
