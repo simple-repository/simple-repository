@@ -29,7 +29,7 @@ def project_page() -> model.ProjectDetail:
 
 
 @pytest.mark.asyncio
-async def test_glob_provider__yanked_files(
+async def test_glob_provider__yanked_files__single_rule(
     tmp_path: pathlib.Path,
     project_page: model.ProjectDetail,
 ) -> None:
@@ -42,6 +42,25 @@ async def test_glob_provider__yanked_files(
 
     res = await provider.yanked_files(project_page)
     assert {"project-1.0.whl": "bad"} == res
+
+
+@pytest.mark.asyncio
+async def test_glob_provider__yanked_files__multiple_rules(
+    tmp_path: pathlib.Path,
+    project_page: model.ProjectDetail,
+) -> None:
+    file = tmp_path / "yank_config.json"
+    file.write_text(
+        data='{"project": {"*.whl": "rule1", "*-1.0.*": "rule2"}, "pandas": ["*[!.whl]", "not supported"]}',
+    )
+
+    provider = GlobYankProvider(yank_config_file=file)
+
+    res = await provider.yanked_files(project_page)
+    assert {
+        "project-1.0.whl": "rule1",
+        "project-1.0.tar.gz": "rule2",
+    } == res
 
 
 @pytest.mark.asyncio
@@ -85,19 +104,28 @@ def test_load_config_wrong_type(
         GlobYankProvider(yank_config_file=file)
 
 
+@pytest.mark.parametrize(
+    "contents",
+    [
+        '{"a": "b"}',
+        '{"a": {"b": ["c", "d"]}}',
+    ],
+)
 def test_load_config_wrong_format(
     tmp_path: pathlib.PosixPath,
+    contents: str,
 ) -> None:
     file = tmp_path / "yank_config.json"
     file.write_text(
-        data='{"a": "b"}',
+        data=contents,
     )
     with pytest.raises(
         errors.InvalidConfigurationError,
         match=(
             f"Invalid yank configuration file. {str(file)} must"
-            " contain a dictionary mapping a project name to a tuple"
-            " containing a glob pattern and a yank reason."
+            " contain a dictionary mapping a project name to either"
+            " a tuple containing a glob pattern and a yank reason,"
+            " or a mapping of glob patterns to yank reasons"
         ),
     ):
         GlobYankProvider(yank_config_file=file)
