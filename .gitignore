@@ -1,3 +1,4 @@
 *.egg-info
 .idea
 simple_repository/_version.py
+__pycache__
