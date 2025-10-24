@@ -145,7 +145,7 @@ class GlobYankProvider(YankProvider):
                 not isinstance(key, str)
                 or not isinstance(value, list)
                 or len(value) != 2
-                or not all(isinstance(elem, str) for elem in value)
+                or any(not isinstance(elem, str) for elem in value)
             ):
                 raise errors.InvalidConfigurationError(
                     f"Invalid yank configuration file. {str(json_file)} must"
