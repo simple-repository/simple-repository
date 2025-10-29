@@ -121,14 +121,13 @@ class GlobYankProvider(YankProvider):
         yanked_files = {}
         value = self._yank_config.get(project_page.name)
         if value:
-            untouched_files = list(project_page.files)
-            for pattern, reason in value.items():
-                for file in untouched_files.copy():
+            for file in project_page.files:
+                for pattern, reason in value.items():
                     if fnmatch.fnmatch(file.filename, pattern):
-                        yanked_files[file.filename] = reason
                         # If multiple rules can be applied to the same file
                         # only the first match will be picked as a reason
-                        untouched_files.remove(file)
+                        yanked_files[file.filename] = reason
+                        break  # Stop checking other patterns for this file
         return yanked_files
 
     def _load_config_json(
