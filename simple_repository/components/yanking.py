@@ -105,10 +105,7 @@ class GlobYankProvider(YankProvider):
         self,
         yank_config_file: pathlib.Path,
     ) -> None:
-        self._yank_config: typing.Dict[
-            str,
-            typing.Tuple[str, str],
-        ] = self._load_config_json(yank_config_file)
+        self._yank_config = self._load_config_json(yank_config_file)
 
     async def yanked_versions(
         self,
@@ -124,35 +121,50 @@ class GlobYankProvider(YankProvider):
         yanked_files = {}
         value = self._yank_config.get(project_page.name)
         if value:
-            pattern, reason = value
-            yanked_files = {
-                file.filename: reason
-                for file in project_page.files
-                if fnmatch.fnmatch(file.filename, pattern)
-            }
-
+            for file in project_page.files:
+                for pattern, reason in value.items():
+                    if fnmatch.fnmatch(file.filename, pattern):
+                        # If multiple rules can be applied to the same file
+                        # only the first match will be picked as a reason
+                        yanked_files[file.filename] = reason
+                        break  # Stop checking other patterns for this file
         return yanked_files
 
     def _load_config_json(
         self,
         json_file: pathlib.Path,
-    ) -> typing.Dict[str, typing.Tuple[str, str]]:
+    ) -> typing.Dict[str, typing.Dict[str, str]]:
         json_config = utils.load_config_json(json_file)
 
-        config_dict: typing.Dict[str, typing.Tuple[str, str]] = {}
+        config_dict: typing.Dict[str, typing.Dict[str, str]] = {}
         for key, value in json_config.items():
-            if (
-                not isinstance(key, str)
-                or not isinstance(value, list)
-                or len(value) != 2
-                or not all(isinstance(elem, str) for elem in value)
+            if not isinstance(key, str) or not (
+                (
+                    isinstance(value, list)
+                    and len(value) == 2
+                    and all(isinstance(elem, str) for elem in value)
+                )
+                or (
+                    isinstance(value, dict)
+                    and all(
+                        isinstance(dict_key, str) and isinstance(dict_val, str)
+                        for dict_key, dict_val in value.items()
+                    )
+                )
             ):
                 raise errors.InvalidConfigurationError(
                     f"Invalid yank configuration file. {str(json_file)} must"
-                    " contain a dictionary mapping a project name to a tuple"
-                    " containing a glob pattern and a yank reason.",
+                    " contain a dictionary mapping a project name to either"
+                    " a tuple containing a glob pattern and a yank reason, or"
+                    " a mapping of glob patterns to yank reasons.",
                 )
-            config_dict[packaging.utils.canonicalize_name(key)] = (value[0], value[1])
+            config_key = packaging.utils.canonicalize_name(key)
+            if isinstance(value, list):
+                config_dict[config_key] = {
+                    value[0]: value[1],
+                }
+            else:
+                config_dict[config_key] = value
 
         return config_dict
 
