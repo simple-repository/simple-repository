@@ -76,6 +76,14 @@ def test_frozen_json_mapping__from_any_mapping__with_dict():
     assert m["a"]["b"] == (4, 5, None)
 
 
+def test_frozen_json_mapping__from_any_mapping__with_json_mapping():
+    nested = _frozen_json.JSONMapping.from_any_mapping({"b": [4, 5, None]})
+    m = _frozen_json.JSONMapping.from_any_mapping({"a": nested})
+    assert isinstance(m["a"], _frozen_json.JSONMapping)
+    assert isinstance(m["a"]["b"], tuple)
+    assert m["a"]["b"] == (4, 5, None)
+
+
 def test_frozen_json_mapping__init__from_any_mapping__with__dict_inside_tuple():
     m = _frozen_json.JSONMapping.from_any_mapping({"a": (1, 2, {})})
     assert isinstance(m["a"][2], _frozen_json.JSONMapping)

@@ -7,12 +7,17 @@
 
 from __future__ import annotations
 
+import typing
+
 import pytest
 
 from ... import errors, model
 from ...components.core import SimpleRepository
 from ...components.merged import MergedRepository
 from .fake_repository import FakeRepository
+
+if typing.TYPE_CHECKING:
+    import collections.abc
 
 
 @pytest.mark.asyncio
@@ -200,8 +205,28 @@ async def test_get_resource__not_found(resource_repo_t1: SimpleRepository) -> No
         await resource_repo_t1.get_resource("missing-project", "missing.whl")
 
 
+@pytest.mark.parametrize(
+    "nested_extra",
+    (
+        {},
+        {"_nested_extra": {"_foo": "bar"}},
+        {
+            "_nested_extra": model.PrivateMetadataMapping.from_any_mapping(
+                {"_foo": "bar"},
+            ),
+        },
+        {"_nested_extra": {"_foo": {"_bar": "baz"}}},
+        {
+            "_nested_extra": {
+                "_foo": model.PrivateMetadataMapping.from_any_mapping({"_bar": "baz"}),
+            },
+        },
+    ),
+)
 @pytest.mark.asyncio
-async def test_get_project_page__merges_private_metadata() -> None:
+async def test_get_project_page__merges_private_metadata(
+    nested_extra: collections.abc.Mapping[str, typing.Any],
+) -> None:
     repo = MergedRepository(
         [
             FakeRepository(
@@ -229,6 +254,7 @@ async def test_get_project_page__merges_private_metadata() -> None:
                             {
                                 "_source_repo": "repo2",
                                 "_build_info": "ci-123",
+                                **nested_extra,
                             },
                         ),
                     ),
