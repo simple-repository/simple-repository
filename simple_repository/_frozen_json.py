@@ -96,7 +96,9 @@ class JSONMapping(typing.Mapping[str, FrozenJSONType]):
         def transform(value: typing.Any) -> FrozenJSONType: ...
 
         def transform(value: typing.Any) -> FrozenJSONType:
-            if isinstance(value, Mapping) and not isinstance(value, JSONMapping):
+            if isinstance(value, JSONMapping):
+                return value
+            if isinstance(value, Mapping):
                 non_str_k = ", ".join(
                     sorted(
                         f"{repr(k)!r} (type {type(k).__name__})"
